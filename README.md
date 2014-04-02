@@ -1,4 +1,4 @@
-# Verify PGP signatures plugin
+# Verify PGP signatures plugin [![Build Status](https://travis-ci.org/s4u/sitemapxml-maven-plugin.svg?branch=master)](https://travis-ci.org/s4u/sitemapxml-maven-plugin)
 
 This plugin allow you to automatically verify PGP signature of all project dependency.
 
@@ -6,4 +6,4 @@ This plugin allow you to automatically verify PGP signature of all project depen
 
 More information you can find on site:
 
-http://s4u.github.io/pgpverify-maven-plugin/
+http://www.simplify4u.org/pgpverify-maven-plugin/
