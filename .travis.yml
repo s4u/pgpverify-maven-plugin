@@ -1,1 +1,9 @@
 language: java
+
+install: git clone --depth 1 -b travis git://github.com/s4u/parent.git ../travis
+script: 'if [ ${TRAVIS_PULL_REQUEST} = ''false'' ]; then mvn -V -s ../travis/settings.xml deploy; else mvn -V -s ../travis/settings.xml verify; fi'
+
+env:
+  global:
+  - secure: fDaiHxOgyoI/Rs3pyx2TWhQ+v36H6RFDk9l3fD/HokwvmVjxqjJUk1DcZ5re500kROUxGjPosxMB63P7vueRcBM+pXpRj1LVLFaDlOEyoPY0N0OLUJMf576y7c5uaouxF/Mc9BunaGlX6RNbBim/AbG0r3dblw7KZGNqOMZAgwI=
+  - secure: Rd9Wht1m1bo8UTng7GwzSJvnWl0x4OkWulu8V+JAfeLFqfcpWI8E8ELijrIDGIfsKjCEh2ctpCNvswSdLSjoufWrkByE/TckXNUZJOcU8doFfp4XsmLMG77AwWkiOXQp8G2YrQWvLInCQtOKttUvjFfrD3d+sfb7dWHTuJboHWs=
