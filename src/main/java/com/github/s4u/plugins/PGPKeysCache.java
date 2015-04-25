@@ -32,6 +32,7 @@ import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 
 /**
  * @author Slawomir Jaranowski.
@@ -77,13 +78,11 @@ public class PGPKeysCache {
             }
 
             InputStream keyIn = PGPUtil.getDecoderStream(new FileInputStream(keyFile));
-            PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn);
+            PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
             key = pgpRing.getPublicKey(keyID);
         } finally {
-            if (key == null && keyFile != null && keyFile.exists()) {
-                if (!keyFile.delete()) {
-                    log.warn("Can't delete: " + keyFile);
-                }
+            if (key == null) {
+                deleteFile(keyFile);
             }
         }
         return key;
@@ -100,12 +99,8 @@ public class PGPKeysCache {
             throw new IOException("Path exist but it isn't directory: " + dir);
         }
 
-        if (!dir.exists()) {
-            if (dir.mkdirs()) {
-                if (!dir.exists()) {
-                    throw new IOException("Can't create directory: " + dir);
-                }
-            }
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new IOException("Can't create directory: " + dir);
         }
 
         URL keyUrl = URI.create(String.format(keyServer, keyID)).toURL();
@@ -113,14 +108,22 @@ public class PGPKeysCache {
             Resources.copy(keyUrl, outputStream);
         } catch (IOException e) {
             // if error try remove file
-            if (keyFile.exists()) {
-                if (!keyFile.delete()) {
-                    throw new IOException("Can't delete: " + keyFile, e);
-                }
-            }
+            deleteFile(keyFile);
             throw e;
         }
 
         log.info(String.format("Receive key: %X to %s", keyID, keyFile));
     }
+
+    private void deleteFile(File keyFile) {
+
+        if (keyFile == null || !keyFile.exists()) {
+            return;
+        }
+
+        if (!keyFile.delete()) {
+            log.warn("Can't delete: " + keyFile);
+        }
+    }
+
 }

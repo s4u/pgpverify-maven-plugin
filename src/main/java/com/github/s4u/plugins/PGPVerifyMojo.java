@@ -16,19 +16,6 @@
 
 package com.github.s4u.plugins;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.SignatureException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.google.common.collect.Lists;
 import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
@@ -55,7 +42,20 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -68,22 +68,22 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 public class PGPVerifyMojo extends AbstractMojo {
 
     @Parameter(property = "project", readonly = true, required = true)
-    private MavenProject project = null;
+    private MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    private MavenSession session;
 
     @Component
-    private MavenSession session = null;
+    private ProjectDependenciesResolver resolver;
 
     @Component
-    protected ProjectDependenciesResolver resolver;
-
-    @Component
-    private RepositorySystem repositorySystem = null;
+    private RepositorySystem repositorySystem;
 
     @Parameter(defaultValue = "${localRepository}", readonly = true, required = true)
-    private ArtifactRepository localRepository = null;
+    private ArtifactRepository localRepository;
 
     @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true, required = true)
-    private List<ArtifactRepository> pomRemoteRepositories = null;
+    private List<ArtifactRepository> pomRemoteRepositories;
 
     /**
      * The directory for storing cached PGP public keys.
@@ -123,18 +123,10 @@ public class PGPVerifyMojo extends AbstractMojo {
                     continue;
                 }
 
-                Artifact aAsc = repositorySystem.createArtifactWithClassifier(
-                        a.getGroupId(), a.getArtifactId(), a.getVersion(),
-                        a.getType() + ".asc", a.getClassifier());
-
-                ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
-                rreq.setArtifact(aAsc);
-                rreq.setResolveTransitively(false);
-                rreq.setLocalRepository(localRepository);
-                rreq.setRemoteRepositories(pomRemoteRepositories);
-
+                ArtifactResolutionRequest rreq = getArtifactResolutionRequestForAsc(a);
                 ArtifactResolutionResult result = repositorySystem.resolve(rreq);
                 if (result.isSuccess()) {
+                    Artifact aAsc = rreq.getArtifact();
                     getLog().debug(aAsc.toString() + " " + aAsc.getFile());
                     artifactToAsc.put(a, aAsc);
                 } else {
@@ -154,7 +146,25 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
+    }
 
+    /**
+     * Create ArtifactResolutionRequest for asc file corresponding to artifact.
+     * @param artifact artifact
+     * @return new ArtifactResolutionRequest
+     */
+    private ArtifactResolutionRequest getArtifactResolutionRequestForAsc(Artifact artifact) {
+
+        Artifact aAsc = repositorySystem.createArtifactWithClassifier(
+                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+                artifact.getType() + ".asc", artifact.getClassifier());
+
+        ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
+        rreq.setArtifact(aAsc);
+        rreq.setResolveTransitively(false);
+        rreq.setLocalRepository(localRepository);
+        rreq.setRemoteRepositories(pomRemoteRepositories);
+        return rreq;
     }
 
     private void initCache() throws MojoFailureException {
@@ -185,7 +195,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         try {
             InputStream sigInputStream = PGPUtil.getDecoderStream(new FileInputStream(signatureFile));
-            PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream);
+            PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
             PGPSignatureList sigList = (PGPSignatureList) pgpObjectFactory.nextObject();
             PGPSignature pgpSignature = sigList.get(0);
 
@@ -214,7 +224,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 return false;
             }
 
-        } catch (IOException | PGPException | SignatureException e) {
+        } catch (IOException | PGPException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
     }
