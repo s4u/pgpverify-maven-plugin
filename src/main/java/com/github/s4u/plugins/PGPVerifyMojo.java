@@ -87,21 +87,31 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * The directory for storing cached PGP public keys.
+     * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keycache", defaultValue = "${settings.localRepository}/pgpkeys-cache", required = true)
     private File pgpKeysCachePath;
 
     /**
      * Scope used to build dependency list.
+     * @since 1.0.0
      */
     @Parameter(property = "pgpverify.scope", defaultValue = "test")
     private String scope;
 
     /**
      * PGP public key server address.
+     * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keyserver", defaultValue = "hkp://pool.sks-keyservers.net", required = true)
     private String pgpKeyServer;
+
+    /**
+     * Fail the build if some of dependency hasn't signature.
+     * @since 1.1.0
+     */
+    @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
+    private boolean failNoSignature;
 
     private PGPKeysCache pgpKeysCache;
 
@@ -130,7 +140,12 @@ public class PGPVerifyMojo extends AbstractMojo {
                     getLog().debug(aAsc.toString() + " " + aAsc.getFile());
                     artifactToAsc.put(a, aAsc);
                 } else {
-                    getLog().warn("No signature for " + a);
+                    if (failNoSignature) {
+                        getLog().error("No signature for " + a);
+                        throw new MojoExecutionException("No signature for " + a);
+                    } else {
+                        getLog().warn("No signature for " + a);
+                    }
                 }
             }
 
