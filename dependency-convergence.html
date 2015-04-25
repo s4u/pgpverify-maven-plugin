@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Verify PGP signatures plugin &#x2013; Plugin Documentation</title>
+    <title>Verify PGP signatures plugin &#x2013; Dependency Convergence</title>
     <style type="text/css" media="all">
       @import url("./css/maven-base.css");
       @import url("./css/maven-theme.css");
@@ -59,22 +59,46 @@
                           <a href="index.html" title="Introduction">Introduction</a>
             </li>
                   <li class="none">
-            <strong>Goals</strong>
-          </li>
+                          <a href="plugin-info.html" title="Goals">Goals</a>
+            </li>
           </ul>
                        <h5>Project Documentation</h5>
                   <ul>
-                                                                                                                                                                                                                    <li class="collapsed">
+                                                                                                                                                                                                                              <li class="expanded">
                           <a href="project-info.html" title="Project Information">Project Information</a>
-                  </li>
-                                                                              <li class="expanded">
-                          <a href="project-reports.html" title="Project Reports">Project Reports</a>
                     <ul>
                       <li class="none">
-            <strong>Plugin Documentation</strong>
+                          <a href="integration.html" title="Continuous Integration">Continuous Integration</a>
+            </li>
+                      <li class="none">
+                          <a href="dependencies.html" title="Dependencies">Dependencies</a>
+            </li>
+                      <li class="none">
+            <strong>Dependency Convergence</strong>
           </li>
+                      <li class="none">
+                          <a href="issue-tracking.html" title="Issue Tracking">Issue Tracking</a>
+            </li>
+                      <li class="none">
+                          <a href="license.html" title="Project License">Project License</a>
+            </li>
+                      <li class="none">
+                          <a href="plugins.html" title="Project Plugins">Project Plugins</a>
+            </li>
+                      <li class="none">
+                          <a href="team-list.html" title="Project Team">Project Team</a>
+            </li>
+                      <li class="none">
+                          <a href="source-repository.html" title="Source Repository">Source Repository</a>
+            </li>
+                      <li class="none">
+                          <a href="project-summary.html" title="Project Summary">Project Summary</a>
+            </li>
               </ul>
         </li>
+                                                                    <li class="collapsed">
+                          <a href="project-reports.html" title="Project Reports">Project Reports</a>
+                  </li>
           </ul>
                              <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
         <img class="poweredBy" alt="Built by Maven" src="./images/logos/maven-feather.png" />
@@ -86,68 +110,36 @@
     <div id="bodyColumn">
       <div id="contentBox">
         <div class="section">
-<h2><a name="Plugin_Documentation"></a>Plugin Documentation</h2><a name="Plugin_Documentation"></a>
-<p>Goals available for this plugin:</p>
-<table border="0" class="bodyTable">
+<h2><a name="Dependency_Convergence"></a>Dependency Convergence</h2>
+<table border="0" class="bodyTable"><caption>
+  <b>Legend:</b>
+</caption>
 <tr class="a">
-<th>Goal</th>
-<th>Description</th></tr>
+<td><img alt="error" src="images/icon_error_sml.gif" /></td>
+<td>At least one dependency has a differing version of the dependency or has SNAPSHOT dependencies.</td></tr></table><br />
+<table border="0" class="bodyTable"><caption>
+  <b>Statistics:</b>
+</caption>
 <tr class="b">
-<td><a href="check-mojo.html">pgpverify:check</a></td>
-<td>Check PGP signature of dependency.</td></tr>
+<th>Number of dependencies (NOD):</th>
+<td>26</td></tr>
 <tr class="a">
-<td><a href="help-mojo.html">pgpverify:help</a></td>
-<td>Display help information on pgpverify-maven-plugin.<br />
-Call <code>mvn pgpverify:help -Ddetail=true
--Dgoal=&lt;goal-name&gt;</code> to display parameter details.</td></tr></table>
+<th>Number of unique artifacts (NOA):</th>
+<td>26</td></tr>
+<tr class="b">
+<th>Number of version-conflicting artifacts (NOC):</th>
+<td>0</td></tr>
+<tr class="a">
+<th>Number of SNAPSHOT artifacts (NOS):</th>
+<td>0</td></tr>
+<tr class="b">
+<th>Convergence (NOD/NOA):</th>
+<td><img alt="success" src="images/icon_success_sml.gif" />&#160;<b>100 %</b></td></tr>
+<tr class="a">
+<th>Ready for release (100 % convergence and no SNAPSHOTS):</th>
+<td><img alt="success" src="images/icon_success_sml.gif" />&#160;<b>Success</b></td></tr></table></div>
 <div class="section">
-<h3><a name="System_Requirements"></a>System Requirements</h3><a name="System_Requirements"></a>
-<p>The following specifies the minimum requirements to run this Maven plugin:</p>
-<table border="0" class="bodyTable">
-<tr class="a">
-<td>Maven</td>
-<td>3.0.4</td></tr>
-<tr class="b">
-<td>JDK</td>
-<td>1.7</td></tr>
-<tr class="a">
-<td>Memory</td>
-<td>No minimum requirement.</td></tr>
-<tr class="b">
-<td>Disk Space</td>
-<td>No minimum requirement.</td></tr></table></div>
-<div class="section">
-<h3><a name="Usage"></a>Usage</h3><a name="Usage"></a>
-<p>You should specify the version in your project's plugin configuration:</p>
-<div class="source">
-<pre>&lt;project&gt;
-  ...
-  &lt;build&gt;
-    &lt;!-- To define the plugin version in your parent POM --&gt;
-    &lt;pluginManagement&gt;
-      &lt;plugins&gt;
-        &lt;plugin&gt;
-          &lt;groupId&gt;com.github.s4u.plugins&lt;/groupId&gt;
-          &lt;artifactId&gt;pgpverify-maven-plugin&lt;/artifactId&gt;
-          &lt;version&gt;1.1.0-SNAPSHOT&lt;/version&gt;
-        &lt;/plugin&gt;
-        ...
-      &lt;/plugins&gt;
-    &lt;/pluginManagement&gt;
-    &lt;!-- To use the plugin goals in your POM or parent POM --&gt;
-    &lt;plugins&gt;
-      &lt;plugin&gt;
-        &lt;groupId&gt;com.github.s4u.plugins&lt;/groupId&gt;
-        &lt;artifactId&gt;pgpverify-maven-plugin&lt;/artifactId&gt;
-        &lt;version&gt;1.1.0-SNAPSHOT&lt;/version&gt;
-      &lt;/plugin&gt;
-      ...
-    &lt;/plugins&gt;
-  &lt;/build&gt;
-  ...
-&lt;/project&gt;
-</pre></div>
-<p>For more information, see <a class="externalLink" href="http://maven.apache.org/guides/mini/guide-configuring-plugins.html">&quot;Guide to Configuring Plug-ins&quot;</a></p></div></div>
+<h3><a name="Dependencies_used_in_this_project"></a>Dependencies used in this project</h3></div>
       </div>
     </div>
     <div class="clear">
