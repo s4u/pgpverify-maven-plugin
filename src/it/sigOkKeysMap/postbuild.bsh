@@ -1,0 +1,5 @@
+import java.io.*;
+
+File asc = new File(basedir, "../../it-repo/junit/junit/4.12/junit-4.12.jar.asc");
+
+return asc.exists() && asc.isFile() && asc.length() > 0;

@@ -42,6 +42,7 @@ public class PGPKeysCache {
     private final Log log;
     private final File cachePath;
     private final String keyServer;
+    private final String keyServerShow;
 
     public PGPKeysCache(Log log, File cachePath, String keyServer) throws URISyntaxException {
 
@@ -61,6 +62,17 @@ public class PGPKeysCache {
 
         this.keyServer = uri.toString() + "0x%016X";
         log.debug("KeyServerPath=" + this.keyServer);
+
+        uri = new URI(scheme, uri.getUserInfo(), uri.getHost(), port,
+                "/pks/lookup", "op=vindex&fingerprint=on&search=", null);
+
+        this.keyServerShow = uri.toString() + "0x%016X";
+        log.debug("KeyServerShowPath=" + this.keyServerShow);
+    }
+
+    public Object getUrlForKey(long keyID) {
+
+        return String.format(keyServerShow, keyID);
     }
 
     public PGPPublicKey getKey(long keyID) throws IOException, PGPException {
@@ -125,5 +137,4 @@ public class PGPKeysCache {
             log.warn("Can't delete: " + keyFile);
         }
     }
-
 }

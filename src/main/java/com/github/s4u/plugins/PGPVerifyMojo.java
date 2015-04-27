@@ -44,6 +44,7 @@ import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -80,6 +81,9 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Component
     private RepositorySystem repositorySystem;
 
+    @Component
+    private KeysMap keysMap;
+
     @Parameter(defaultValue = "${localRepository}", readonly = true, required = true)
     private ArtifactRepository localRepository;
 
@@ -88,6 +92,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * The directory for storing cached PGP public keys.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keycache", defaultValue = "${settings.localRepository}/pgpkeys-cache", required = true)
@@ -95,6 +100,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Scope used to build dependency list.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.scope", defaultValue = "test")
@@ -102,6 +108,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * PGP public key server address.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keyserver", defaultValue = "hkp://pool.sks-keyservers.net", required = true)
@@ -109,6 +116,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Fail the build if some of dependency hasn't signature.
+     *
      * @since 1.1.0
      */
     @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
@@ -121,12 +129,26 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
     private boolean verifyPomFiles;
 
+    /**
+     * Specifies the location of the properties file which contains the map of dependency to pgp key.
+     *
+     * @since 1.1.0
+     */
+    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
+    private String keysMapLocation;
+
     private PGPKeysCache pgpKeysCache;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
         initCache();
+
+        try {
+            keysMap.load(keysMapLocation);
+        } catch (ResourceNotFoundException | IOException e) {
+            throw new MojoExecutionException("load keys map", e);
+        }
 
         try {
 
@@ -201,6 +223,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Create ArtifactResolutionRequest for asc file corresponding to artifact.
+     *
      * @param artifact artifact
      * @return new ArtifactResolutionRequest
      */
@@ -270,6 +293,13 @@ public class PGPVerifyMojo extends AbstractMojo {
             PGPSignature pgpSignature = sigList.get(0);
 
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
+
+            if (!keysMap.isValidKey(artifact, publicKey)) {
+                String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
+                String keyUrl = String.format("%s", pgpKeysCache.getUrlForKey(publicKey.getKeyID()));
+                getLog().error(String.format("Not allowed artifact and keyID:\n\t%s\n\t%s\n", msg, keyUrl));
+                return false;
+            }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
 
