@@ -142,16 +142,9 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        initCache();
+        prepareForKeys();
 
         try {
-            keysMap.load(keysMapLocation);
-        } catch (ResourceNotFoundException | IOException e) {
-            throw new MojoExecutionException("load keys map", e);
-        }
-
-        try {
-
             Set<Artifact> resolve = resolver.resolve(project, Arrays.asList(scope.split(",")), session);
             if (verifyPomFiles) {
                 resolve.addAll(getPomArtifacts(resolve));
@@ -193,6 +186,23 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
         } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
             throw new MojoExecutionException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Prepare cache and keys map.
+     *
+     * @throws MojoFailureException
+     * @throws MojoExecutionException
+     */
+    private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
+
+        initCache();
+
+        try {
+            keysMap.load(keysMapLocation);
+        } catch (ResourceNotFoundException | IOException e) {
+            throw new MojoExecutionException("load keys map", e);
         }
     }
 
