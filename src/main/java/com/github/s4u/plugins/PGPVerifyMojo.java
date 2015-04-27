@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -113,6 +114,13 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
     private boolean failNoSignature;
 
+    /**
+     * Verify pom files also.
+     * @since 1.1.0
+     */
+    @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
+    private boolean verifyPomFiles;
+
     private PGPKeysCache pgpKeysCache;
 
     @Override
@@ -123,6 +131,9 @@ public class PGPVerifyMojo extends AbstractMojo {
         try {
 
             Set<Artifact> resolve = resolver.resolve(project, Arrays.asList(scope.split(",")), session);
+            if (verifyPomFiles) {
+                resolve.addAll(getPomArtifacts(resolve));
+            }
 
             Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
 
@@ -164,6 +175,31 @@ public class PGPVerifyMojo extends AbstractMojo {
     }
 
     /**
+     * Create Artifact objects for all pom files corresponding to the artifacts that you send in.
+     * @param resolve Set of artifacts to obtain pom's for
+     * @return Artifacts for all the pom files
+     */
+    private Set<Artifact> getPomArtifacts(Set<Artifact> resolve) throws MojoExecutionException {
+        Set<Artifact> poms = new HashSet<Artifact>();
+
+        for (Artifact a : resolve) {
+            if (a.isSnapshot()) {
+                continue;
+            }
+
+            ArtifactResolutionRequest rreq = getArtifactResolutionRequestForPom(a);
+            ArtifactResolutionResult result = repositorySystem.resolve(rreq);
+            if (result.isSuccess()) {
+                poms.add(rreq.getArtifact());
+            } else {
+                getLog().error("No pom for " + a);
+                throw new MojoExecutionException("No pom for " + a);
+            }
+        }
+        return poms;
+    }
+
+    /**
      * Create ArtifactResolutionRequest for asc file corresponding to artifact.
      * @param artifact artifact
      * @return new ArtifactResolutionRequest
@@ -173,6 +209,25 @@ public class PGPVerifyMojo extends AbstractMojo {
         Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType() + ".asc", artifact.getClassifier());
+
+        ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
+        rreq.setArtifact(aAsc);
+        rreq.setResolveTransitively(false);
+        rreq.setLocalRepository(localRepository);
+        rreq.setRemoteRepositories(pomRemoteRepositories);
+        return rreq;
+    }
+
+    /**
+     * Create ArtifactResolutionRequest for pom file corresponding to artifact.
+     * @param artifact artifact
+     * @return new ArtifactResolutionRequest
+     */
+    private ArtifactResolutionRequest getArtifactResolutionRequestForPom(Artifact artifact) {
+
+        Artifact aAsc = repositorySystem.createArtifactWithClassifier(
+                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+                "pom", artifact.getClassifier());
 
         ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
         rreq.setArtifact(aAsc);
