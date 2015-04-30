@@ -167,18 +167,20 @@ public class PGPVerifyMojo extends AbstractMojo {
                     artifactToAsc.put(a, aAsc);
                 } else {
                     if (failNoSignature) {
-                        getLog().error("No signature for " + a);
-                        throw new MojoExecutionException("No signature for " + a);
+                        getLog().error("No signature for " + a.getId());
+                        throw new MojoExecutionException("No signature for " + a.getId());
                     } else {
-                        getLog().warn("No signature for " + a);
+                        getLog().warn("No signature for " + a.getId());
                     }
                 }
             }
 
             boolean isAllSigOk = true;
             for (Map.Entry<Artifact, Artifact> artifactEntry : artifactToAsc.entrySet()) {
-                isAllSigOk = isAllSigOk && verifyPGPSignature(artifactEntry.getKey(),
+
+                boolean isLastOk = verifyPGPSignature(artifactEntry.getKey(),
                         artifactEntry.getKey().getFile(), artifactEntry.getValue().getFile());
+                isAllSigOk = isAllSigOk && isLastOk;
             }
 
             if (!isAllSigOk) {
@@ -224,8 +226,8 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (result.isSuccess()) {
                 poms.add(rreq.getArtifact());
             } else {
-                getLog().error("No pom for " + a);
-                throw new MojoExecutionException("No pom for " + a);
+                getLog().error("No pom for " + a.getId());
+                throw new MojoExecutionException("No pom for " + a.getId());
             }
         }
         return poms;
@@ -307,7 +309,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (!keysMap.isValidKey(artifact, publicKey)) {
                 String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
                 String keyUrl = String.format("%s", pgpKeysCache.getUrlForKey(publicKey.getKeyID()));
-                getLog().error(String.format("Not allowed artifact and keyID:\n\t%s\n\t%s\n", msg, keyUrl));
+                getLog().error(String.format("Not allowed artifact %s and keyID:\n\t%s\n\t%s\n", artifact.getId(), msg, keyUrl));
                 return false;
             }
 
@@ -323,11 +325,11 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             String msgFormat = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
             if (pgpSignature.verify()) {
-                getLog().info(String.format(msgFormat, ArtifactUtils.key(artifact),
+                getLog().info(String.format(msgFormat, artifact.getId(),
                         "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
                 return true;
             } else {
-                getLog().warn(String.format(msgFormat, ArtifactUtils.key(artifact),
+                getLog().warn(String.format(msgFormat, artifact.getId(),
                         "ERROR", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
