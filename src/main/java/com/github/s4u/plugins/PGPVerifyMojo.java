@@ -16,6 +16,7 @@
 
 package com.github.s4u.plugins;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
@@ -201,10 +202,26 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         initCache();
 
+        if (Strings.isNullOrEmpty(keysMapLocation) || Strings.isNullOrEmpty(keysMapLocation.trim())) {
+            return;
+        }
+
+        Exception savedException = null;
         try {
-            keysMap.load(keysMapLocation);
+            keysMap.load(project.getBasedir().getCanonicalPath() + File.separator + keysMapLocation);
         } catch (ResourceNotFoundException | IOException e) {
-            throw new MojoExecutionException("load keys map", e);
+            try {
+                if (project.getParent() == null) {
+                    savedException = e;
+                } else {
+                    keysMap.load(project.getParent().getBasedir().getCanonicalPath() + File.separator + keysMapLocation);
+                }
+            } catch (ResourceNotFoundException | IOException e2) {
+                savedException = e2;
+            }
+        }
+        if (savedException != null) {
+            throw new MojoExecutionException("load keys map", savedException);
         }
     }
 
@@ -214,7 +231,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return Artifacts for all the pom files
      */
     private Set<Artifact> getPomArtifacts(Set<Artifact> resolve) throws MojoExecutionException {
-        Set<Artifact> poms = new HashSet<Artifact>();
+        Set<Artifact> poms = new HashSet<>();
 
         for (Artifact a : resolve) {
             if (a.isSnapshot()) {
