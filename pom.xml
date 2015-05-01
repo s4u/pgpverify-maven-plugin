@@ -175,13 +175,13 @@
                         <configuration>
                             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                             <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
-                            <goals>
-                                <goal>verify</goal>
-                            </goals>
-                            <mergeUserSettings>true</mergeUserSettings>
+                            <settingsFile>src/it/settings.xml</settingsFile>
                             <noLog>true</noLog>
                             <showErrors>true</showErrors>
                             <streamLogs>true</streamLogs>
+                            <goals>
+                                <goal>verify</goal>
+                            </goals>
                         </configuration>
                     </execution>
                 </executions>
