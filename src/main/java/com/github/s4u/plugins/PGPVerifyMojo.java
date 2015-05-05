@@ -124,6 +124,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Verify pom files also.
+     *
      * @since 1.1.0
      */
     @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
@@ -210,6 +211,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Create Artifact objects for all pom files corresponding to the artifacts that you send in.
+     *
      * @param resolve Set of artifacts to obtain pom's for
      * @return Artifacts for all the pom files
      */
@@ -255,6 +257,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Create ArtifactResolutionRequest for pom file corresponding to artifact.
+     *
      * @param artifact artifact
      * @return new ArtifactResolutionRequest
      */
@@ -302,6 +305,9 @@ public class PGPVerifyMojo extends AbstractMojo {
             InputStream sigInputStream = PGPUtil.getDecoderStream(new FileInputStream(signatureFile));
             PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
             PGPSignatureList sigList = (PGPSignatureList) pgpObjectFactory.nextObject();
+            if (sigList == null) {
+                throw new MojoFailureException("Invalid signature file: " + signatureFile);
+            }
             PGPSignature pgpSignature = sigList.get(0);
 
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
