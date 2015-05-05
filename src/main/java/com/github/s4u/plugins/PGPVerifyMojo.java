@@ -133,7 +133,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * <p>Specifies the location of the properties file which contains the map of dependency to pgp key.</p>
      *
-     * <p>The syntax of each line of properties file is:</br></br>
+     * <p>The syntax of each line of properties file is:<br/><br/>
      * <code>groupId:artifactId:version=pgpKey</code></p>
      *
      * <p>You can use <code>*</code> in <code>groupId, artefactId and version</code> as wildcard.</p>
