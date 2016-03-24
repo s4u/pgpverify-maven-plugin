@@ -55,6 +55,9 @@ public class PGPKeysCache {
         if ("hkp".equalsIgnoreCase(uri.getScheme())) {
             scheme = "http";
             port = 11371;
+        } else if ("hkps".equalsIgnoreCase(uri.getScheme())) {
+            scheme = "https";
+            port = 443;
         }
 
         uri = new URI(scheme, uri.getUserInfo(), uri.getHost(), port,
