@@ -111,11 +111,11 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @since 1.0.0
      */
-    @Parameter(property = "pgpverify.keyserver", defaultValue = "hkp://pool.sks-keyservers.net", required = true)
+    @Parameter(property = "pgpverify.keyserver", defaultValue = "hkps://pgp.mit.edu/", required = true)
     private String pgpKeyServer;
 
     /**
-     * Fail the build if some of dependency hasn't signature.
+     * Fail the build if any dependency lacks a signature.
      *
      * @since 1.1.0
      */
