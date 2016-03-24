@@ -10,7 +10,7 @@ cache:
   - $HOME/.m2/repository
 
 before_cache:
-  - rm -rfv $HOME/.m2/repository/com/github/s4u/plugins*
+  - rm -rfv $HOME/.m2/repository/com/github/s4u/plugins/pgpverify-maven-plugin*
 
 env:
   global:
