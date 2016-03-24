@@ -49,7 +49,7 @@ public class KeysMap {
         private final InputStream inputStream;
         private Character backSpace;
 
-        public Reader(InputStream inputStream) {
+        Reader(InputStream inputStream) {
             this.inputStream = inputStream;
         }
 
