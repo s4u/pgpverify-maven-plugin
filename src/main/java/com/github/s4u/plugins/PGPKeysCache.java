@@ -22,11 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 
-import com.google.common.io.Resources;
+import com.google.common.io.ByteStreams;
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -41,41 +39,20 @@ public class PGPKeysCache {
 
     private final Log log;
     private final File cachePath;
-    private final String keyServer;
-    private final String keyServerShow;
+    private final PGPKeysServerClient keysServerClient;
 
     public PGPKeysCache(Log log, File cachePath, String keyServer) throws URISyntaxException {
 
         this.log = log;
         this.cachePath = cachePath;
-
-        URI uri = new URI(keyServer);
-        String scheme = uri.getScheme();
-        int port = uri.getPort();
-        if ("hkp".equalsIgnoreCase(uri.getScheme())) {
-            scheme = "http";
-            port = 11371;
-        }
-
-        uri = new URI(scheme, uri.getUserInfo(), uri.getHost(), port,
-                "/pks/lookup", "op=get&options=mr&search=", null);
-
-        this.keyServer = uri.toString() + "0x%016X";
-        log.debug("KeyServerPath=" + this.keyServer);
-
-        uri = new URI(scheme, uri.getUserInfo(), uri.getHost(), port,
-                "/pks/lookup", "op=vindex&fingerprint=on&search=", null);
-
-        this.keyServerShow = uri.toString() + "0x%016X";
-        log.debug("KeyServerShowPath=" + this.keyServerShow);
+        keysServerClient = PGPKeysServerClient.getInstance(keyServer);
     }
 
-    public Object getUrlForKey(long keyID) {
-
-        return String.format(keyServerShow, keyID);
+    String getUrlForShowKey(long keyID) {
+        return keysServerClient.getUriForShowKey(keyID).toString();
     }
 
-    public PGPPublicKey getKey(long keyID) throws IOException, PGPException {
+    PGPPublicKey getKey(long keyID) throws IOException, PGPException {
 
         File keyFile = null;
         PGPPublicKey key = null;
@@ -115,16 +92,16 @@ public class PGPKeysCache {
             throw new IOException("Can't create directory: " + dir);
         }
 
-        URL keyUrl = URI.create(String.format(keyServer, keyID)).toURL();
-        try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
-            Resources.copy(keyUrl, outputStream);
+        try (InputStream inputStream = keysServerClient.getInputStreamForKey(keyID);
+             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
+            ByteStreams.copy(inputStream, outputStream);
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
             throw e;
         }
 
-        log.info(String.format("Receive key: %X to %s", keyID, keyFile));
+        log.info(String.format("Receive key: %s\n\tto %s", keysServerClient.getUriForGetKey(keyID), keyFile));
     }
 
     private void deleteFile(File keyFile) {

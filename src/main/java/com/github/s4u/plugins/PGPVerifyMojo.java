@@ -324,7 +324,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             if (!keysMap.isValidKey(artifact, publicKey)) {
                 String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
-                String keyUrl = String.format("%s", pgpKeysCache.getUrlForKey(publicKey.getKeyID()));
+                String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
                 getLog().error(String.format("Not allowed artifact %s and keyID:\n\t%s\n\t%s\n", artifact.getId(), msg, keyUrl));
                 return false;
             }
