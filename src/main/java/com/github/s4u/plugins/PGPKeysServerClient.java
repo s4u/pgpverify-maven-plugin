@@ -20,6 +20,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 /**
  * Common support for communication with key servers.
@@ -38,7 +42,8 @@ abstract class PGPKeysServerClient {
      * @return PGPKeysServerClient
      * @throws URISyntaxException if something wrong with key server address
      */
-    static PGPKeysServerClient getInstance(String keyserver) throws URISyntaxException {
+    static PGPKeysServerClient getInstance(String keyserver)
+            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
         URI uri = new URI(keyserver);
         switch (uri.getScheme().toLowerCase()) {
             case "hkp":

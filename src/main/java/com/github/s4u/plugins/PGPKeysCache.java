@@ -23,6 +23,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 import com.google.common.io.ByteStreams;
 import org.apache.maven.plugin.logging.Log;
@@ -41,7 +45,8 @@ public class PGPKeysCache {
     private final File cachePath;
     private final PGPKeysServerClient keysServerClient;
 
-    public PGPKeysCache(Log log, File cachePath, String keyServer) throws URISyntaxException {
+    public PGPKeysCache(Log log, File cachePath, String keyServer)
+            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
 
         this.log = log;
         this.cachePath = cachePath;
