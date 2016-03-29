@@ -52,6 +52,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -111,7 +115,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @since 1.0.0
      */
-    @Parameter(property = "pgpverify.keyserver", defaultValue = "hkp://pool.sks-keyservers.net", required = true)
+    @Parameter(property = "pgpverify.keyserver", defaultValue = "hkps://hkps.pool.sks-keyservers.net", required = true)
     private String pgpKeyServer;
 
     /**
@@ -301,7 +305,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         try {
             pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, pgpKeyServer);
-        } catch (URISyntaxException e) {
+        } catch (URISyntaxException | IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
     }
