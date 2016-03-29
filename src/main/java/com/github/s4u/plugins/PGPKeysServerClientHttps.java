@@ -42,7 +42,7 @@ public class PGPKeysServerClientHttps extends PGPKeysServerClient {
     protected PGPKeysServerClientHttps(URI uri)
             throws URISyntaxException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
         super(uri);
-        if ("hkps://hkps.pool.sks-keyservers.net".equalsIgnoreCase(uri.toString())) {
+        if ("hkps.pool.sks-keyservers.net".equalsIgnoreCase(uri.getHost())) {
             final CertificateFactory cf = CertificateFactory.getInstance("X.509");
             final Certificate ca = cf.generateCertificate(getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
             final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
