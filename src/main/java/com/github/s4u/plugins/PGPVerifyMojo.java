@@ -16,6 +16,7 @@
 
 package com.github.s4u.plugins;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
@@ -119,12 +120,20 @@ public class PGPVerifyMojo extends AbstractMojo {
     private String pgpKeyServer;
 
     /**
-     * Fail the build if some of dependency hasn't signature.
+     * Fail the build if any dependency doesn't have a signature.
      *
      * @since 1.1.0
      */
     @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
     private boolean failNoSignature;
+
+    /**
+     * Fail the build if any dependency has a weak signature.
+     *
+     * @since 1.2.0
+     */
+    @Parameter(property = "pgpgverify.failWeakSignature", defaultValue = "false")
+    private boolean failWeakSignature;
 
     /**
      * Verify pom files also.
@@ -230,7 +239,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return Artifacts for all the pom files
      */
     private Set<Artifact> getPomArtifacts(Set<Artifact> resolve) throws MojoExecutionException {
-        Set<Artifact> poms = new HashSet<Artifact>();
+        Set<Artifact> poms = new HashSet<>();
 
         for (Artifact a : resolve) {
             if (a.isSnapshot()) {
@@ -312,6 +321,15 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private boolean verifyPGPSignature(Artifact artifact, File artifactFile, File signatureFile) throws MojoFailureException {
 
+        final Map<Integer, String> weakSignatures = ImmutableMap.<Integer, String>builder()
+                .put(1, "MD5")
+                .put(4, "DOUBLE_SHA")
+                .put(5, "MD2")
+                .put(6, "TIGER_192")
+                .put(7, "HAVAL_5_160")
+                .put(11, "SHA224")
+                .build();
+
         getLog().debug("Artifact file: " + artifactFile);
         getLog().debug("Artifact sign: " + signatureFile);
 
@@ -347,6 +365,17 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (pgpSignature.verify()) {
                 getLog().info(String.format(msgFormat, artifact.getId(),
                         "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
+                if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
+                    if (failWeakSignature) {
+                        getLog().error("Weak signature algorithm used: "
+                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
+                        throw new MojoFailureException("Weak signature algorithm used: "
+                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
+                    } else {
+                        getLog().warn("Weak signature algorithm used: "
+                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
+                    }
+                }
                 return true;
             } else {
                 getLog().warn(String.format(msgFormat, artifact.getId(),
