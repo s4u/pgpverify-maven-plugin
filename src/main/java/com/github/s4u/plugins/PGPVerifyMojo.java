@@ -136,14 +136,6 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean failWeakSignature;
 
     /**
-     * Verify pom files also.
-     *
-     * @since 1.1.0
-     */
-    @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
-    private boolean verifyPomFiles;
-
-    /**
      * <p>Specifies the location of the properties file which contains the map of dependency to pgp key.</p>
      *
      * <p>The syntax of each line of properties file is:<br/><br/>
@@ -170,9 +162,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         try {
             Set<Artifact> resolve = resolver.resolve(project, Arrays.asList(scope.split(",")), session);
-            if (verifyPomFiles) {
-                resolve.addAll(getPomArtifacts(resolve));
-            }
+            resolve.addAll(getPomArtifacts(resolve));
 
             Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
 
@@ -251,12 +241,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (result.isSuccess()) {
                 poms.add(rreq.getArtifact());
             } else {
-                if (failNoSignature) {
-                    getLog().error("No pom for " + a.getId());
-                    throw new MojoExecutionException("No pom for " + a.getId());
-                } else {
-                    getLog().warn("No pom for " + a.getId());
-                }
+                getLog().warn("No pom for " + a.getId());
             }
         }
         return poms;
