@@ -251,8 +251,12 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (result.isSuccess()) {
                 poms.add(rreq.getArtifact());
             } else {
-                getLog().error("No pom for " + a.getId());
-                throw new MojoExecutionException("No pom for " + a.getId());
+                if (failNoSignature) {
+                    getLog().error("No pom for " + a.getId());
+                    throw new MojoExecutionException("No pom for " + a.getId());
+                } else {
+                    getLog().warn("No pom for " + a.getId());
+                }
             }
         }
         return poms;
