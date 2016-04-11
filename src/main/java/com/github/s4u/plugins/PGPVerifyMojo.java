@@ -135,10 +135,11 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpgverify.failWeakSignature", defaultValue = "false")
     private boolean failWeakSignature;
 
-    /** Verify pom files also.
-    *
-    * @since 1.1.0
-    */
+    /**
+     * Verify pom files also.
+     *
+     * @since 1.1.0
+     */
     @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
     private boolean verifyPomFiles;
 
