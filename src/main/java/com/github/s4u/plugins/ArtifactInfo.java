@@ -16,9 +16,12 @@
 package com.github.s4u.plugins;
 
 import org.apache.maven.artifact.Artifact;
-import org.bouncycastle.openpgp.PGPPublicKey;
+import org.codehaus.plexus.util.StringUtils;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,50 +30,47 @@ import java.util.regex.Pattern;
  */
 public class ArtifactInfo {
 
-    private final KeyInfo keyInfo;
+    private final String groupId;
+    private final String artifactId;
+    private final String type;
 
-    private final Pattern groupIdPattern;
-    private final Pattern artifactIdPattern;
-    private final Pattern versionPattern;
-
-    public ArtifactInfo(String strArtifact, KeyInfo keyInfo) {
+    public ArtifactInfo(String strArtifact) {
 
         String[] split = strArtifact.split(":");
-        String groupId = split.length > 0 ? split[0].trim().toLowerCase(Locale.US) : "";
-        String artifactId = split.length > 1 ? split[1].trim().toLowerCase(Locale.US) : "";
-        String version = split.length > 2 ? split[2].trim().toLowerCase(Locale.US) : "";
-
-        groupIdPattern = Pattern.compile(patternPrepare(groupId));
-        artifactIdPattern = Pattern.compile(patternPrepare(artifactId));
-        versionPattern = Pattern.compile(patternPrepare(version));
-
-        this.keyInfo = keyInfo;
+        this.groupId = split.length > 0 ? split[0].trim().toLowerCase(Locale.US) : "";
+        this.artifactId = split.length > 1 ? split[1].trim().toLowerCase(Locale.US) : "";
+        this.type = split.length > 2 ? split[2].trim().toLowerCase(Locale.US) : "";
     }
 
-    private String patternPrepare(String str) {
-
-        if (str.length() == 0) {
-            return ".*";
-        }
-
-        String ret = str.replaceAll("\\.", "\\\\.");
-        ret = ret.replaceAll("\\*", ".*");
-        return ret;
+    public ArtifactInfo(Artifact artifact) {
+        this(artifact.getGroupId() + ":" + artifact.getArtifactId());
     }
 
     public boolean isMatch(Artifact artifact) {
-
-        return isMatchPattern(groupIdPattern, artifact.getGroupId())
-                && isMatchPattern(artifactIdPattern, artifact.getArtifactId())
-                && isMatchPattern(versionPattern, artifact.getVersion());
+        return Objects.equals(groupId, artifact.getGroupId()) &&
+                Objects.equals(artifactId, artifact.getArtifactId()) &&
+                Objects.equals(type, artifact.getType());
     }
 
-    private boolean isMatchPattern(Pattern pattern, String str) {
-        Matcher m = pattern.matcher(str.toLowerCase(Locale.US));
-        return m.matches();
+    public String toString() {
+        return new StringJoiner(":")
+                .add(groupId)
+                .add(artifactId)
+                .toString();
     }
 
-    public boolean isKeyMatch(PGPPublicKey key) {
-        return keyInfo.isKeyMatch(key);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ArtifactInfo that = (ArtifactInfo) o;
+        return Objects.equals(groupId, that.groupId) &&
+                Objects.equals(artifactId, that.artifactId) &&
+                Objects.equals(type, that.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(groupId, artifactId, type);
     }
 }

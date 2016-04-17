@@ -1,116 +1,86 @@
-/*
- * Copyright 2015 Slawomir Jaranowski
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.github.s4u.plugins;
 
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.maven.artifact.Artifact;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.OutputStream;
+import java.math.BigInteger;
+import java.util.Map;
 import java.util.Properties;
 
 /**
- * @author Slawomir Jaranowski.
+ * Created by grenville on 4/15/16.
  */
-@Component(role = KeysMap.class)
 public class KeysMap {
 
-    @Requirement
-    private ResourceManager resourceManager;
+    private final Map<ArtifactInfo, Long> keysMap;
+    private final File keysMapLocation;
 
-    private final List<ArtifactInfo> keysMapList = new ArrayList<>();
+    public KeysMap(final File keysMapLocation, final ResourceManager resourceManager) throws ResourceNotFoundException, IOException {
+        this.keysMapLocation = keysMapLocation;
 
-    /**
-     * Properties.load recognize ':' as key value separator.
-     * This reader adds backlash before ':' char.
-     */
-    class Reader extends InputStream {
-
-        private final InputStream inputStream;
-        private Character backSpace;
-
-        Reader(InputStream inputStream) {
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public int read() throws IOException {
-
-            int c;
-            if (backSpace == null) {
-                c = inputStream.read();
-            } else {
-                c = backSpace;
-                backSpace = null;
-                return c;
+        final Map<ArtifactInfo, Long> keysMap = Maps.newHashMap();
+        if (keysMapLocation.exists()) {
+            final Properties properties = new Properties();
+            try(final InputStream inputStream = resourceManager.getResourceAsInputStream(keysMapLocation.getAbsolutePath())) {
+                properties.load(inputStream);
             }
 
-            if (c == ':') {
-                backSpace = ':';
-                return '\\';
+            for (String propKey : properties.stringPropertyNames()) {
+                final String strKeyId = properties.getProperty(propKey);
+                final Long keyId = new BigInteger(strKeyId, 16).longValue();
+                final ArtifactInfo artifactInfo = new ArtifactInfo(propKey);
+                keysMap.put(artifactInfo, keyId);
             }
-            return c;
         }
+        this.keysMap = keysMap;
     }
 
-
-    public void load(String locale) throws ResourceNotFoundException, IOException {
-
-        if (Strings.isNullOrEmpty(locale) || Strings.isNullOrEmpty(locale.trim())) {
-            return;
-        }
-
-        InputStream inputStream = resourceManager.getResourceAsInputStream(locale);
-
-        Properties properties = new Properties();
-        properties.load(new Reader(inputStream));
-        processProps(properties);
+    public boolean exists(final Artifact artifact) {
+        return keysMap.containsKey(new ArtifactInfo(artifact));
     }
 
-    public boolean isValidKey(Artifact artifact, PGPPublicKey key) {
+    public boolean isValid(final Artifact artifact, final long keyId) {
 
-        if (keysMapList.isEmpty()) {
+        if (keysMap.isEmpty()) {
             return true;
         }
 
-        for (ArtifactInfo artifactInfo : keysMapList) {
-            if (artifactInfo.isMatch(artifact)) {
-                return artifactInfo.isKeyMatch(key);
+        for (final ImmutableMap.Entry<ArtifactInfo, Long> entry : keysMap.entrySet()) {
+            if (entry.getKey().isMatch(artifact)) {
+                return entry.getValue().equals(keyId);
             }
         }
 
-        return false;
+        return true;
     }
 
-    private void processProps(Properties properties) {
+    public void addArtifactToKeyMapping(Artifact artifact, long keyId) {
+        final ArtifactInfo artifactInfo = new ArtifactInfo(artifact);
+        keysMap.put(artifactInfo, keyId);
+    }
 
-        for (String propKey : properties.stringPropertyNames()) {
-            ArtifactInfo artifactInfo = createArtifactInfo(propKey, properties.getProperty(propKey));
-            keysMapList.add(artifactInfo);
+    public void save() throws IOException {
+        if (keysMapLocation.exists()) {
+            if(!keysMapLocation.delete()) {
+                throw new IOException("Failed to delete key map.");
+            }
         }
-    }
 
-    private ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
-        return new ArtifactInfo(strArtifact, new KeyInfo(strKeys));
+        final Properties properties = new Properties();
+        for (final Map.Entry<ArtifactInfo, Long> entry : keysMap.entrySet()) {
+            final String artifact = entry.getKey().toString();
+            properties.put(artifact, Long.toHexString(entry.getValue()));
+        }
+        try (final OutputStream outputStream = new FileOutputStream(keysMapLocation)) {
+            properties.store(outputStream, null);
+        }
     }
 }

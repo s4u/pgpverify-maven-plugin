@@ -29,8 +29,8 @@ import static org.mockito.Mockito.when;
  */
 public abstract class TestUtils {
 
-    static Artifact getArtifact(String groupId, String artifactId, String version) {
-        return new DefaultArtifact(groupId, artifactId, version, "", "", "", null);
+    static Artifact getArtifact(String groupId, String artifactId, String type) {
+        return new DefaultArtifact(groupId, artifactId, "", "", type, "", null);
     }
 
     static PGPPublicKey getPGPgpPublicKey(long keyID) {

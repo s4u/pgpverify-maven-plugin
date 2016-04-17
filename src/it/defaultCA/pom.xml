@@ -37,6 +37,10 @@
                 <groupId>com.github.s4u.plugins</groupId>
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
+                <configuration>
+                    <pgpKeyServer>hkps://pgp.mit.edu</pgpKeyServer>
+                    <keysMapLocation>${project.basedir}/keysmap.properties</keysMapLocation>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -44,9 +48,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <pgpKeyServer>hkps://pgp.mit.edu</pgpKeyServer>
-                </configuration>
             </plugin>
         </plugins>
     </build>

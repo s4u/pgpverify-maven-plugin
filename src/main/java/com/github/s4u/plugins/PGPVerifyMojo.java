@@ -45,6 +45,7 @@ import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 
 import java.io.BufferedInputStream;
@@ -87,7 +88,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private RepositorySystem repositorySystem;
 
     @Component
-    private KeysMap keysMap;
+    private ResourceManager resourceManager;
 
     @Parameter(defaultValue = "${localRepository}", readonly = true, required = true)
     private ArtifactRepository localRepository;
@@ -136,43 +137,29 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean failWeakSignature;
 
     /**
-     * Verify pom files also.
-     *
-     * @since 1.1.0
-     */
-    @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
-    private boolean verifyPomFiles;
-
-    /**
      * <p>Specifies the location of the properties file which contains the map of dependency to pgp key.</p>
      *
      * <p>The syntax of each line of properties file is:<br/><br/>
-     * <code>groupId:artifactId:version=pgpKey</code></p>
+     * <code>groupId:artifactId:type=pgpKey</code></p>
      *
-     * <p>You can use <code>*</code> in <code>groupId, artefactId and version</code> as wildcard.</p>
-     *
-     * <p><code>pgpKey</code> must be written as hex number starting with 0x.
-     * You can use <code>*</code> or <code>any</code> for match any pgp key.</p>
-     *
-     * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value for those fields.</p>
+     * <p><code>pgpKey</code> must be written as hex number.
      *
      * @since 1.1.0
      */
-    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
+    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "${settings.localRepository}/pgpkeys-cache/keysMap", required = true)
     private String keysMapLocation;
 
     private PGPKeysCache pgpKeysCache;
+    private KeysMap keysMap;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        prepareForKeys();
+        init();
 
         try {
             Set<Artifact> resolve = resolver.resolve(project, Arrays.asList(scope.split(",")), session);
-            if (verifyPomFiles) {
-                resolve.addAll(getPomArtifacts(resolve));
-            }
+            resolve.addAll(getPomArtifacts(resolve));
 
             Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
 
@@ -193,6 +180,9 @@ public class PGPVerifyMojo extends AbstractMojo {
                     if (failNoSignature) {
                         getLog().error("No signature for " + a.getId());
                         throw new MojoExecutionException("No signature for " + a.getId());
+                    } else if (keysMap.exists(a)) {
+                        getLog().error("Was signed before, new version unsigned " + a.getId());
+                        throw new MojoExecutionException("Was signed before, new version unsigned " + a.getId());
                     } else {
                         getLog().warn("No signature for " + a.getId());
                     }
@@ -210,25 +200,12 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (!isAllSigOk) {
                 throw new MojoExecutionException("PGP signature error");
             }
+
+            keysMap.save();
         } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
             throw new MojoExecutionException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Prepare cache and keys map.
-     *
-     * @throws MojoFailureException
-     * @throws MojoExecutionException
-     */
-    private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
-
-        initCache();
-
-        try {
-            keysMap.load(keysMapLocation);
-        } catch (ResourceNotFoundException | IOException e) {
-            throw new MojoExecutionException("load keys map", e);
+        } catch (IOException e) {
+            throw new MojoExecutionException("Exception while saving key map: " + e.getMessage(), e);
         }
     }
 
@@ -298,7 +275,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         return rreq;
     }
 
-    private void initCache() throws MojoFailureException {
+    private void init() throws MojoFailureException {
 
         if (pgpKeysCachePath.exists()) {
             if (!pgpKeysCachePath.isDirectory()) {
@@ -314,7 +291,9 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         try {
             pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, pgpKeyServer);
-        } catch (URISyntaxException | IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            keysMap = new KeysMap(new File(keysMapLocation), resourceManager);
+        } catch (URISyntaxException | IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException
+                | KeyManagementException | PGPException | ResourceNotFoundException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
     }
@@ -344,7 +323,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
 
-            if (!keysMap.isValidKey(artifact, publicKey)) {
+            if (!keysMap.isValid(artifact, publicKey.getKeyID())) {
                 String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
                 String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
                 getLog().error(String.format("Not allowed artifact %s and keyID:\n\t%s\n\t%s\n", artifact.getId(), msg, keyUrl));
@@ -376,6 +355,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                                 + weakSignatures.get(pgpSignature.getHashAlgorithm()));
                     }
                 }
+                keysMap.addArtifactToKeyMapping(artifact, publicKey.getKeyID());
                 return true;
             } else {
                 getLog().warn(String.format(msgFormat, artifact.getId(),
