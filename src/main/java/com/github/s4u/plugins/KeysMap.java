@@ -31,9 +31,9 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Created by grenville on 4/15/16.
- */
+ /**
+  * @author Slawomir Jaranowski.
+  */
 public class KeysMap {
 
     private final Map<ArtifactInfo, Long> keysMap;
