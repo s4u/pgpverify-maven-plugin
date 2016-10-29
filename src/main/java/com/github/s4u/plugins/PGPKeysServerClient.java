@@ -114,7 +114,7 @@ abstract class PGPKeysServerClient {
      * Return URI to using for communication with key server.
      *
      * This method must change protocol from pgp key server specific to supported by java.
-     * Eg. hkp -> http
+     * Eg. hkp to http
      *
      * @param keyserver key server address
      * @return URI for given key server
