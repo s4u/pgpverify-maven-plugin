@@ -39,6 +39,7 @@
                 <version>@project.version@</version>
                 <configuration>
                     <failNoSignature>true</failNoSignature>
+                    <keysMapLocation>${project.basedir}/keysmap.properties</keysMapLocation>
                 </configuration>
                 <executions>
                     <execution>

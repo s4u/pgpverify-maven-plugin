@@ -37,6 +37,9 @@
                 <groupId>com.github.s4u.plugins</groupId>
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
+                <configuration>
+                    <keysMapLocation>${project.basedir}/keysmap.properties</keysMapLocation>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

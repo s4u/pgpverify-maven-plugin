@@ -35,6 +35,7 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 
 /**
  * @author Slawomir Jaranowski.
@@ -45,12 +46,12 @@ public class PGPKeysCache {
     private final File cachePath;
     private final PGPKeysServerClient keysServerClient;
 
-    public PGPKeysCache(Log log, File cachePath, String keyServer)
-            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
-
+    public PGPKeysCache(Log log, File cachePath, String keyServerLocation)
+            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
+            KeyManagementException, ResourceNotFoundException, PGPException {
         this.log = log;
         this.cachePath = cachePath;
-        keysServerClient = PGPKeysServerClient.getInstance(keyServer);
+        this.keysServerClient = PGPKeysServerClient.getInstance(keyServerLocation);
     }
 
     String getUrlForShowKey(long keyID) {

@@ -27,24 +27,19 @@ import static org.testng.Assert.assertTrue;
  */
 public class ArtifactInfoTest {
 
-    private static final KeyInfo ANY_KEY = new KeyInfo("*");
-
     @DataProvider(name = "lists")
     public Object[][] artifactsList() {
         return new Object[][]{
-                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.1") },
-                {"test.group:test:1.1.*", getArtifact("test.group", "test", "1.1.5") },
-                {"test.group:test", getArtifact("test.group", "test", "1.2.3") },
-                {"test.*:test", getArtifact("test.group", "test", "1.2.3") },
-                {"test.*", getArtifact("test.group", "test-test", "1.2.3") },
+                {"test.group:test:jar:1.1.1", getArtifact("test.group", "test", "jar") },
+                {"test.group:test:jar:1.1.*", getArtifact("test.group", "test", "jar") },
+                {"test.group:test:pom", getArtifact("test.group", "test", "pom") }
         };
     }
 
     @Test(dataProvider = "lists")
     public void testMatchArtifact(String pattern, Artifact artifact) {
 
-        ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
+        ArtifactInfo artifactInfo = new ArtifactInfo(pattern);
         assertTrue(artifactInfo.isMatch(artifact));
-        assertTrue(artifactInfo.isKeyMatch(null));
     }
 }
