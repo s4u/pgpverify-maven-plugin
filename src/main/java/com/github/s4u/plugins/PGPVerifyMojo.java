@@ -267,9 +267,12 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                artifact.getType() + ".asc", artifact.getClassifier());
+                artifact.getType(), artifact.getClassifier());
 
         ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
+
+        aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
+
         rreq.setArtifact(aAsc);
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
