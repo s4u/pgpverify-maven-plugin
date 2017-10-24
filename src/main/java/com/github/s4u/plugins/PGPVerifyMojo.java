@@ -288,9 +288,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     private ArtifactResolutionRequest getArtifactResolutionRequestForPom(Artifact artifact) {
 
-        Artifact aAsc = repositorySystem.createArtifactWithClassifier(
-                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                "pom", artifact.getClassifier());
+        Artifact aAsc = repositorySystem.createProjectArtifact(
+                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
 
         ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
         rreq.setArtifact(aAsc);
