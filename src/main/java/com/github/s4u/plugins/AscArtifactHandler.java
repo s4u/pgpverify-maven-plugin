@@ -58,7 +58,7 @@ public class AscArtifactHandler implements ArtifactHandler {
 
     @Override
     public boolean isIncludesDependencies() {
-        return false;
+        return wrappedHandler.isIncludesDependencies();
     }
 
     @Override
