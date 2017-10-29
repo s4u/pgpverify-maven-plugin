@@ -42,7 +42,7 @@ abstract class PGPKeysServerClient {
      * @return PGPKeysServerClient
      * @throws URISyntaxException if something wrong with key server address
      */
-    static PGPKeysServerClient getInstance(String keyserver)
+    static PGPKeysServerClient getClient(String keyserver)
             throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
         URI uri = new URI(keyserver);
         switch (uri.getScheme().toLowerCase()) {

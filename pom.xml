@@ -19,9 +19,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.github.s4u</groupId>
+        <groupId>org.simplify4u</groupId>
         <artifactId>parent</artifactId>
-        <version>2.1.0</version>
+        <version>2.3.0</version>
         <relativePath/>
     </parent>
 
@@ -165,18 +165,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <properties>
-                        <property>
-                            <name>surefire.testng.verbose</name>
-                            <value>2</value>
-                        </property>
-                    </properties>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>
                     <execution>
@@ -186,14 +174,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <properties>
-                        <property>
-                            <name>surefire.testng.verbose</name>
-                            <value>2</value>
-                        </property>
-                    </properties>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

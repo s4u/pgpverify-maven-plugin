@@ -45,7 +45,7 @@ public class PGPKeysServerClientIT {
         File tempFile = File.createTempFile("PGPClientTest", null);
         tempFile.deleteOnExit();
 
-        PGPKeysServerClient pgpKeysServerClient = PGPKeysServerClient.getInstance(keyServerUrl);
+        PGPKeysServerClient pgpKeysServerClient = PGPKeysServerClient.getClient(keyServerUrl);
 
         try (InputStream inputStream = pgpKeysServerClient.getInputStreamForKey(TEST_KEYID);
              FileOutputStream outputStream = new FileOutputStream(tempFile)) {

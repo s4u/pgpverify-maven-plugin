@@ -50,7 +50,7 @@ public class PGPKeysCache {
 
         this.log = log;
         this.cachePath = cachePath;
-        keysServerClient = PGPKeysServerClient.getInstance(keyServer);
+        keysServerClient = PGPKeysServerClient.getClient(keyServer);
     }
 
     String getUrlForShowKey(long keyID) {
