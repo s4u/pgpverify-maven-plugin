@@ -2,8 +2,15 @@ sudo: false
 language: java
 jdk: oraclejdk8
 
-install: git clone --depth 1 -b travis git://github.com/s4u/parent.git ../travis
-script: 'if [ ${TRAVIS_PULL_REQUEST} = ''false'' ]; then mvn -V -s ../travis/settings.xml deploy; else mvn -V -s ../travis/settings.xml verify; fi'
+install:
+    - mkdir -p ../utils
+    - curl -Ls https://github.com/s4u/travis/archive/master.tar.gz \
+      | tar -zx --strip-components 2 -C ../utils travis-master/src
+
+
+script:
+    - ../utils/mvn-push.sh clean deploy
+    - ../utils/mvn-pr.sh   clean verify
 
 cache:
   directories:
