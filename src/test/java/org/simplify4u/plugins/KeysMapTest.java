@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Slawomir Jaranowski
+ * Copyright 2017 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.s4u.plugins;
+package org.simplify4u.plugins;
 
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
@@ -23,8 +23,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static com.github.s4u.plugins.TestUtils.getArtifact;
-import static com.github.s4u.plugins.TestUtils.getPGPgpPublicKey;
+import static org.simplify4u.plugins.TestUtils.getArtifact;
+import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;

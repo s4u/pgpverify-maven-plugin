@@ -51,7 +51,7 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.github.s4u.plugins</groupId>
+                <groupId>org.simplify4u.plugins</groupId>
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
                 <configuration>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Slawomir Jaranowski
+ * Copyright 2017 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.github.s4u.plugins;
+package org.simplify4u.plugins;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
