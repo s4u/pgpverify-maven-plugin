@@ -21,11 +21,11 @@
     <parent>
         <groupId>test</groupId>
         <artifactId>modules-parent</artifactId>
-        <version>0.0.1-SNAPSHOTS</version>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>module1</artifactId>
-    <version>0.0.1-SNAPSHOTS</version>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <dependencies>
