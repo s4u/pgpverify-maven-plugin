@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * Check PGP signature of dependency.
  *
@@ -72,8 +71,8 @@ import java.util.Set;
  */
 @Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE)
+@SuppressWarnings({"PMD.TooManyFields", "PMD.AvoidDuplicateLiterals"})
 public class PGPVerifyMojo extends AbstractMojo {
-
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
 
@@ -144,6 +143,32 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPomFiles;
 
     /**
+     * Verify dependencies at a SNAPSHOT version, instead of only verifying full release version
+     * dependencies.
+     *
+     * @since 1.2.0
+     */
+    @Parameter(property = "pgpverify.verifySnapshots", defaultValue = "false")
+    private boolean verifySnapshots;
+
+    /**
+     * Verify "provided" dependencies, which the JDK or a container provide at runtime.
+     *
+     * @since 1.2.0
+     */
+    @Parameter(property = "pgpverify.verifyProvidedDependencies", defaultValue = "false")
+    private boolean verifyProvidedDependencies;
+
+    /**
+     * Verify "system" dependencies, which are artifacts that have an explicit path specified in the
+     * POM, are always available, and are not looked up in a repository.
+     *
+     * @since 1.2.0
+     */
+    @Parameter(property = "pgpverify.verifySystemDependencies", defaultValue = "false")
+    private boolean verifySystemDependencies;
+
+    /**
      * <p>Specifies the location of a file that contains the map of dependencies to PGP
      * key.</p>
      *
@@ -169,51 +194,10 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-
         prepareForKeys();
 
         try {
-            Set<Artifact> resolve = resolver.resolve(project, Arrays.asList(scope.split(",")), session);
-            if (verifyPomFiles) {
-                resolve.addAll(getPomArtifacts(resolve));
-            }
-
-            Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
-
-            getLog().debug("Start resolving ASC files");
-            for (Artifact a : resolve) {
-
-                if (a.isSnapshot()) {
-                    continue;
-                }
-
-                ArtifactResolutionRequest rreq = getArtifactResolutionRequestForAsc(a);
-                ArtifactResolutionResult result = repositorySystem.resolve(rreq);
-                if (result.isSuccess()) {
-                    Artifact aAsc = rreq.getArtifact();
-                    getLog().debug(aAsc.toString() + " " + aAsc.getFile());
-                    artifactToAsc.put(a, aAsc);
-                } else {
-                    if (failNoSignature) {
-                        getLog().error("No signature for " + a.getId());
-                        throw new MojoExecutionException("No signature for " + a.getId());
-                    } else {
-                        getLog().warn("No signature for " + a.getId());
-                    }
-                }
-            }
-
-            boolean isAllSigOk = true;
-            for (Map.Entry<Artifact, Artifact> artifactEntry : artifactToAsc.entrySet()) {
-
-                boolean isLastOk = verifyPGPSignature(artifactEntry.getKey(),
-                        artifactEntry.getKey().getFile(), artifactEntry.getValue().getFile());
-                isAllSigOk = isAllSigOk && isLastOk;
-            }
-
-            if (!isAllSigOk) {
-                throw new MojoExecutionException("PGP signature error");
-            }
+            verifyArtifacts(getArtifactsToVerify());
         } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
@@ -226,7 +210,6 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @throws MojoExecutionException
      */
     private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
-
         initCache();
 
         try {
@@ -237,28 +220,116 @@ public class PGPVerifyMojo extends AbstractMojo {
     }
 
     /**
+     * Gets all of the artifacts that PGPVerify is going to check.
+     *
+     * @return The set of artifacts on which to check PGP signatures.
+     *
+     * @throws ArtifactResolutionException
+     * @throws ArtifactNotFoundException
+     * @throws MojoExecutionException
+     */
+    private Set<Artifact> getArtifactsToVerify()
+    throws ArtifactResolutionException, ArtifactNotFoundException, MojoExecutionException {
+        Set<Artifact> artifacts =
+            resolver.resolve(project, Arrays.asList(scope.split(",")), session);
+
+        if (verifyPomFiles) {
+            artifacts.addAll(getPomArtifacts(artifacts));
+        }
+
+        return artifacts;
+    }
+
+    /**
      * Create Artifact objects for all pom files corresponding to the artifacts that you send in.
      *
-     * @param resolve Set of artifacts to obtain pom's for
-     * @return Artifacts for all the pom files
+     * @param   artifacts
+     *          Set of artifacts to obtain pom's for
+     *
+     * @return  Artifacts for all the pom files
      */
-    private Set<Artifact> getPomArtifacts(Set<Artifact> resolve) throws MojoExecutionException {
+    private Set<Artifact> getPomArtifacts(Set<Artifact> artifacts)
+    throws MojoExecutionException {
         Set<Artifact> poms = new HashSet<>();
 
-        for (Artifact a : resolve) {
-            if (a.isSnapshot()) {
+        for (Artifact artifact : artifacts) {
+            if (shouldSkipArtifact(artifact)) {
                 continue;
             }
 
-            ArtifactResolutionRequest rreq = getArtifactResolutionRequestForPom(a);
+            ArtifactResolutionRequest rreq = getArtifactResolutionRequestForPom(artifact);
             ArtifactResolutionResult result = repositorySystem.resolve(rreq);
+
             if (result.isSuccess()) {
                 poms.add(rreq.getArtifact());
             } else {
-                getLog().warn("No pom for " + a.getId());
+                getLog().warn("No pom for " + artifact.getId());
             }
         }
+
         return poms;
+    }
+
+    /**
+     * Performs PGP verification of all of the provided artifacts.
+     *
+     * @param   artifacts
+     *          The artifacts to verify.
+     *
+     * @throws  MojoExecutionException
+     * @throws  MojoFailureException
+     */
+    private void verifyArtifacts(Set<Artifact> artifacts)
+    throws MojoExecutionException, MojoFailureException {
+        final Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
+
+        getLog().debug("Start resolving ASC files");
+
+        for (Artifact artifact : artifacts) {
+            final Artifact ascArtifact = resolveAscArtifact(artifact);
+
+            if (ascArtifact != null) {
+                artifactToAsc.put(artifact, ascArtifact);
+            }
+        }
+
+        verifyArtifactSignatures(artifactToAsc);
+    }
+
+    /**
+     * Retrieves the PGP signature file that corresponds to the given Maven artifact.
+     *
+     * @param   artifact
+     *          The artifact for which a signature file is desired.
+     * @return  Either a Maven artifact for the signature file, or {@code null} if the signature
+     *          file could not be retrieved.
+     *
+     * @throws  MojoExecutionException
+     *          If the signature could not be retrieved and the Mojo has been configured to fail
+     *          on a missing signature.
+     */
+    private Artifact resolveAscArtifact(Artifact artifact) throws MojoExecutionException {
+        Artifact ascArtifact = null;
+
+        if (!shouldSkipArtifact(artifact)) {
+            final ArtifactResolutionRequest ascReq = getArtifactResolutionRequestForAsc(artifact);
+            final ArtifactResolutionResult ascResult = repositorySystem.resolve(ascReq);
+
+            if (ascResult.isSuccess()) {
+                ascArtifact = ascReq.getArtifact();
+
+                getLog().debug(ascArtifact.toString() + " " + ascArtifact.getFile());
+            } else {
+                if (failNoSignature) {
+                    getLog().error("No signature for " + artifact.getId());
+                    throw new MojoExecutionException("No signature for " + artifact.getId());
+                } else {
+                    getLog().warn("No signature for " + artifact.getId());
+                }
+            }
+        }
+
+        return ascArtifact;
     }
 
     /**
@@ -268,7 +339,6 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return new ArtifactResolutionRequest
      */
     private ArtifactResolutionRequest getArtifactResolutionRequestForAsc(Artifact artifact) {
-
         Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType(), artifact.getClassifier());
@@ -281,6 +351,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
         rreq.setRemoteRepositories(pomRemoteRepositories);
+
         return rreq;
     }
 
@@ -291,7 +362,6 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return new ArtifactResolutionRequest
      */
     private ArtifactResolutionRequest getArtifactResolutionRequestForPom(Artifact artifact) {
-
         Artifact aAsc = repositorySystem.createProjectArtifact(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
 
@@ -300,11 +370,11 @@ public class PGPVerifyMojo extends AbstractMojo {
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
         rreq.setRemoteRepositories(pomRemoteRepositories);
+
         return rreq;
     }
 
     private void initCache() throws MojoFailureException {
-
         if (pgpKeysCachePath.exists()) {
             if (!pgpKeysCachePath.isDirectory()) {
                 throw new MojoFailureException("PGP keys cache path exist but is not a directory: " + pgpKeysCachePath);
@@ -324,8 +394,27 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
     }
 
-    private boolean verifyPGPSignature(Artifact artifact, File artifactFile, File signatureFile) throws MojoFailureException {
+    private void verifyArtifactSignatures(Map<Artifact, Artifact> artifactToAsc)
+    throws MojoFailureException, MojoExecutionException {
+        boolean isAllSigOk = true;
 
+        for (Map.Entry<Artifact, Artifact> artifactEntry : artifactToAsc.entrySet()) {
+            final Artifact artifact = artifactEntry.getKey();
+            final Artifact ascArtifact = artifactEntry.getValue();
+            final boolean isLastOk = verifyPGPSignature(artifact, ascArtifact);
+
+            isAllSigOk = isAllSigOk && isLastOk;
+        }
+
+        if (!isAllSigOk) {
+            throw new MojoExecutionException("PGP signature error");
+        }
+    }
+
+    private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
+    throws MojoFailureException {
+        final File artifactFile = artifact.getFile();
+        final File signatureFile = ascArtifact.getFile();
         final Map<Integer, String> weakSignatures = ImmutableMap.<Integer, String>builder()
                 .put(1, "MD5")
                 .put(4, "DOUBLE_SHA")
@@ -393,6 +482,38 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (IOException | PGPException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Indicates whether or not an artifact should be skipped, based on the configuration of this
+     * mojo.
+     *
+     * @param   artifact
+     *          The artifact being considered for verification.
+     *
+     * @return  {@code true} if the artifact should be skipped; {@code false} if it should be
+     *          processed.
+     */
+    private boolean shouldSkipArtifact(final Artifact artifact) {
+        boolean skip = false;
+
+        if (artifact.isSnapshot() && !verifySnapshots) {
+            skip = true;
+        } else {
+            final String artifactScope = artifact.getScope();
+
+            if (artifactScope != null) {
+                if (artifactScope.equals(Artifact.SCOPE_PROVIDED)
+                    && !verifyProvidedDependencies) {
+                    skip = true;
+                } else if (artifactScope.equals(Artifact.SCOPE_SYSTEM)
+                           && !verifySystemDependencies) {
+                    skip = true;
+                }
+            }
+        }
+
+        return skip;
     }
 }
 
