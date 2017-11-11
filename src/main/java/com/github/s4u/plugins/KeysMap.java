@@ -49,10 +49,10 @@ public class KeysMap {
             final Map<String, String> propertyMap;
 
             try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
-                propertyMap = loadProps(inputStream);
+                propertyMap = loadKeysMap(inputStream);
             }
 
-            processProps(propertyMap);
+            processKeysMap(propertyMap);
         }
     }
 
@@ -70,14 +70,13 @@ public class KeysMap {
         return false;
     }
 
-    private Map<String, String> loadProps(final InputStream inputStream)
+    private Map<String, String> loadKeysMap(final InputStream inputStream)
     throws IOException {
-        final Map<String, String> propertyMap = new LinkedHashMap<>();
-        final BufferedReader propertiesReader =
-            new BufferedReader(new InputStreamReader(inputStream));
+        final Map<String, String> keysMaps = new LinkedHashMap<>();
+        final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream));
         String currentLine;
 
-        while ((currentLine = propertiesReader.readLine()) != null) {
+        while ((currentLine = mapReader.readLine()) != null) {
             if (!isCommentLine(currentLine)) {
                 final String[] parts = currentLine.split("=");
 
@@ -86,17 +85,17 @@ public class KeysMap {
                         "Property line is malformed: " + currentLine);
                 }
 
-                propertyMap.put(parts[0], parts[1]);
+                keysMaps.put(parts[0], parts[1]);
             }
         }
 
-        return propertyMap;
+        return keysMaps;
     }
 
-    private void processProps(Map<String, String> properties) {
-        for (Entry<String, String> property : properties.entrySet()) {
+    private void processKeysMap(Map<String, String> keysMap) {
+        for (Entry<String, String> mapEntry : keysMap.entrySet()) {
             ArtifactInfo artifactInfo =
-                createArtifactInfo(property.getKey(), property.getValue());
+                createArtifactInfo(mapEntry.getKey(), mapEntry.getValue());
 
             keysMapList.add(artifactInfo);
         }
