@@ -144,17 +144,21 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPomFiles;
 
     /**
-     * <p>Specifies the location of the properties file which contains the map of dependency to pgp key.</p>
+     * <p>Specifies the location of a file that contains the map of dependencies to PGP
+     * key.</p>
      *
-     * <p>The syntax of each line of properties file is:<br/><br/>
+     * <p>The format of the file is similar to, but more flexible than, a Java properties file.
+     * The syntax of each line of properties file is:<br/><br/>
      * <code>groupId:artifactId:version=pgpKey</code></p>
      *
-     * <p>You can use <code>*</code> in <code>groupId, artefactId and version</code> as wildcard.</p>
+     * <p>You can use <code>*</code> in <code>groupId, artifactId and version</code> as
+     * wildcard.</p>
      *
      * <p><code>pgpKey</code> must be written as hex number starting with 0x.
      * You can use <code>*</code> or <code>any</code> for match any pgp key.</p>
      *
-     * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value for those fields.</p>
+     * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value
+     * for those fields.</p>
      *
      * @since 1.1.0
      */

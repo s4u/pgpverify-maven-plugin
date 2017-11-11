@@ -69,7 +69,7 @@ public class KeysMapTest {
 
     @Test
     public void validKeyFromMap1() throws Exception {
-        keysMap.load("/keysMap1.properties");
+        keysMap.load("/keysMap1.list");
 
         assertTrue(
           keysMap.isValidKey(
@@ -79,7 +79,7 @@ public class KeysMapTest {
 
     @Test
     public void validKeyFromMap2() throws Exception {
-        keysMap.load("/keysMap1.properties");
+        keysMap.load("/keysMap1.list");
 
         assertTrue(
           keysMap.isValidKey(
@@ -89,7 +89,7 @@ public class KeysMapTest {
 
     @Test
     public void invalidKeyFromMap() throws Exception {
-        keysMap.load("/keysMap1.properties");
+        keysMap.load("/keysMap1.list");
 
         assertFalse(
           keysMap.isValidKey(
@@ -99,7 +99,7 @@ public class KeysMapTest {
 
     @Test
     public void keysProcessedInEncounterOrder() throws Exception {
-        keysMap.load("/keysMap2.properties");
+        keysMap.load("/keysMap2.list");
 
         assertTrue(
           keysMap.isValidKey(
