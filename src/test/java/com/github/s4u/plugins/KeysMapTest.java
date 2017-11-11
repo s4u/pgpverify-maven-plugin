@@ -43,7 +43,7 @@ public class KeysMapTest {
     }
 
     @AfterMethod
-    public void terraDown() {
+    public void tearDown() {
         keysMap = null;
     }
 
@@ -55,35 +55,55 @@ public class KeysMapTest {
     @Test
     public void nullLocationTest() throws Exception {
         keysMap.load(null);
+
         assertTrue(keysMap.isValidKey(getArtifact("test.group", "test", "1.1.1"), null));
     }
 
     @Test
     public void emptyLocationTest() throws Exception {
         keysMap.load("");
+
         assertTrue(keysMap.isValidKey(getArtifact("test.group", "test", "1.1.1"), null));
     }
 
 
     @Test
     public void validKeyFromMap1() throws Exception {
-
         keysMap.load("/keysMap1.properties");
-        assertTrue(keysMap.isValidKey(getArtifact("junit", "junit", "4.12"), getPGPgpPublicKey(0x123456789abcdef0L)));
+
+        assertTrue(
+          keysMap.isValidKey(
+            getArtifact("junit", "junit", "4.12"),
+            getPGPgpPublicKey(0x123456789abcdef0L)));
     }
 
     @Test
     public void validKeyFromMap2() throws Exception {
-
         keysMap.load("/keysMap1.properties");
-        assertTrue(keysMap.isValidKey(getArtifact("test.test", "test", "1.2.3"), getPGPgpPublicKey(0x123456789abcdef0L)));
+
+        assertTrue(
+          keysMap.isValidKey(
+            getArtifact("test.test", "test", "1.2.3"),
+            getPGPgpPublicKey(0x123456789abcdef0L)));
     }
 
     @Test
     public void invalidKeyFromMap() throws Exception {
-
         keysMap.load("/keysMap1.properties");
-        assertFalse(keysMap.isValidKey(getArtifact("junit", "junit", "4.11"), getPGPgpPublicKey(0x123456789abcdef0L)));
+
+        assertFalse(
+          keysMap.isValidKey(
+            getArtifact("junit", "junit", "4.11"),
+            getPGPgpPublicKey(0x123456789abcdef0L)));
     }
 
+    @Test
+    public void keysProcessedInEncounterOrder() throws Exception {
+        keysMap.load("/keysMap2.properties");
+
+        assertTrue(
+          keysMap.isValidKey(
+            getArtifact("test", "test-package", "1.0.0"),
+            getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
+    }
 }
