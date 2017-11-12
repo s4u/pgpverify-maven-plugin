@@ -23,28 +23,13 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <repositories>
-        <!-- Prevent resolving ASC files for `org.codehaus.cargo:empty-jar` from Maven Central -->
-        <repository>
-            <id>central</id>
-            <url>http://repo.maven.apache.org/maven2</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <dependencies>
         <!-- NOTE: This version does not actually exist in the wild. It was created from
                    `empty-jar-1.6.5` for this test. -->
         <dependency>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>empty-jar</artifactId>
-            <version>1.6.5</version>
+            <version>0.0.1</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/../../../src/test/resources/empty-jar-0.0.1.jar</systemPath>
         </dependency>
