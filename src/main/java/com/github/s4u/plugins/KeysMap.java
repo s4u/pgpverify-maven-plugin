@@ -77,7 +77,7 @@ public class KeysMap {
         String currentLine;
 
         while ((currentLine = mapReader.readLine()) != null) {
-            if (!isCommentLine(currentLine)) {
+            if (!currentLine.isEmpty() && !isCommentLine(currentLine)) {
                 final String[] parts = currentLine.split("=");
 
                 if (parts.length != 2) {
