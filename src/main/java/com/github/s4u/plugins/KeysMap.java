@@ -16,6 +16,11 @@
 package com.github.s4u.plugins;
 
 import com.google.common.base.Strings;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.codehaus.plexus.component.annotations.Component;
@@ -27,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * @author Slawomir Jaranowski.
@@ -40,55 +44,19 @@ public class KeysMap {
 
     private final List<ArtifactInfo> keysMapList = new ArrayList<>();
 
-    /**
-     * Properties.load recognize ':' as key value separator.
-     * This reader adds backlash before ':' char.
-     */
-    class Reader extends InputStream {
-
-        private final InputStream inputStream;
-        private Character backSpace;
-
-        Reader(InputStream inputStream) {
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public int read() throws IOException {
-
-            int c;
-            if (backSpace == null) {
-                c = inputStream.read();
-            } else {
-                c = backSpace;
-                backSpace = null;
-                return c;
-            }
-
-            if (c == ':') {
-                backSpace = ':';
-                return '\\';
-            }
-            return c;
-        }
-    }
-
-
     public void load(String locale) throws ResourceNotFoundException, IOException {
+        if (!Strings.isNullOrEmpty(locale) && !Strings.isNullOrEmpty(locale.trim())) {
+            final Map<String, String> propertyMap;
 
-        if (Strings.isNullOrEmpty(locale) || Strings.isNullOrEmpty(locale.trim())) {
-            return;
+            try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
+                propertyMap = loadKeysMap(inputStream);
+            }
+
+            processKeysMap(propertyMap);
         }
-
-        InputStream inputStream = resourceManager.getResourceAsInputStream(locale);
-
-        Properties properties = new Properties();
-        properties.load(new Reader(inputStream));
-        processProps(properties);
     }
 
     public boolean isValidKey(Artifact artifact, PGPPublicKey key) {
-
         if (keysMapList.isEmpty()) {
             return true;
         }
@@ -102,12 +70,39 @@ public class KeysMap {
         return false;
     }
 
-    private void processProps(Properties properties) {
+    private Map<String, String> loadKeysMap(final InputStream inputStream)
+    throws IOException {
+        final Map<String, String> keysMaps = new LinkedHashMap<>();
+        final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream));
+        String currentLine;
 
-        for (String propKey : properties.stringPropertyNames()) {
-            ArtifactInfo artifactInfo = createArtifactInfo(propKey, properties.getProperty(propKey));
+        while ((currentLine = mapReader.readLine()) != null) {
+            if (!currentLine.isEmpty() && !isCommentLine(currentLine)) {
+                final String[] parts = currentLine.split("=");
+
+                if (parts.length != 2) {
+                    throw new IllegalArgumentException(
+                        "Property line is malformed: " + currentLine);
+                }
+
+                keysMaps.put(parts[0], parts[1]);
+            }
+        }
+
+        return keysMaps;
+    }
+
+    private void processKeysMap(Map<String, String> keysMap) {
+        for (Entry<String, String> mapEntry : keysMap.entrySet()) {
+            ArtifactInfo artifactInfo =
+                createArtifactInfo(mapEntry.getKey(), mapEntry.getValue());
+
             keysMapList.add(artifactInfo);
         }
+    }
+
+    private boolean isCommentLine(final String line) {
+        return !line.isEmpty() && line.charAt(0) == '#';
     }
 
     private ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {

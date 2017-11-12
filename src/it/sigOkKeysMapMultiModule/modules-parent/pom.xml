@@ -40,7 +40,7 @@
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
                 <configuration>
-                    <keysMapLocation>/test/keysmap.properties</keysMapLocation>
+                    <keysMapLocation>/test/keysmap.list</keysMapLocation>
                 </configuration>
                 <executions>
                     <execution>
