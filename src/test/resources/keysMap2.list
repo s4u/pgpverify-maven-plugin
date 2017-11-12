@@ -14,4 +14,6 @@
 # limitations under the License.
 #
 test:*:1.0.0=0xA6ADFC93EF34893E
+
+# Spaces in this file (like the line above) should not cause problems
 test:test-package:*=0xA6ADFC93EF34893F
