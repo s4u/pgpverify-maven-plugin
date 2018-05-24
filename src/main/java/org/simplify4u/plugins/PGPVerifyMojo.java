@@ -18,6 +18,7 @@
 package org.simplify4u.plugins;
 
 import com.github.s4u.plugins.skipfilters.ProvidedDependencySkipper;
+import com.github.s4u.plugins.skipfilters.ReactorDependencySkipper;
 import com.github.s4u.plugins.skipfilters.SkipFilter;
 import com.github.s4u.plugins.skipfilters.SnapshotDependencySkipper;
 import com.github.s4u.plugins.skipfilters.SystemDependencySkipper;
@@ -174,6 +175,25 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifySystemDependencies;
 
     /**
+     * Verify dependencies that are part of the current build (what Maven calls the "reactor").
+     *
+     * <p>This setting only affects multi-module builds that have inter-dependencies between
+     * modules. It has no effect on single-module projects nor on multi-module projects that do not
+     * have dependencies among the modules.
+     *
+     * <p>In affected builds, if this setting is {@code true}, and the current build is not applying
+     * GPG signatures, then the output artifacts of some of the modules in the build will not be
+     * signed. Consequently, other modules within the build that depend on those output artifacts
+     * will not pass the GPG signature check because they are unsigned. When this setting is
+     * {@code false}, GPG signatures are not checked on output artifacts of modules in the current
+     * build, to avoid this issue.
+     *
+     * @since 1.3.0
+     */
+    @Parameter(property = "pgpverify.verifyReactorDependencies", defaultValue = "false")
+    private boolean verifyReactorDependencies;
+
+    /**
      * <p>Specifies the location of a file that contains the map of dependencies to PGP
      * key.</p>
      *
@@ -224,6 +244,10 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         if (!this.verifySystemDependencies) {
             filters.add(new SystemDependencySkipper());
+        }
+
+        if (!this.verifyReactorDependencies) {
+            filters.add(new ReactorDependencySkipper(this.project, this.session));
         }
 
         this.skipFilters = filters;
