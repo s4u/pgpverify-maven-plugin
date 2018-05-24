@@ -1,5 +1,6 @@
 /*
  * Copyright 2017 Slawomir Jaranowski
+ * Portions Copyright 2017-2018 Wren Security.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +17,29 @@
 
 package org.simplify4u.plugins;
 
+import com.github.s4u.plugins.skipfilters.ProvidedDependencySkipper;
+import com.github.s4u.plugins.skipfilters.SkipFilter;
+import com.github.s4u.plugins.skipfilters.SnapshotDependencySkipper;
+import com.github.s4u.plugins.skipfilters.SystemDependencySkipper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -46,23 +68,6 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Check PGP signature of dependency.
@@ -192,8 +197,11 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private PGPKeysCache pgpKeysCache;
 
+    private List<SkipFilter> skipFilters;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        prepareSkipFilters();
         prepareForKeys();
 
         try {
@@ -201,6 +209,24 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
+    }
+
+    private void prepareSkipFilters() {
+        final List<SkipFilter> filters = new LinkedList<>();
+
+        if (!this.verifySnapshots) {
+            filters.add(new SnapshotDependencySkipper());
+        }
+
+        if (!this.verifyProvidedDependencies) {
+            filters.add(new ProvidedDependencySkipper());
+        }
+
+        if (!this.verifySystemDependencies) {
+            filters.add(new SystemDependencySkipper());
+        }
+
+        this.skipFilters = filters;
     }
 
     /**
@@ -495,25 +521,13 @@ public class PGPVerifyMojo extends AbstractMojo {
      *          processed.
      */
     private boolean shouldSkipArtifact(final Artifact artifact) {
-        boolean skip = false;
-
-        if (artifact.isSnapshot() && !verifySnapshots) {
-            skip = true;
-        } else {
-            final String artifactScope = artifact.getScope();
-
-            if (artifactScope != null) {
-                if (artifactScope.equals(Artifact.SCOPE_PROVIDED)
-                    && !verifyProvidedDependencies) {
-                    skip = true;
-                } else if (artifactScope.equals(Artifact.SCOPE_SYSTEM)
-                           && !verifySystemDependencies) {
-                    skip = true;
-                }
+        for (final SkipFilter filter : this.skipFilters) {
+            if (filter.shouldSkipArtifact(artifact)) {
+                return true;
             }
         }
 
-        return skip;
+        return false;
     }
 }
 
