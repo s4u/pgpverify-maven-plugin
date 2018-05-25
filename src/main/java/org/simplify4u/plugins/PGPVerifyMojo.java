@@ -17,13 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import com.github.s4u.plugins.skipfilters.ProvidedDependencySkipper;
-import com.github.s4u.plugins.skipfilters.ReactorDependencySkipper;
-import com.github.s4u.plugins.skipfilters.SkipFilter;
-import com.github.s4u.plugins.skipfilters.SnapshotDependencySkipper;
-import com.github.s4u.plugins.skipfilters.SystemDependencySkipper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,6 +34,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -69,6 +65,11 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
+import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
+import org.simplify4u.plugins.skipfilters.SkipFilter;
+import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
+import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 
 /**
  * Check PGP signature of dependency.
@@ -98,7 +99,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private ArtifactRepository localRepository;
 
     @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true, required = true)
-    private List<ArtifactRepository> pomRemoteRepositories;
+    private List<ArtifactRepository> remoteRepositories;
 
     /**
      * The directory for storing cached PGP public keys.
@@ -298,8 +299,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @return  Artifacts for all the pom files
      */
-    private Set<Artifact> getPomArtifacts(Set<Artifact> artifacts)
-    throws MojoExecutionException {
+    private Set<Artifact> getPomArtifacts(Set<Artifact> artifacts) {
         Set<Artifact> poms = new HashSet<>();
 
         for (Artifact artifact : artifacts) {
@@ -400,7 +400,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         rreq.setArtifact(aAsc);
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
-        rreq.setRemoteRepositories(pomRemoteRepositories);
+        rreq.setRemoteRepositories(remoteRepositories);
 
         return rreq;
     }
@@ -419,7 +419,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         rreq.setArtifact(aAsc);
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
-        rreq.setRemoteRepositories(pomRemoteRepositories);
+        rreq.setRemoteRepositories(remoteRepositories);
 
         return rreq;
     }

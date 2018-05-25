@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.github.s4u.plugins.skipfilters;
+package org.simplify4u.plugins.skipfilters;
 
 import java.util.List;
 import org.apache.maven.artifact.Artifact;

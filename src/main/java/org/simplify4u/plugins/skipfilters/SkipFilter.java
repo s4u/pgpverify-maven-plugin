@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package com.github.s4u.plugins.skipfilters;
+package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
 /**
- * A filter that always skips verification of runtime-provided dependencies.
+ * An interface for a filter that determines whether or not a particular artifact should be
+ * processed or skipped, based on the mojo configuration.
  */
-public class ProvidedDependencySkipper implements SkipFilter {
-    @Override
-    public boolean shouldSkipArtifact(Artifact artifact) {
-        final String artifactScope = artifact.getScope();
-
-        return artifactScope != null && artifactScope.equals(Artifact.SCOPE_PROVIDED);
-    }
+public interface SkipFilter {
+    /**
+     * Indicates whether or not an artifact should be skipped, based on the configuration of this
+     * filter.
+     *
+     * @param   artifact
+     *          The artifact being considered for verification.
+     *
+     * @return  {@code true} if the artifact should be skipped; {@code false} if it should be
+     *          processed.
+     */
+    boolean shouldSkipArtifact(final Artifact artifact);
 }

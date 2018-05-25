@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.github.s4u.plugins.skipfilters;
+package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
 /**
- * A filter that always skips verification of system-provided dependencies.
+ * A filter that always skips verification of runtime-provided dependencies.
  */
-public class SystemDependencySkipper implements SkipFilter {
+public class ProvidedDependencySkipper implements SkipFilter {
     @Override
     public boolean shouldSkipArtifact(Artifact artifact) {
         final String artifactScope = artifact.getScope();
 
-        return artifactScope != null && artifactScope.equals(Artifact.SCOPE_SYSTEM);
+        return artifactScope != null && artifactScope.equals(Artifact.SCOPE_PROVIDED);
     }
 }
