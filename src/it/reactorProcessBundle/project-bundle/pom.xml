@@ -18,16 +18,30 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>test</groupId>
-    <artifactId>test-parent</artifactId>
-    <version>0.0.1</version>
-    <packaging>pom</packaging>
+    <parent>
+        <groupId>test</groupId>
+        <artifactId>test-parent</artifactId>
+        <version>0.0.1</version>
+    </parent>
 
-    <modules>
-        <module>project-pom</module>
-        <module>project-jar</module>
-        <module>project-test-jar</module>
-        <module>project-bundle</module>
-        <module>project-verifier</module>
-    </modules>
+    <groupId>test</groupId>
+    <artifactId>project-bundle</artifactId>
+    <version>0.0.1</version>
+    <packaging>bundle</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>3.5.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Export-Package>com.demo.hello.*</Export-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
