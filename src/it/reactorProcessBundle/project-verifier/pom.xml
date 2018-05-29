@@ -25,7 +25,35 @@
     </parent>
 
     <groupId>test</groupId>
-    <artifactId>projectA</artifactId>
+    <artifactId>project-verifier</artifactId>
     <version>0.0.1</version>
-    <packaging>pom</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>@project.version@</version>
+                <configuration>
+                    <failNoSignature>true</failNoSignature>
+                    <verifyReactorDependencies>true</verifyReactorDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>test</groupId>
+            <artifactId>project-bundle</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+    </dependencies>
 </project>

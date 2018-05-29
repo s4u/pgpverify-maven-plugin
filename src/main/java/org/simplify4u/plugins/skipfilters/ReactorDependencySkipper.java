@@ -16,10 +16,11 @@
 
 package org.simplify4u.plugins.skipfilters;
 
-import java.util.List;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
+
+import java.util.List;
 
 /**
  * A filter that always skips verification of upstream dependencies that are being built as part of
@@ -28,7 +29,16 @@ import org.apache.maven.project.MavenProject;
 public class ReactorDependencySkipper implements SkipFilter {
     private final List<MavenProject> upstreamProjects;
 
-    public ReactorDependencySkipper(final MavenProject currentProject, final MavenSession session) {
+    /**
+     * Constructor for {@code ReactorDependencySkipper}.
+     *
+     * @param currentProject
+     *   The project currently being built.
+     * @param session
+     *   The current maven session.
+     */
+    public ReactorDependencySkipper(final MavenProject currentProject,
+                                    final MavenSession session) {
         this.upstreamProjects =
             session.getProjectDependencyGraph().getUpstreamProjects(currentProject, true);
     }
@@ -46,16 +56,58 @@ public class ReactorDependencySkipper implements SkipFilter {
      *          The to check against upstream reactor dependencies.
      *
      * @return  {@code true} if the specified artifact is in the current Maven reactor build and is
-     *          a direct or transitive dependency of the current project; {@code false} if it is not
-     *          either.
+     *          a direct or transitive dependency of the current project; {@code false} if it is
+     *          not either.
      */
     private boolean isUpstreamReactorDependency(final Artifact artifact) {
         for (final MavenProject upstreamProject : this.upstreamProjects) {
-            if (upstreamProject.getId().equals(artifact.getId())) {
+            if (this.artifactMatchesProject(artifact, upstreamProject)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Check whether the specified artifact belongs to the specified Maven project.
+     *
+     * @param artifact
+     *   The artifact being checked.
+     * @param project
+     *   The project to which the artifact will be compared.
+     *
+     * @return
+     *   {@code true} if the artifact was produced by the specified project; or
+     *   {@code false} if it is not.
+     */
+    private boolean artifactMatchesProject(final Artifact artifact,
+                                           final MavenProject project) {
+        final Artifact projectArtifact = project.getArtifact();
+
+        return projectArtifact != null
+               && this.artifactsMatch(projectArtifact, artifact);
+    }
+
+    /**
+     * Check whether the specified artifacts are equivalent, or at least
+     * identify the same group, artifact ID, and version.
+     *
+     * @param artifact1
+     *   The first artifact.
+     * @param artifact2
+     *   The second artifact.
+     *
+     * @return
+     *   If either the two artifacts are equal or correspond to the same Maven
+     *   coordinates.
+     */
+    @SuppressWarnings("PMD.UselessParentheses")
+    private boolean artifactsMatch(final Artifact artifact1,
+                                   final Artifact artifact2) {
+        return artifact1.equals(artifact2)
+            || (artifact1.getGroupId().equals(artifact2.getGroupId())
+                && artifact1.getArtifactId().equals(artifact2.getArtifactId())
+                && artifact1.getVersion().equals(artifact2.getVersion()));
     }
 }

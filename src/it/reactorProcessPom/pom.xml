@@ -25,9 +25,6 @@
 
     <modules>
         <module>project-pom</module>
-        <module>project-jar</module>
-        <module>project-test-jar</module>
-        <module>project-bundle</module>
         <module>project-verifier</module>
     </modules>
 </project>
