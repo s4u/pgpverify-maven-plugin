@@ -23,9 +23,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -153,14 +155,30 @@ public class PGPKeysServerClientIT {
             System.err.println(
                 String.format(
                     "[Retry %d of %d] Attempting key request from %s after error "
-                    + "(failed after %d seconds): \"%s\"",
+                    + "(failed after %d seconds, target host was %s): \"%s\"",
                     this.getCurrentRetryCount(),
                     this.getMaxRetryCount(),
                     url,
                     this.getSecondsSinceLastRetry(),
+                    this.getTargetHost(url),
                     cause.toString()));
 
             this.resetTimer();
+        }
+
+        private String getTargetHost(URL url) {
+            String ipAddress;
+
+            final InetAddress address;
+            try {
+                address = InetAddress.getByName(url.getHost());
+                ipAddress = address.toString();
+            } catch (UnknownHostException ex) {
+                // Suppress -- fall back to "unknown".
+                ipAddress = "unknown";
+            }
+
+            return ipAddress;
         }
 
         @Override

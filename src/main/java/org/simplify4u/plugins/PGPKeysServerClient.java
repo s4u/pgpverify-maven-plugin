@@ -184,10 +184,14 @@ abstract class PGPKeysServerClient {
      */
     void copyKeyToOutputStream(long keyId, OutputStream outputStream,
                                final RequestFailureStrategy failureStrategy) throws IOException {
-        final URL keyUrl = getUriForGetKey(keyId).toURL();
+        // Allow us to cycle through servers in DNS-based round-robin pools
+        java.security.Security.setProperty("networkaddress.cache.ttl", "1");
+
         boolean shouldRetry = false;
 
         do {
+            // Re-generate URL to allow cycling servers in DNS-based round-robin pools
+            final URL keyUrl = getUriForGetKey(keyId).toURL();
             final URLConnection connection = this.getConnectionForKeyUrl(keyUrl);
 
             try (final InputStream inputStream = connection.getInputStream()) {
