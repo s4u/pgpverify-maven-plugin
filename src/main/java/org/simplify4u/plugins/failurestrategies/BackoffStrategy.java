@@ -23,7 +23,7 @@ import java.net.URL;
  * A failure strategy that will retry up to N times, backing off a longer period of time between
  * attempts to allow the target server to recover.
  *
- * <p>By default, this strategy will allow retrying up to ten times, with an additional 500
+ * <p>By default, this strategy will allow retrying up to ten times, with an additional 2000
  * milliseconds more per attempt, before giving up. The delay between retries and maximum number of
  * retries can be controlled by using the {@link #BackoffStrategy(long, int)} constructor.
  *
@@ -34,7 +34,10 @@ import java.net.URL;
  * same request).
  */
 public class BackoffStrategy extends RetryNTimesStrategy {
-    public static final long DEFAULT_BACKOFF_SCALAR = 500;
+    /**
+     * Default back-off: +2000 ms per retry.
+     */
+    public static final long DEFAULT_BACKOFF_SCALAR = 2000;
 
     private final long backoffScalar;
 
