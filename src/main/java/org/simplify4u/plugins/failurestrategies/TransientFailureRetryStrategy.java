@@ -28,7 +28,7 @@ import java.util.List;
 
 /**
  * A failure strategy that automatically retries transient HTTP failures
- * (timeouts and some 5XX errors).
+ * (timeouts, 408 errors, and some 5XX errors).
  *
  * <p>By default, this strategy will allow retrying up to four times before
  * giving up. The maximum number of retries can be controlled by using the
@@ -57,6 +57,7 @@ public class TransientFailureRetryStrategy extends BackoffStrategy {
     private static final List<Integer> RETRYABLE_STATUS_CODES =
         Collections.unmodifiableList(
             Arrays.asList(
+                HttpURLConnection.HTTP_CLIENT_TIMEOUT,
                 HttpURLConnection.HTTP_INTERNAL_ERROR,
                 HttpURLConnection.HTTP_BAD_GATEWAY,
                 HttpURLConnection.HTTP_UNAVAILABLE,
