@@ -123,6 +123,7 @@ public class TransientFailureRetryStrategy extends BackoffStrategy {
         return false;
     }
 
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     private boolean canRetryStatusCode(URLConnection connection) {
         boolean canRetry = false;
 
