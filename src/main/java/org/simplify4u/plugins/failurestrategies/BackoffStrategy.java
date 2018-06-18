@@ -85,12 +85,30 @@ public class BackoffStrategy extends RetryNTimesStrategy {
         this.backoffScalar = backoffScalar;
     }
 
+    /**
+     * Callback to notify the strategy that a request to the specified URL is being delayed for
+     * the specified amount of time.
+     *
+     * <p>This "back-off" is being attempted in an effort to allow a remote server to recover.
+     *
+     * @param url
+     *   The URL that is being retried.
+     * @param delay
+     *   The amount of time (in milliseconds) until the retry will be attempted.
+     */
+    public void onBackoff(final URL url, final long delay) {
+        // No-op -- subclasses can override for logging
+    }
+
     @Override
-    public void onRetry(URL url, IOException cause) {
+    public void onRetry(final URL url, final IOException cause) {
         super.onRetry(url, cause);
 
         try {
-            Thread.sleep(this.getCurrentRetryCount() * backoffScalar);
+            final long delay = this.getCurrentRetryCount() * this.backoffScalar;
+
+            this.onBackoff(url, delay);
+            Thread.sleep(delay);
         } catch (InterruptedException ex) {
             throw new IllegalStateException("Interrupted during retry", ex);
         }

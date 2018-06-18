@@ -166,6 +166,18 @@ public class PGPKeysServerClientIT {
             this.resetTimer();
         }
 
+        @Override
+        public void onBackoff(final URL url, final long delay) {
+            super.onBackoff(url, delay);
+
+            System.err.println(
+                String.format(
+                    "[Retry %d of %d] Backing off for %d milliseconds...",
+                    this.getCurrentRetryCount(),
+                    this.getMaxRetryCount(),
+                    delay));
+        }
+
         private void resetTimer() {
             this.lastRetryStart = Instant.now();
         }

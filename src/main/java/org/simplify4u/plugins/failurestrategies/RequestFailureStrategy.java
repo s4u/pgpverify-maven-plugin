@@ -48,7 +48,7 @@ public interface RequestFailureStrategy {
                      final IOException cause);
 
     /**
-     * Notifies the strategy that a request to the specified URL is being
+     * Callback to notify the strategy that a request to the specified URL is being
      * attempted after the specified exception caused the last attempt to fail.
      *
      * @param url

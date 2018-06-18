@@ -104,7 +104,7 @@ public class PGPKeysCache {
                 outputStream,
                 new TransientFailureRetryStrategy() {
                     @Override
-                    public void onRetry(URL url, IOException cause) {
+                    public void onRetry(final URL url, final IOException cause) {
                         super.onRetry(url, cause);
 
                         log.warn(
@@ -115,6 +115,18 @@ public class PGPKeysCache {
                                 this.getMaxRetryCount(),
                                 url,
                                 cause.toString()));
+                    }
+
+                    @Override
+                    public void onBackoff(final URL url, final long delay) {
+                        super.onBackoff(url, delay);
+
+                        log.warn(
+                            String.format(
+                                "[Retry %d of %d] Backing off for %d milliseconds...",
+                                this.getCurrentRetryCount(),
+                                this.getMaxRetryCount(),
+                                delay));
                     }
                 });
         } catch (IOException e) {
