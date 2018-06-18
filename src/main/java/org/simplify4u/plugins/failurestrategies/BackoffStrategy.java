@@ -34,24 +34,24 @@ import java.net.URL;
  * same request).
  */
 public class BackoffStrategy extends RetryNTimesStrategy {
-    public static final int DEFAULT_BACKOFF_SCALAR = 500;
+    public static final long DEFAULT_BACKOFF_SCALAR = 500;
 
-    private final int backoffScalar;
+    private final long backoffScalar;
 
     /**
      * Constructor for {@code BackoffStrategy}.
      *
      * <p>Creates a retry strategy that will allow retrying the same request up
-     * to four times.
+     * to ten times.
      */
     public BackoffStrategy() {
-        this(DEFAULT_MAX_RETRY_COUNT, DEFAULT_BACKOFF_SCALAR);
+        this(DEFAULT_BACKOFF_SCALAR, DEFAULT_MAX_RETRY_COUNT);
     }
 
     /**
      * Constructor for {@code BackoffStrategy}.
      *
-     * <p>Creates a retry strategy that will allow retrying the same request up to four times, with
+     * <p>Creates a retry strategy that will allow retrying the same request up to ten times, with
      * the specified number of milliseconds of delay added to each additional attempt. For example,
      * {@code 500} would cause the first retry to happen half a second later, the second retry one
      * second later, the third one and a half seconds later, and so on.
@@ -60,7 +60,7 @@ public class BackoffStrategy extends RetryNTimesStrategy {
      *   The number of milliseconds to add to each retry attempt. The delay is cumulative, so each
      *   retry takes longer than the previous one.
      */
-    public BackoffStrategy(int backoffScalar) {
+    public BackoffStrategy(long backoffScalar) {
         this(backoffScalar, DEFAULT_MAX_RETRY_COUNT);
     }
 
@@ -79,7 +79,7 @@ public class BackoffStrategy extends RetryNTimesStrategy {
      * @param maxRetryCount
      *   The maximum number of times that the request can be retried.
      */
-    public BackoffStrategy(int backoffScalar, int maxRetryCount) {
+    public BackoffStrategy(long backoffScalar, int maxRetryCount) {
         super(maxRetryCount);
 
         this.backoffScalar = backoffScalar;
