@@ -101,7 +101,7 @@ public class PGPKeysServerClientIT {
     throws Exception {
         final int maxRetries = 2;
         final TransientFailureRetryStrategy retryStrategy
-            = new TransientFailureRetryStrategy(maxRetries);
+            = new TransientFailureRetryStrategy(100, maxRetries);
 
         // We use short timeouts for both timeouts since we don't want to hold up the tests on URLs
         // we know will take a while.
