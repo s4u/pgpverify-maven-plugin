@@ -15,15 +15,11 @@
  */
 package org.simplify4u.plugins;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -31,6 +27,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Implementation of PGPKeysServerClient for HTTPS protocol.
@@ -39,17 +39,24 @@ public class PGPKeysServerClientHttps extends PGPKeysServerClient {
 
     private final SSLSocketFactory sslSocketFactory;
 
-    protected PGPKeysServerClientHttps(URI uri)
-            throws URISyntaxException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
-        super(uri);
+    protected PGPKeysServerClientHttps(final URI uri, final int connectTimeout,
+                                       final int readTimeout)
+    throws URISyntaxException, CertificateException, IOException, KeyStoreException,
+           NoSuchAlgorithmException, KeyManagementException {
+        super(uri, connectTimeout, readTimeout);
+
         if ("hkps.pool.sks-keyservers.net".equalsIgnoreCase(uri.getHost())) {
             final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            final Certificate ca = cf.generateCertificate(getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+            final Certificate ca = cf.generateCertificate(
+                getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+
             final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
             keyStore.load(null, null);
             keyStore.setCertificateEntry("ca", ca);
 
-            final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            final TrustManagerFactory tmf
+                = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(keyStore);
 
             final SSLContext context = SSLContext.getInstance("TLS");
@@ -63,14 +70,25 @@ public class PGPKeysServerClientHttps extends PGPKeysServerClient {
 
     @Override
     protected URI prepareKeyServerURI(URI keyserver) throws URISyntaxException {
-        return new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(), null, null, null);
+        return new URI(
+            "https",
+            keyserver.getUserInfo(),
+            keyserver.getHost(),
+            keyserver.getPort(),
+            null,
+            null,
+            null);
     }
 
     @Override
-    protected InputStream getInputStreamForKey(URL keyURL) throws IOException {
+    protected URLConnection getConnectionForKeyUrl(URL keyUrl) throws IOException {
         // standard support by Java - can be extended eg. to support custom CA certs
-        final HttpsURLConnection keyServerUrlConnection = (HttpsURLConnection) keyURL.openConnection();
-        keyServerUrlConnection.setSSLSocketFactory(sslSocketFactory);
-        return keyServerUrlConnection.getInputStream();
+        final HttpsURLConnection connection = (HttpsURLConnection) keyUrl.openConnection();
+
+        connection.setSSLSocketFactory(sslSocketFactory);
+
+        this.applyTimeouts(connection);
+
+        return connection;
     }
 }
