@@ -114,9 +114,13 @@ public class TransientFailureRetryStrategy extends BackoffStrategy {
     }
 
     private boolean canRetryExceptionType(final IOException cause) {
-        return RETRYABLE_EXCEPTION_TYPES
-            .stream()
-            .anyMatch((exceptionType) -> exceptionType.isInstance(cause));
+        for (Class<? extends IOException> exceptionType : RETRYABLE_EXCEPTION_TYPES) {
+            if (exceptionType.isInstance(cause)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean canRetryStatusCode(URLConnection connection) {

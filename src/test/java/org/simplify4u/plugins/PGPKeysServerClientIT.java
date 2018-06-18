@@ -32,8 +32,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.Date;
 import org.simplify4u.plugins.failurestrategies.TransientFailureRetryStrategy;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -140,7 +139,7 @@ public class PGPKeysServerClientIT {
      */
     private static class VerboseRetryStrategy
     extends TransientFailureRetryStrategy {
-        private Instant lastRetryStart;
+        private Date lastRetryStart;
 
         VerboseRetryStrategy() {
             super();
@@ -194,13 +193,13 @@ public class PGPKeysServerClientIT {
         }
 
         private void resetTimer() {
-            this.lastRetryStart = Instant.now();
+            this.lastRetryStart = new Date();
         }
 
         private long getSecondsSinceLastRetry() {
-            final Instant now = Instant.now();
+            final Date now = new Date();
 
-            return Duration.between(this.lastRetryStart, now).toMillis() / 1000;
+            return (now.getTime() - this.lastRetryStart.getTime()) / 1000;
         }
     }
 
