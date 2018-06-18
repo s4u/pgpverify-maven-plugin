@@ -15,45 +15,99 @@
  */
 package org.simplify4u.plugins;
 
+import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.ServiceUnavailableRetryStrategy;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  * Common support for communication with key servers.
  */
 abstract class PGPKeysServerClient {
+    private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
+    private static final int DEFAULT_READ_TIMEOUT = 10000;
 
     private final URI keyserver;
+    private final int connectTimeout;
+    private final int readTimeout;
 
-    protected PGPKeysServerClient(URI keyserver) throws URISyntaxException {
+    protected PGPKeysServerClient(final URI keyserver, final int connectTimeout,
+                                  final int readTimeout) throws URISyntaxException {
         this.keyserver = prepareKeyServerURI(keyserver);
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
     }
 
     /**
-     * Create PGPKeysServerClient instance for specific protocol.
-     * @param keyserver - key server address
-     * @return PGPKeysServerClient
-     * @throws URISyntaxException if something wrong with key server address
+     * Create a PGP key server for a given URL.
+     *
+     * @param keyServer
+     *   The key server address / URL.
+     *
+     * @return
+     *   The right PGP client for the given address.
+     *
+     * @throws URISyntaxException
+     *   If the key server address is invalid or improperly-formatted.
      */
-    static PGPKeysServerClient getClient(String keyserver)
-            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
-        URI uri = new URI(keyserver);
-        switch (uri.getScheme().toLowerCase()) {
+    static PGPKeysServerClient getClient(final String keyServer)
+    throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException,
+           KeyManagementException, IOException {
+        return getClient(keyServer, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT);
+    }
+
+    /**
+     * Create a PGP key server for a given URL.
+     *
+     * @param keyServer
+     *   The key server address / URL.
+     * @param connectTimeout
+     *   The timeout (in milliseconds) that the client should wait to establish a connection to
+     *   the PGP server.
+     * @param readTimeout
+     *   The timeout (in milliseconds) that the client should wait for data from the PGP server.
+     *
+     * @return
+     *   The right PGP client for the given address.
+     *
+     * @throws URISyntaxException
+     *   If the key server address is invalid or improperly-formatted.
+     */
+    static PGPKeysServerClient getClient(final String keyServer, final int connectTimeout,
+                                         final int readTimeout)
+    throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException,
+           KeyManagementException, IOException {
+        final URI uri = new URI(keyServer);
+        final String protocol = uri.getScheme().toLowerCase();
+
+        switch (protocol) {
             case "hkp":
             case "http":
-                return new PGPKeysServerClientHttp(uri);
+                return new PGPKeysServerClientHttp(uri, connectTimeout, readTimeout);
+
             case "hkps":
             case "https":
-                return new PGPKeysServerClientHttps(uri);
+                return new PGPKeysServerClientHttps(uri, connectTimeout, readTimeout);
+
             default:
-                throw new URISyntaxException(keyserver, "Unsupported protocol");
+                throw new URISyntaxException(keyServer, "Unsupported protocol: " + protocol);
         }
     }
 
@@ -93,19 +147,116 @@ abstract class PGPKeysServerClient {
                     keyserver.getHost(), keyserver.getPort(),
                     "/pks/lookup", getQueryStringForShowKey(keyID), null);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(String.format("URI exception for keyId 0x%016X", keyID), e);
+            throw new IllegalArgumentException(
+                String.format("URI exception for keyId 0x%016X", keyID), e);
         }
     }
 
     /**
-     * Open connection to key server and return input stream for given key id.
+     * Requests the PGP key with the specified key ID from the server and copies it to the specified
+     * output stream.
      *
-     * @param keyID  key id
-     * @return InputStream for key
-     * @throws IOException if communication fails
+     * <p>If the request fails, it will not be retried, and an {@link IOException} will be thrown.
+     *
+     * @param keyId
+     *   The ID of the key to request from the server.
+     * @param outputStream
+     *   The output stream to which the key will be written.
+     *
+     * @throws IOException
+     *   If the request fails, or the key cannot be written to the output stream.
      */
-    InputStream getInputStreamForKey(long keyID) throws IOException {
-        return getInputStreamForKey(getUriForGetKey(keyID).toURL());
+    void copyKeyToOutputStream(final long keyId, final OutputStream outputStream,
+                               final PGPServerRetryHandler retryHandler) throws IOException {
+        this.copyKeyToOutputStream(keyId, outputStream, retryHandler, retryHandler);
+    }
+
+    /**
+     * Requests the PGP key with the specified key ID from the server and copies it to the specified
+     * output stream.
+     *
+     * <p>If the request fails, based on the type of failure the request may be silently retried
+     * unless instructed otherwise by the provided failure strategy. If a failure occurs and the
+     * strategy indicates that the request should not be retried, the exception will be re-thrown.
+     *
+     * @param keyId
+     *   The ID of the key to request from the server.
+     * @param outputStream
+     *   The output stream to which the key will be written.
+     * @param requestRetryHandler
+     *   The strategy that controls whether or not to retry failing PGP requests. The strategy is
+     *   also notified when a retry is attempted.
+     *
+     * @throws IOException
+     *   If the request fails, or the key cannot be written to the output stream.
+     */
+    void copyKeyToOutputStream(long keyId, OutputStream outputStream,
+                               final HttpRequestRetryHandler requestRetryHandler,
+                               final ServiceUnavailableRetryStrategy serviceRetryHandler)
+    throws IOException {
+        final URI keyUri = getUriForGetKey(keyId);
+        final HttpUriRequest request = new HttpGet(keyUri);
+
+        try (final CloseableHttpClient client = this.buildClient(requestRetryHandler, serviceRetryHandler);
+             final CloseableHttpResponse response = client.execute(request)) {
+            this.processKeyResponse(outputStream, response);
+        }
+    }
+
+    private void processKeyResponse(OutputStream outputStream, CloseableHttpResponse response)
+    throws IOException {
+        final StatusLine statusLine = response.getStatusLine();
+
+        if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
+            final HttpEntity responseEntity = response.getEntity();
+
+            if (responseEntity == null) {
+                throw new IOException("No response body returned.");
+            } else {
+                try (InputStream inputStream = responseEntity.getContent()) {
+                    ByteStreams.copy(inputStream, outputStream);
+                }
+            }
+        } else {
+            throw new IOException("PGP server returned an error: " + statusLine);
+        }
+    }
+
+    private CloseableHttpClient buildClient(
+                                    final HttpRequestRetryHandler requestRetryHandler,
+                                    final ServiceUnavailableRetryStrategy serviceRetryHandler) {
+        // Allow us to cycle through servers in DNS-based round-robin pools
+        java.security.Security.setProperty("networkaddress.cache.ttl", "1");
+
+        final HttpClientBuilder clientBuilder = this.createClientBuilder();
+
+        this.applyTimeouts(clientBuilder);
+
+        clientBuilder
+            .setRetryHandler(requestRetryHandler)
+            .setServiceUnavailableRetryStrategy(serviceRetryHandler);
+
+        return clientBuilder.build();
+    }
+
+    protected abstract HttpClientBuilder createClientBuilder();
+
+    /**
+     * Sets connect and read timeouts on the given connection.
+     *
+     * @param builder
+     *   The client builder on which timeouts are to be applied.
+     */
+    protected void applyTimeouts(final HttpClientBuilder builder) {
+        final RequestConfig requestConfig
+            = RequestConfig
+                .custom()
+                .setConnectionRequestTimeout(this.connectTimeout)
+                .setConnectTimeout(this.connectTimeout)
+                .setSocketTimeout(this.readTimeout)
+                .build();
+
+        builder.setDefaultRequestConfig(requestConfig);
     }
 
     // abstract methods to implemented in child class.
@@ -121,14 +272,5 @@ abstract class PGPKeysServerClient {
      * @throws URISyntaxException if key server address is wrong
      */
     protected abstract URI prepareKeyServerURI(URI keyserver) throws URISyntaxException;
-
-    /**
-     * Open connection to key server and return input stream for given key url.
-     *
-     * @param keyURL url for key file
-     * @return InputStream for key
-     * @throws IOException if communication fails
-     */
-    protected abstract InputStream getInputStreamForKey(URL keyURL) throws IOException;
 }
 

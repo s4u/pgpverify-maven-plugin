@@ -15,35 +15,36 @@
  */
 package org.simplify4u.plugins;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  * Implementation of PGPKeysServerClient for HTTP protocol.
  */
 class PGPKeysServerClientHttp extends PGPKeysServerClient {
-
-    protected PGPKeysServerClientHttp(URI keyserver) throws URISyntaxException {
-        super(keyserver);
+    protected PGPKeysServerClientHttp(final URI keyserver, final int connectTimeout,
+                                      final int readTimeout)
+    throws URISyntaxException {
+        super(keyserver, connectTimeout, readTimeout);
     }
 
     @Override
-    protected URI prepareKeyServerURI(URI keyserver) throws URISyntaxException {
-
+    protected URI prepareKeyServerURI(URI keyServer) throws URISyntaxException {
         int port = -1;
-        if (keyserver.getPort() > 0) {
-            port = keyserver.getPort();
-        } else if ("hkp".equalsIgnoreCase(keyserver.getScheme())) {
+
+        if (keyServer.getPort() > 0) {
+            port = keyServer.getPort();
+        } else if ("hkp".equalsIgnoreCase(keyServer.getScheme())) {
             port = 11371;
         }
-        return new URI("http", keyserver.getUserInfo(), keyserver.getHost(), port, null, null, null);
+
+        return new URI(
+            "http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null);
     }
 
     @Override
-    protected InputStream getInputStreamForKey(URL keyURL) throws IOException {
-        return keyURL.openStream();
+    protected HttpClientBuilder createClientBuilder() {
+         return HttpClientBuilder.create();
     }
 }
