@@ -30,7 +30,7 @@ import java.util.List;
  * A failure strategy that automatically retries transient HTTP failures
  * (timeouts, 408 errors, and some 5XX errors).
  *
- * <p>By default, this strategy will allow retrying up to four times before
+ * <p>By default, this strategy will allow retrying up to ten times before
  * giving up. The maximum number of retries can be controlled by using the
  * {@link #TransientFailureRetryStrategy(int)} constructor.
  *
@@ -68,7 +68,7 @@ public class TransientFailureRetryStrategy extends BackoffStrategy {
      * Constructor for {@code TransientFailureRetryStrategy}.
      *
      * <p>Creates a retry strategy that will allow retrying the same request up
-     * to four times.
+     * to ten times.
      */
     public TransientFailureRetryStrategy() {
         super(DEFAULT_BACKOFF_SCALAR, DEFAULT_MAX_RETRY_COUNT);

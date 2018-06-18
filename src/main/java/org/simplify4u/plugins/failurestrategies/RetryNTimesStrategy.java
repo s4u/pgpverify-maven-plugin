@@ -23,7 +23,7 @@ import java.net.URLConnection;
 /**
  * A failure strategy that automatically retries a request up to N times..
  *
- * <p>By default, this strategy will allow retrying up to four times before
+ * <p>By default, this strategy will allow retrying up to ten times before
  * giving up. The maximum number of retries can be controlled by using the
  * {@link #RetryNTimesStrategy(int)} constructor.
  *
@@ -34,7 +34,7 @@ import java.net.URLConnection;
  * same request).
  */
 public class RetryNTimesStrategy implements RequestFailureStrategy {
-    public static final int DEFAULT_MAX_RETRY_COUNT = 4;
+    public static final int DEFAULT_MAX_RETRY_COUNT = 10;
 
     private final int maxRetryCount;
 
@@ -44,7 +44,7 @@ public class RetryNTimesStrategy implements RequestFailureStrategy {
      * Constructor for {@code RetryNTimesStrategy}.
      *
      * <p>Creates a retry strategy that will allow retrying the same request up
-     * to four times.
+     * to ten times.
      */
     public RetryNTimesStrategy() {
         this(DEFAULT_MAX_RETRY_COUNT);

@@ -39,8 +39,6 @@ import org.testng.annotations.Test;
 public class PGPKeysServerClientIT {
     private static final long TEST_KEYID = 0xF8484389379ACEACL;
 
-    private static final int TEST_MAX_RETRIES = 10;
-    private static final int LONG_TEST_TIMEOUT = 30000;
     private static final int SHORT_TEST_TIMEOUT = 1000;
 
     @DataProvider(name = "goodServerUrls")
@@ -87,8 +85,7 @@ public class PGPKeysServerClientIT {
 
         tempFile.deleteOnExit();
 
-        final PGPKeysServerClient client
-            = PGPKeysServerClient.getClient(keyServerUrl, SHORT_TEST_TIMEOUT, LONG_TEST_TIMEOUT);
+        final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl);
 
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             client.copyKeyToOutputStream(TEST_KEYID, outputStream, new VerboseRetryStrategy());
@@ -144,7 +141,7 @@ public class PGPKeysServerClientIT {
         private Instant lastRetryStart;
 
         VerboseRetryStrategy() {
-            super(TEST_MAX_RETRIES);
+            super();
 
             this.resetTimer();
         }
