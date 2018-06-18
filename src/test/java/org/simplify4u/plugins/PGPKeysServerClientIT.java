@@ -79,7 +79,7 @@ public class PGPKeysServerClientIT {
         };
     }
 
-    @Test(dataProvider = "goodServerUrls")
+    @Test(dataProvider = "goodServerUrls", successPercentage = 80)
     public void testClient(String keyServerUrl) throws Exception {
         final File tempFile = File.createTempFile("PGPClientTest", null);
 
