@@ -23,18 +23,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-
-import com.google.common.io.ByteStreams;
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.simplify4u.plugins.failurestrategies.TransientFailureRetryStrategy;
 
 /**
  * @author Slawomir Jaranowski.
@@ -83,8 +83,8 @@ public class PGPKeysCache {
     }
 
     private void receiveKey(File keyFile, long keyID) throws IOException {
-
         File dir = keyFile.getParentFile();
+
         if (dir == null) {
             throw new IOException("No parent dir for: " + keyFile);
         }
@@ -97,9 +97,38 @@ public class PGPKeysCache {
             throw new IOException("Can't create directory: " + dir);
         }
 
-        try (InputStream inputStream = keysServerClient.getInputStreamForKey(keyID);
-             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
-            ByteStreams.copy(inputStream, outputStream);
+        try (BufferedOutputStream outputStream = new BufferedOutputStream(
+                 new FileOutputStream(keyFile))) {
+            keysServerClient.copyKeyToOutputStream(
+                keyID,
+                outputStream,
+                new TransientFailureRetryStrategy() {
+                    @Override
+                    public void onRetry(final URL url, final IOException cause) {
+                        super.onRetry(url, cause);
+
+                        log.warn(
+                            String.format(
+                                "[Retry %d of %d] Attempting key request from %s "
+                                + "after error: \"%s\"",
+                                this.getCurrentRetryCount(),
+                                this.getMaxRetryCount(),
+                                url,
+                                cause.toString()));
+                    }
+
+                    @Override
+                    public void onBackoff(final URL url, final long delay) {
+                        super.onBackoff(url, delay);
+
+                        log.warn(
+                            String.format(
+                                "[Retry %d of %d] Backing off for %d milliseconds...",
+                                this.getCurrentRetryCount(),
+                                this.getMaxRetryCount(),
+                                delay));
+                    }
+                });
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
