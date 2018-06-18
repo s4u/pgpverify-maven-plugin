@@ -78,6 +78,9 @@ public class TransientFailureRetryStrategy extends RetryNTimesStrategy {
      *
      * <p>Creates a retry strategy that will allow retrying the same request up
      * to the specified number of times.
+     *
+     * @param maxRetryCount
+     *   The maximum number of times that the request can be retried.
      */
     public TransientFailureRetryStrategy(final int maxRetryCount) {
         super(maxRetryCount);

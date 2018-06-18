@@ -55,6 +55,9 @@ public class RetryNTimesStrategy implements RequestFailureStrategy {
      *
      * <p>Creates a retry strategy that will allow retrying the same request up
      * to the specified number of times.
+     *
+     * @param maxRetryCount
+     *   The maximum number of times that the request can be retried.
      */
     public RetryNTimesStrategy(final int maxRetryCount) {
         this.maxRetryCount      = maxRetryCount;
