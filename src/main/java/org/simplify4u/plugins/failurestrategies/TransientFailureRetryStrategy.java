@@ -40,7 +40,7 @@ import java.util.List;
  * should be created for each new request (excluding retries of the same
  * request).
  */
-public class TransientFailureRetryStrategy extends RetryNTimesStrategy {
+public class TransientFailureRetryStrategy extends BackoffStrategy {
     /**
      * The list of exception types that signal request failures that may recover after a retry.
      */
@@ -70,7 +70,7 @@ public class TransientFailureRetryStrategy extends RetryNTimesStrategy {
      * to four times.
      */
     public TransientFailureRetryStrategy() {
-        this(DEFAULT_MAX_RETRY_COUNT);
+        super(DEFAULT_BACKOFF_SCALAR, DEFAULT_MAX_RETRY_COUNT);
     }
 
     /**
@@ -83,7 +83,26 @@ public class TransientFailureRetryStrategy extends RetryNTimesStrategy {
      *   The maximum number of times that the request can be retried.
      */
     public TransientFailureRetryStrategy(final int maxRetryCount) {
-        super(maxRetryCount);
+        super(DEFAULT_BACKOFF_SCALAR, maxRetryCount);
+    }
+
+    /**
+     * Constructor for {@code TransientFailureRetryStrategy}.
+     *
+     * <p>Creates a retry strategy that will allow retrying the same request up
+     * to the specified number of times, with the specified number of milliseconds of delay added to
+     * each additional attempt. For example, {@code 500} would cause the first retry to happen
+     * half a second later, the second retry one second later, the third one and a half seconds
+     * later, and so on.
+     *
+     * @param backoffScalar
+     *   The number of milliseconds to add to each retry attempt. The delay is cumulative, so each
+     *   retry takes longer than the previous one.
+     * @param maxRetryCount
+     *   The maximum number of times that the request can be retried.
+     */
+    public TransientFailureRetryStrategy(int backoffScalar, int maxRetryCount) {
+        super(backoffScalar, maxRetryCount);
     }
 
     @Override
