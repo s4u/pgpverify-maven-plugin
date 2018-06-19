@@ -117,9 +117,7 @@ public class PGPKeysServerClientIT {
         final PGPServerRetryHandler retryHandler = new PGPServerRetryHandler(maxRetries) {
             @Override
             protected void onRetry(final String retryReason, final int retryCount,
-                                   final HttpContext context) {
-                super.onRetry(retryReason, retryCount, context);
-
+                                   final long backoffDelay, final HttpContext requestContext) {
                 attemptedRetries.incrementAndGet();
             }
         };

@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -37,28 +38,9 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
     public static final int DEFAULT_MAX_RETRIES = 10;
     public static final int DEFAULT_BACKOFF_INTERVAL = 750;
 
-    @SuppressWarnings("unchecked")
-    private static final List<Class<? extends IOException>> IGNORED_EXCEPTIONS =
-        (List) Collections.singletonList(SSLException.class);
-
-    /**
-     * The list of HTTP status codes that signal request failures that may be recoverable after
-     * a retry.
-     */
-    private static final List<Integer> RETRYABLE_STATUS_CODES =
-        ImmutableList.of(
-            HttpStatus.SC_REQUEST_TIMEOUT,
-            HttpStatus.SC_INTERNAL_SERVER_ERROR,
-            HttpStatus.SC_BAD_GATEWAY,
-            HttpStatus.SC_SERVICE_UNAVAILABLE,
-            HttpStatus.SC_GATEWAY_TIMEOUT
-        );
-
-    private final HttpRequestRetryHandler requestRetryHandler;
-    private final ServiceUnavailableRetryStrategy serviceRetryHandler;
+    private final RequestRetryStrategy requestRetryHandler;
+    private final ServiceRetryStrategy serviceRetryHandler;
     private final Log logger;
-
-    private int currentRetryCount;
 
     public PGPServerRetryHandler() {
         this(new NullLogger(), DEFAULT_MAX_RETRIES, DEFAULT_BACKOFF_INTERVAL);
@@ -77,33 +59,48 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
         this.requestRetryHandler = new RequestRetryStrategy(maxRetries);
         this.serviceRetryHandler = new ServiceRetryStrategy(maxRetries, unavailableBackoffInterval);
         this.logger = logger;
-
-        this.currentRetryCount = 0;
-    }
-
-    public int getCurrentRetryCount() {
-        return this.currentRetryCount;
     }
 
     @Override
     public boolean retryRequest(final IOException cause,
                                 final int executionCount,
-                                final HttpContext context) {
+                                final HttpContext requestContext) {
         final boolean shouldRetry
-            = this.requestRetryHandler.retryRequest(cause, executionCount, context);
+            = this.requestRetryHandler.retryRequest(cause, executionCount, requestContext);
 
-        this.dispatchRetry(shouldRetry, cause.toString(), context);
+        final long backoffDelay = this.serviceRetryHandler.getBackoffScalar() * executionCount;
+
+        this.dispatchRetry(
+            shouldRetry,
+            cause.toString(),
+            executionCount,
+            backoffDelay,
+            requestContext);
+
+        if (shouldRetry && backoffDelay > 0) {
+            // Add a back-off strategy to request retries to avoid overwhelming PGP servers.
+            try {
+                Thread.sleep(backoffDelay);
+            } catch (InterruptedException ex) {
+                throw new IllegalStateException("Interrupted during request back-off", ex);
+            }
+        }
 
         return shouldRetry;
     }
 
     @Override
-    public boolean retryRequest(final HttpResponse response, final int executionCount,
-                                final HttpContext context) {
+    public boolean retryRequest(final HttpResponse errorResponse, final int executionCount,
+                                final HttpContext requestContext) {
         final boolean shouldRetry
-            = this.serviceRetryHandler.retryRequest(response, executionCount, context);
+            = this.serviceRetryHandler.retryRequest(errorResponse, executionCount, requestContext);
 
-        this.dispatchRetry(shouldRetry, response.getStatusLine().toString(), context);
+        this.dispatchRetry(
+            shouldRetry,
+            errorResponse.getStatusLine().toString(),
+            executionCount,
+            this.getRetryInterval(),
+            requestContext);
 
         return shouldRetry;
     }
@@ -114,40 +111,60 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
     }
 
     protected void onRetry(final String retryReason, final int retryCount,
-                           final HttpContext context) {
-        this.logRetry(retryReason, retryCount, context);
+                           final long backoffDelay, final HttpContext requestContext) {
+        // No-op -- provided for sub-classes to override
     }
 
-    private void dispatchRetry(boolean shouldRetry, String retryReason, HttpContext context) {
+    private void dispatchRetry(boolean shouldRetry, final String retryReason,
+                               final int executionCount, final long backoffDelay,
+                               final HttpContext requestContext) {
         if (shouldRetry) {
-            ++this.currentRetryCount;
-
-            this.onRetry(retryReason, this.currentRetryCount, context);
+            this.logRetry(retryReason, executionCount, backoffDelay, requestContext);
+            this.onRetry(retryReason, executionCount, backoffDelay, requestContext);
         }
     }
 
-    private void logRetry(String retryReason, int executionCount, HttpContext context) {
+    private void logRetry(final String retryReason, final int executionCount,
+                          final long backoffDelay, final HttpContext context) {
         final HttpHost host = (HttpHost) context.getAttribute(HttpCoreContext.HTTP_TARGET_HOST);
 
         logger.warn(
             String.format(
-                "[Retry %d of %d] Attempting key request from %s after previous request failed: "
-                + "\"%s\"",
-                executionCount,
-                this.getCurrentRetryCount(),
+                "[Retry %d of %d] Waiting %d milliseconds before retrying key request from %s "
+                + "after last request failed: %s",
+                executionCount - 1,
+                this.requestRetryHandler.getRetryCount(),
+                backoffDelay,
                 host.getAddress(),
                 retryReason));
     }
 
     private static class RequestRetryStrategy
     extends DefaultHttpRequestRetryHandler {
+        @SuppressWarnings("unchecked")
+        private static final List<Class<? extends IOException>> IGNORED_EXCEPTIONS =
+            (List) Collections.singletonList(SSLException.class);
+
         RequestRetryStrategy(final int maxRetries) {
             super(maxRetries, false, IGNORED_EXCEPTIONS);
         }
     }
 
-    private class ServiceRetryStrategy
+    private static class ServiceRetryStrategy
     implements ServiceUnavailableRetryStrategy {
+        /**
+         * The list of HTTP status codes that signal request failures that may be recoverable after
+         * a retry.
+         */
+        private static final List<Integer> RETRYABLE_STATUS_CODES =
+            ImmutableList.of(
+                HttpStatus.SC_REQUEST_TIMEOUT,
+                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                HttpStatus.SC_BAD_GATEWAY,
+                HttpStatus.SC_SERVICE_UNAVAILABLE,
+                HttpStatus.SC_GATEWAY_TIMEOUT
+            );
+
         /**
          * Maximum number of allowed retries if the server responds with a HTTP code
          * in our retry code list. Default value is 1.
@@ -160,6 +177,11 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
          */
         private final long backoffScalar;
 
+        /**
+         * The number of times that this strategy has been asked to retry so far.
+         */
+        private final AtomicLong currentRetryCount;
+
         ServiceRetryStrategy(final int maxRetries, final long backoffScalar) {
             super();
 
@@ -168,6 +190,11 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
 
             this.maxRetries = maxRetries;
             this.backoffScalar = backoffScalar;
+            this.currentRetryCount = new AtomicLong(0);
+        }
+
+        public long getBackoffScalar() {
+            return backoffScalar;
         }
 
         @Override
@@ -177,12 +204,16 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
                 = executionCount <= maxRetries
                 && RETRYABLE_STATUS_CODES.contains(response.getStatusLine().getStatusCode());
 
+            if (shouldRetry) {
+                this.currentRetryCount.incrementAndGet();
+            }
+
             return shouldRetry;
         }
 
         @Override
         public long getRetryInterval() {
-            return PGPServerRetryHandler.this.currentRetryCount * this.backoffScalar;
+            return this.currentRetryCount.get() * this.backoffScalar;
         }
     }
 }
