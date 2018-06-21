@@ -18,6 +18,8 @@ package org.simplify4u.plugins;
 
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -128,15 +130,36 @@ implements HttpRequestRetryHandler, ServiceUnavailableRetryStrategy {
                           final long backoffDelay, final HttpContext context) {
         final HttpHost host = (HttpHost) context.getAttribute(HttpCoreContext.HTTP_TARGET_HOST);
 
-        logger.warn(
-            String.format(
-                "[Retry %d of %d] Waiting %d milliseconds before retrying key request from %s "
-                + "after last request failed: %s",
-                executionCount - 1,
-                this.requestRetryHandler.getRetryCount(),
-                backoffDelay,
-                host.getAddress(),
-                retryReason));
+        if (logger.isWarnEnabled()) {
+            logger.warn(
+                String.format(
+                    "[Retry %d of %d] Waiting %d milliseconds before retrying key request from %s "
+                    + "after last request failed: %s",
+                    executionCount,
+                    this.requestRetryHandler.getRetryCount(),
+                    backoffDelay,
+                    describeHost(host),
+                    retryReason));
+        }
+    }
+
+    private String describeHost(final HttpHost host) {
+        String description;
+
+        try {
+            InetAddress address = host.getAddress();
+
+            if (address == null) {
+                address = InetAddress.getByName(host.getHostName());
+            }
+
+            description = address.toString();
+        } catch (UnknownHostException ex) {
+            // Suppress -- fall back to "unknown".
+            description = "(unknown)";
+        }
+
+        return description;
     }
 
     private static class RequestRetryStrategy
