@@ -32,10 +32,9 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 
 /**
- * Implementation of PGPKeysServerClient for HTTPS protocol.
+ * Implementation of a client for requesting keys from PGP key servers over HKPS/HTTPS.
  */
 public class PGPKeysServerClientHttps extends PGPKeysServerClient {
-
     private final SSLConnectionSocketFactory sslSocketFactory;
 
     protected PGPKeysServerClientHttps(final URI uri, final int connectTimeout,
