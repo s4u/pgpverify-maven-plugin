@@ -31,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.protocol.HttpContext;
+import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -38,7 +39,6 @@ import org.testng.annotations.Test;
 public class PGPKeysServerClientIT {
     private static final long TEST_KEYID = 0xF8484389379ACEACL;
 
-    private static final int MAX_TEST_RETRIES = 10;
     private static final int SHORT_TEST_TIMEOUT = 1000;
 
     @DataProvider(name = "goodServerUrls")
@@ -100,7 +100,12 @@ public class PGPKeysServerClientIT {
 
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             client.copyKeyToOutputStream(
-                TEST_KEYID, outputStream, new PGPServerRetryHandler(MAX_TEST_RETRIES));
+                TEST_KEYID,
+                outputStream,
+                new PGPServerRetryHandler(
+                    new SystemStreamLog(),
+                    PGPServerRetryHandler.DEFAULT_MAX_RETRIES,
+                    PGPServerRetryHandler.DEFAULT_BACKOFF_INTERVAL));
         }
 
         assertTrue(tempFile.length() > 0, "Downloaded key was not expected to be empty");
