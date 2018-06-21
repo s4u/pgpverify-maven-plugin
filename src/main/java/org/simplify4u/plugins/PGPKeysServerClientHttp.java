@@ -20,7 +20,7 @@ import java.net.URISyntaxException;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
- * Implementation of PGPKeysServerClient for HTTP protocol.
+ * Implementation of a client for requesting keys from PGP key servers over HKP/HTTP.
  */
 class PGPKeysServerClientHttp extends PGPKeysServerClient {
     protected PGPKeysServerClientHttp(final URI keyserver, final int connectTimeout,

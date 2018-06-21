@@ -38,7 +38,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
- * Common support for communication with key servers.
+ * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
  */
 abstract class PGPKeysServerClient {
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
@@ -48,6 +48,23 @@ abstract class PGPKeysServerClient {
     private final int connectTimeout;
     private final int readTimeout;
 
+    /**
+     * Protected constructor for {@code PGPKeysServerClient}.
+     *
+     * @see #getClient(String)
+     * @see #getClient(String, int, int)
+     *
+     * @param keyserver
+     *   The URI of the target key server.
+     * @param connectTimeout
+     *   The timeout (in milliseconds) that the client should wait to establish a connection to
+     *   the PGP server.
+     * @param readTimeout
+     *   The timeout (in milliseconds) that the client should wait for data from the PGP server.
+     *
+     * @throws URISyntaxException
+     *   If the key server address is invalid or improperly-formatted.
+     */
     protected PGPKeysServerClient(final URI keyserver, final int connectTimeout,
                                   final int readTimeout) throws URISyntaxException {
         this.keyserver = prepareKeyServerURI(keyserver);
@@ -156,12 +173,18 @@ abstract class PGPKeysServerClient {
      * Requests the PGP key with the specified key ID from the server and copies it to the specified
      * output stream.
      *
-     * <p>If the request fails, it will not be retried, and an {@link IOException} will be thrown.
+     * <p>If the request fails due to connectivity issues or server load, the request will be
+     * retried automatically according to the configuration of the provided retry handler. If the
+     * request still fails after exhausting retries, the final exception will be re-thrown.
      *
      * @param keyId
      *   The ID of the key to request from the server.
      * @param outputStream
      *   The output stream to which the key will be written.
+     * @param retryHandler
+     *   The handler that will be used to control how retries are handled for service reach-ability
+     *   (e.g. connection timeouts, connection drops) and service load issues (e.g. internal server
+     *   errors, load balancer errors, read timeouts, etc).
      *
      * @throws IOException
      *   If the request fails, or the key cannot be written to the output stream.
@@ -175,17 +198,22 @@ abstract class PGPKeysServerClient {
      * Requests the PGP key with the specified key ID from the server and copies it to the specified
      * output stream.
      *
-     * <p>If the request fails, based on the type of failure the request may be silently retried
-     * unless instructed otherwise by the provided failure strategy. If a failure occurs and the
-     * strategy indicates that the request should not be retried, the exception will be re-thrown.
+     * <p>If the request fails due to connectivity issues or server load, the request will be
+     * retried automatically according to the configurations of the provided retry handlers. If the
+     * request still fails after exhausting retries, the final exception will be re-thrown.
      *
      * @param keyId
      *   The ID of the key to request from the server.
      * @param outputStream
      *   The output stream to which the key will be written.
      * @param requestRetryHandler
-     *   The strategy that controls whether or not to retry failing PGP requests. The strategy is
-     *   also notified when a retry is attempted.
+     *   The handler that will be used to control how retries are handled for service reach-ability
+     *   (e.g. connection timeouts, connection drops). This handler is invoked whenever a connection
+     *   cannot be established or is dropped, without a complete response.
+     * @param serviceRetryHandler
+     *   The handler that will be used to control how retries are handled for service load issues
+     *   (e.g. internal server errors, load balancer errors, read timeouts, etc). This handler
+     *   is invoked when there has been an unsuccessful response returned by the target server.
      *
      * @throws IOException
      *   If the request fails, or the key cannot be written to the output stream.
@@ -197,14 +225,48 @@ abstract class PGPKeysServerClient {
         final URI keyUri = getUriForGetKey(keyId);
         final HttpUriRequest request = new HttpGet(keyUri);
 
-        try (final CloseableHttpClient client = this.buildClient(requestRetryHandler, serviceRetryHandler);
+        try (final CloseableHttpClient client = this.buildClient(requestRetryHandler,
+            serviceRetryHandler
+        );
              final CloseableHttpResponse response = client.execute(request)) {
-            this.processKeyResponse(outputStream, response);
+            this.processKeyResponse(response, outputStream);
         }
     }
 
-    private void processKeyResponse(OutputStream outputStream, CloseableHttpResponse response)
-    throws IOException {
+    protected abstract HttpClientBuilder createClientBuilder();
+
+    // abstract methods to implemented in child class.
+
+    /**
+     * Return URI to using for communication with key server.
+     *
+     * This method must change protocol from pgp key server specific to supported by java.
+     * Eg. hkp to http
+     *
+     * @param keyserver key server address
+     * @return URI for given key server
+     * @throws URISyntaxException if key server address is wrong
+     */
+    protected abstract URI prepareKeyServerURI(URI keyserver) throws URISyntaxException;
+
+    /**
+     * Verify that the provided response was successful, and then copy the response to the given
+     * output buffer.
+     *
+     * <p>If the response was not successful (e.g. not a "200 OK") status code, or the response
+     * payload was empty, an {@link IOException} will be thrown.
+     *
+     * @param response
+     *   A representation of the response from the server.
+     * @param outputStream
+     *   The stream to which the response data will be written.
+     *
+     * @throws IOException
+     *   If the response was unsuccessful, did not contain any data, or could not be written
+     *   completely to the target output stream.
+     */
+    private void processKeyResponse(final CloseableHttpResponse response,
+                                    final OutputStream outputStream) throws IOException {
         final StatusLine statusLine = response.getStatusLine();
 
         if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
@@ -222,6 +284,21 @@ abstract class PGPKeysServerClient {
         }
     }
 
+    /**
+     * Build an HTTP client with the given retry handlers.
+     *
+     * @param requestRetryHandler
+     *   The handler that will be used to control how retries are handled for service reach-ability
+     *   (e.g. connection timeouts, connection drops). This handler is invoked whenever a connection
+     *   cannot be established or is dropped, without a complete response.
+     * @param serviceRetryHandler
+     *   The handler that will be used to control how retries are handled for service load issues
+     *   (e.g. internal server errors, load balancer errors, read timeouts, etc). This handler
+     *   is invoked when there has been an unsuccessful response returned by the target server.
+     *
+     * @return
+     *   The new HTTP client instance.
+     */
     private CloseableHttpClient buildClient(
                                     final HttpRequestRetryHandler requestRetryHandler,
                                     final ServiceUnavailableRetryStrategy serviceRetryHandler) {
@@ -239,17 +316,15 @@ abstract class PGPKeysServerClient {
         return clientBuilder.build();
     }
 
-    protected abstract HttpClientBuilder createClientBuilder();
-
     /**
-     * Sets connect and read timeouts on the given connection.
+     * Set connect and read timeouts for an HTTP client that is being built.
      *
      * @param builder
-     *   The client builder on which timeouts are to be applied.
+     *   The client builder to which timeouts will be applied.
      */
-    protected void applyTimeouts(final HttpClientBuilder builder) {
-        final RequestConfig requestConfig
-            = RequestConfig
+    private void applyTimeouts(final HttpClientBuilder builder) {
+        final RequestConfig requestConfig =
+            RequestConfig
                 .custom()
                 .setConnectionRequestTimeout(this.connectTimeout)
                 .setConnectTimeout(this.connectTimeout)
@@ -258,19 +333,5 @@ abstract class PGPKeysServerClient {
 
         builder.setDefaultRequestConfig(requestConfig);
     }
-
-    // abstract methods to implemented in child class.
-
-    /**
-     * Return URI to using for communication with key server.
-     *
-     * This method must change protocol from pgp key server specific to supported by java.
-     * Eg. hkp to http
-     *
-     * @param keyserver key server address
-     * @return URI for given key server
-     * @throws URISyntaxException if key server address is wrong
-     */
-    protected abstract URI prepareKeyServerURI(URI keyserver) throws URISyntaxException;
 }
 
