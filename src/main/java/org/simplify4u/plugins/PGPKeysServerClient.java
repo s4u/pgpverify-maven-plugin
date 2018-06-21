@@ -42,7 +42,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
  */
 abstract class PGPKeysServerClient {
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
-    private static final int DEFAULT_READ_TIMEOUT = 10000;
+    private static final int DEFAULT_READ_TIMEOUT = 20000;
 
     private final URI keyserver;
     private final int connectTimeout;
