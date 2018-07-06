@@ -56,9 +56,9 @@ public class PGPKeysServerClientIT {
     Object[][] badServerUrls() {
         return new Object[][]{
             {
-                "https://example.com:81",
-                "org.apache.http.conn.ConnectTimeoutException: Connect to example.com:81 "
-                + "[example.com/93.184.216.34] failed: connect timed out",
+                "https://10.255.255.1:65535",
+                "org.apache.http.conn.ConnectTimeoutException: Connect to 10.255.255.1:65535 "
+                + "[/10.255.255.1] failed: connect timed out",
                 true    // Should retry
             },
             {
