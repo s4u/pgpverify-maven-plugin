@@ -216,19 +216,31 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
     private String keysMapLocation;
 
+    /**
+     * Skip verification altogether.
+     *
+     * @since 1.3.0
+     */
+    @Parameter(property = "pgpverify.skip", defaultValue = "false")
+    private boolean skip;
+
     private PGPKeysCache pgpKeysCache;
 
     private List<SkipFilter> skipFilters;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        prepareSkipFilters();
-        prepareForKeys();
+        if (skip) {
+            getLog().info("Skipping pgpverify:check");
+        } else {
+            prepareSkipFilters();
+            prepareForKeys();
 
-        try {
-            verifyArtifacts(getArtifactsToVerify());
-        } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
+            try {
+                verifyArtifacts(getArtifactsToVerify());
+            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
+                throw new MojoExecutionException(e.getMessage(), e);
+            }
         }
     }
 
