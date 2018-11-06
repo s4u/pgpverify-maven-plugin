@@ -15,15 +15,9 @@
  */
 package org.simplify4u.plugins;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -31,46 +25,63 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 
 /**
- * Implementation of PGPKeysServerClient for HTTPS protocol.
+ * Implementation of a client for requesting keys from PGP key servers over HKPS/HTTPS.
  */
 public class PGPKeysServerClientHttps extends PGPKeysServerClient {
+    private final SSLConnectionSocketFactory sslSocketFactory;
 
-    private final SSLSocketFactory sslSocketFactory;
+    protected PGPKeysServerClientHttps(final URI uri, final int connectTimeout,
+                                       final int readTimeout)
+    throws URISyntaxException, CertificateException, IOException, KeyStoreException,
+           NoSuchAlgorithmException, KeyManagementException {
+        super(uri, connectTimeout, readTimeout);
 
-    protected PGPKeysServerClientHttps(URI uri)
-            throws URISyntaxException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
-        super(uri);
-        if ("hkps.pool.sks-keyservers.net".equalsIgnoreCase(uri.getHost())) {
+        if (uri.getHost().toLowerCase().endsWith("sks-keyservers.net")) {
             final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            final Certificate ca = cf.generateCertificate(getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+            final Certificate ca = cf.generateCertificate(
+                getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+
             final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
             keyStore.load(null, null);
             keyStore.setCertificateEntry("ca", ca);
 
-            final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            final TrustManagerFactory tmf
+                = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(keyStore);
 
             final SSLContext context = SSLContext.getInstance("TLS");
             context.init(null, tmf.getTrustManagers(), null);
 
-            this.sslSocketFactory = context.getSocketFactory();
+            this.sslSocketFactory
+                = new SSLConnectionSocketFactory(
+                    context, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
         } else {
-            this.sslSocketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            this.sslSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
         }
     }
 
     @Override
     protected URI prepareKeyServerURI(URI keyserver) throws URISyntaxException {
-        return new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(), null, null, null);
+        return new URI(
+            "https",
+            keyserver.getUserInfo(),
+            keyserver.getHost(),
+            keyserver.getPort(),
+            null,
+            null,
+            null);
     }
 
     @Override
-    protected InputStream getInputStreamForKey(URL keyURL) throws IOException {
-        // standard support by Java - can be extended eg. to support custom CA certs
-        final HttpsURLConnection keyServerUrlConnection = (HttpsURLConnection) keyURL.openConnection();
-        keyServerUrlConnection.setSSLSocketFactory(sslSocketFactory);
-        return keyServerUrlConnection.getInputStream();
+    protected HttpClientBuilder createClientBuilder() {
+        return HttpClients.custom().setSSLSocketFactory(this.sslSocketFactory);
     }
 }

@@ -27,8 +27,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-
-import com.google.common.io.ByteStreams;
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -82,9 +80,9 @@ public class PGPKeysCache {
         return key;
     }
 
-    private void receiveKey(File keyFile, long keyID) throws IOException {
-
+    private void receiveKey(File keyFile, long keyId) throws IOException {
         File dir = keyFile.getParentFile();
+
         if (dir == null) {
             throw new IOException("No parent dir for: " + keyFile);
         }
@@ -97,16 +95,17 @@ public class PGPKeysCache {
             throw new IOException("Can't create directory: " + dir);
         }
 
-        try (InputStream inputStream = keysServerClient.getInputStreamForKey(keyID);
-             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
-            ByteStreams.copy(inputStream, outputStream);
+        try (BufferedOutputStream outputStream = new BufferedOutputStream(
+                 new FileOutputStream(keyFile))) {
+            keysServerClient.copyKeyToOutputStream(
+                keyId, outputStream, new PGPServerRetryHandler(this.log));
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
             throw e;
         }
 
-        log.info(String.format("Receive key: %s\n\tto %s", keysServerClient.getUriForGetKey(keyID), keyFile));
+        log.info(String.format("Receive key: %s\n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
     }
 
     private void deleteFile(File keyFile) {
