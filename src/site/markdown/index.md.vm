@@ -1,4 +1,5 @@
-# Verify PGP signatures plugin
+Verify PGP signatures plugin
+============================
 
 This plugin allow you to automatically verify PGP signature of all project dependency.
 

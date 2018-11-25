@@ -22,7 +22,30 @@
     <publishDate position="right" />
     <version position="right" />
 
+    <skin>
+        <groupId>org.apache.maven.skins</groupId>
+        <artifactId>maven-fluido-skin</artifactId>
+        <version>1.7</version>
+    </skin>
+
+    <custom>
+        <fluidoSkin>
+            <copyrightClass>pull-right</copyrightClass>
+            <gitHub>
+                <projectId>s4u/pgpverify-maven-plugin</projectId>
+                <ribbonOrientation>right</ribbonOrientation>
+                <ribbonColor>gray</ribbonColor>
+            </gitHub>
+            <facebookLike/>
+            <googlePlusOne/>
+        </fluidoSkin>
+    </custom>
+
     <body>
+        <breadcrumbs>
+            <item name="Home" href="/index.html"/>
+        </breadcrumbs>
+
         <menu name="Overview">
             <item name="Introduction" href="index.html" />
             <item name="Goals" href="plugin-info.html" />
