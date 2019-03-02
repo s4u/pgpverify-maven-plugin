@@ -224,6 +224,14 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.skip", defaultValue = "false")
     private boolean skip;
 
+    /**
+     * Only log errors.
+     *
+     * @since 1.4.0
+     */
+    @Parameter(property = "pgpverify.quiet", defaultValue = "false")
+    private boolean quiet;
+
     private PGPKeysCache pgpKeysCache;
 
     private List<SkipFilter> skipFilters;
@@ -519,17 +527,21 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             String msgFormat = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
             if (pgpSignature.verify()) {
-                getLog().info(String.format(msgFormat, artifact.getId(),
-                        "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
+                final String logMessageOK = String.format(msgFormat, artifact.getId(),
+                        "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs()));
+                if (quiet) {
+                    getLog().debug(logMessageOK);
+                } else {
+                    getLog().info(logMessageOK);
+                }
                 if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
+                    final String logMessageWeakSignature = "Weak signature algorithm used: "
+                            + weakSignatures.get(pgpSignature.getHashAlgorithm());
                     if (failWeakSignature) {
-                        getLog().error("Weak signature algorithm used: "
-                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
-                        throw new MojoFailureException("Weak signature algorithm used: "
-                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
+                        getLog().error(logMessageWeakSignature);
+                        throw new MojoFailureException(logMessageWeakSignature);
                     } else {
-                        getLog().warn("Weak signature algorithm used: "
-                                + weakSignatures.get(pgpSignature.getHashAlgorithm()));
+                        getLog().warn(logMessageWeakSignature);
                     }
                 }
                 return true;
