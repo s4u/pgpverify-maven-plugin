@@ -27,6 +27,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -105,7 +106,7 @@ public class PGPKeysCache {
             throw e;
         }
 
-        log.info(String.format("Receive key: %s\n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
+        log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
     }
 
     private void deleteFile(File keyFile) {

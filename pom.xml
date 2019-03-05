@@ -50,6 +50,10 @@
         </developer>
     </developers>
 
+    <prerequisites>
+        <maven>${maven.version}</maven>
+    </prerequisites>
+
     <scm>
         <connection>scm:git:git@github.com:s4u/pgpverify-maven-plugin.git</connection>
         <developerConnection>${project.scm.connection}</developerConnection>
@@ -70,9 +74,6 @@
         <maven-invoker-plugin.version>3.1.0</maven-invoker-plugin.version>
     </properties>
 
-    <prerequisites>
-        <maven>${maven.version}</maven>
-    </prerequisites>
 
     <dependencyManagement>
         <dependencies>
@@ -199,7 +200,7 @@
                             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                             <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
                             <settingsFile>src/it/settings.xml</settingsFile>
-                            <showErrors>true</showErrors>
+                            <showErrors>false</showErrors>
                             <streamLogs>true</streamLogs>
                             <mavenOpts>${argLine}</mavenOpts>
                         </configuration>

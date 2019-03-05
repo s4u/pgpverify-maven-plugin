@@ -15,7 +15,6 @@
  */
 package org.simplify4u.plugins;
 
-import com.google.common.io.ByteStreams;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +24,9 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Locale;
+
+import com.google.common.io.ByteStreams;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -112,7 +114,7 @@ abstract class PGPKeysServerClient {
     throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException,
            KeyManagementException, IOException {
         final URI uri = new URI(keyServer);
-        final String protocol = uri.getScheme().toLowerCase();
+        final String protocol = uri.getScheme().toLowerCase(Locale.ROOT);
 
         switch (protocol) {
             case "hkp":

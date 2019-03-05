@@ -17,6 +17,7 @@ package org.simplify4u.plugins;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+
 import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
@@ -45,6 +46,6 @@ class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
     @Override
     protected HttpClientBuilder createClientBuilder() {
-         return HttpClientBuilder.create();
+        return HttpClientBuilder.create();
     }
 }

@@ -15,12 +15,12 @@
  */
 package org.simplify4u.plugins;
 
-import org.apache.maven.artifact.Artifact;
-import org.bouncycastle.openpgp.PGPPublicKey;
-
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.maven.artifact.Artifact;
+import org.bouncycastle.openpgp.PGPPublicKey;
 
 /**
  * @author Slawomir Jaranowski.
@@ -32,6 +32,9 @@ public class ArtifactInfo {
     private final Pattern groupIdPattern;
     private final Pattern artifactIdPattern;
     private final Pattern versionPattern;
+
+    private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
+    private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
 
     public ArtifactInfo(String strArtifact, KeyInfo keyInfo) {
 
@@ -53,8 +56,8 @@ public class ArtifactInfo {
             return ".*";
         }
 
-        String ret = str.replaceAll("\\.", "\\\\.");
-        ret = ret.replaceAll("\\*", ".*");
+        String ret = DOT_REPLACE.matcher(str).replaceAll("\\\\.");
+        ret = STAR_REPLACE.matcher(ret).replaceAll(".*");
         return ret;
     }
 

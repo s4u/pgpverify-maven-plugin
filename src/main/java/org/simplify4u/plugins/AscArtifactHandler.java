@@ -32,7 +32,7 @@ public class AscArtifactHandler implements ArtifactHandler {
      *   The artifact for which a GPG signature artifact is desired.
      */
     public AscArtifactHandler(Artifact targetArtifact) {
-      this(targetArtifact.getArtifactHandler());
+        this(targetArtifact.getArtifactHandler());
     }
 
     /**
@@ -48,7 +48,7 @@ public class AscArtifactHandler implements ArtifactHandler {
      *   provided handler, except for the file extension (".asc").
      */
     public AscArtifactHandler(ArtifactHandler wrappedHandler) {
-      this.wrappedHandler = wrappedHandler;
+        this.wrappedHandler = wrappedHandler;
     }
 
     @Override

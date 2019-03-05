@@ -25,8 +25,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Locale;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -43,7 +45,7 @@ public class PGPKeysServerClientHttps extends PGPKeysServerClient {
            NoSuchAlgorithmException, KeyManagementException {
         super(uri, connectTimeout, readTimeout);
 
-        if (uri.getHost().toLowerCase().endsWith("sks-keyservers.net")) {
+        if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
             final CertificateFactory cf = CertificateFactory.getInstance("X.509");
             final Certificate ca = cf.generateCertificate(
                 getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
