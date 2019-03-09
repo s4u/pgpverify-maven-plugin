@@ -297,10 +297,9 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @throws ArtifactResolutionException
      * @throws ArtifactNotFoundException
-     * @throws MojoExecutionException
      */
     private Set<Artifact> getArtifactsToVerify()
-    throws ArtifactResolutionException, ArtifactNotFoundException, MojoExecutionException {
+    throws ArtifactResolutionException, ArtifactNotFoundException {
         Set<Artifact> artifacts =
             resolver.resolve(project, Arrays.asList(scope.split(",")), session);
 
@@ -511,7 +510,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             if (!keysMap.isValidKey(artifact, publicKey)) {
                 String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
                 String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
-                getLog().error(String.format("Not allowed artifact %s and keyID:\n\t%s\n\t%s\n", artifact.getId(), msg, keyUrl));
+                getLog().error(String.format("Not allowed artifact %s and keyID:%n\t%s%n\t%s%n", artifact.getId(), msg, keyUrl));
                 return false;
             }
 
