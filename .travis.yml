@@ -5,6 +5,10 @@ jdk: oraclejdk8
 git:
   depth: false
 
+branches:
+  only:
+    - master
+
 addons:
   sonarcloud:
     organization: "simplify4u"
