@@ -45,7 +45,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <pgpKeyServer>hkps://pgp.mit.edu</pgpKeyServer>
+                    <pgpKeyServer>hkps://keyserver.ubuntu.com</pgpKeyServer>
                 </configuration>
             </plugin>
         </plugins>

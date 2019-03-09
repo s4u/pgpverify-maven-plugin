@@ -15,10 +15,6 @@
  */
 package org.simplify4u.plugins;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +26,11 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+
 import org.apache.http.protocol.HttpContext;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.testng.annotations.BeforeClass;
@@ -47,7 +48,7 @@ public class PGPKeysServerClientIT {
             {"hkp://pool.sks-keyservers.net"},
             {"hkp://p80.pool.sks-keyservers.net:80"},
             {"http://p80.pool.sks-keyservers.net"},
-            {"hkps://pgp.mit.edu/"},
+            {"hkps://keyserver.ubuntu.com/"},
             {"hkps://hkps.pool.sks-keyservers.net"}
         };
     }
