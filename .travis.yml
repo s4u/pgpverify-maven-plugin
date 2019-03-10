@@ -1,5 +1,4 @@
 language: java
-jdk: oraclejdk8
 
 # turn shallow clone off for sonar
 git:
@@ -16,22 +15,30 @@ addons:
       secure: "X7o2WeH1LcHDbfaN2CNwGvd58zL6MpBtW4V9R16c6w5P9e+rmq9NZ4JAnQBSUPMQXrCDmIEzIqCkmCi/4XqZOfrXoGTVI/m7YBoSmMp2OlRCafgaxSOYO5Ip5q9I3DcTQfjxurRJc43vFLu9+lyyvCnJnAmm+5mNWCt/Nw700m4="
 
 install:
-    - mkdir -p ../utils
-    - curl -Ls https://github.com/s4u/travis/archive/master.tar.gz |
-        tar -zx --strip-components 2 -C ../utils travis-master/src
+  - mkdir -p ../utils
+  - curl -Ls https://github.com/s4u/travis/archive/master.tar.gz |
+    tar -zx --strip-components 2 -C ../utils travis-master/src
 
-script:
-    - ../utils/mvn-push.sh clean deploy sonar:sonar
-    - ../utils/mvn-pr.sh   clean verify
+matrix:
+  include:
+
+    - jdk: oraclejdk8
+      script:
+        - ../utils/mvn-push.sh clean deploy sonar:sonar
+        - ../utils/mvn-pr.sh   clean verify
+
+    - jdk: openjdk11
+      script:
+        - ../utils/mvn-run.sh clean verify
 
 cache:
   directories:
-  - $HOME/.m2/repository
+    - $HOME/.m2/repository
 
 before_cache:
   - rm -rfv $HOME/.m2/repository/org/simplify4u/plugins/pgpverify-maven-plugin*
 
 env:
   global:
-  - secure: fDaiHxOgyoI/Rs3pyx2TWhQ+v36H6RFDk9l3fD/HokwvmVjxqjJUk1DcZ5re500kROUxGjPosxMB63P7vueRcBM+pXpRj1LVLFaDlOEyoPY0N0OLUJMf576y7c5uaouxF/Mc9BunaGlX6RNbBim/AbG0r3dblw7KZGNqOMZAgwI=
-  - secure: Rd9Wht1m1bo8UTng7GwzSJvnWl0x4OkWulu8V+JAfeLFqfcpWI8E8ELijrIDGIfsKjCEh2ctpCNvswSdLSjoufWrkByE/TckXNUZJOcU8doFfp4XsmLMG77AwWkiOXQp8G2YrQWvLInCQtOKttUvjFfrD3d+sfb7dWHTuJboHWs=
+    - secure: fDaiHxOgyoI/Rs3pyx2TWhQ+v36H6RFDk9l3fD/HokwvmVjxqjJUk1DcZ5re500kROUxGjPosxMB63P7vueRcBM+pXpRj1LVLFaDlOEyoPY0N0OLUJMf576y7c5uaouxF/Mc9BunaGlX6RNbBim/AbG0r3dblw7KZGNqOMZAgwI=
+    - secure: Rd9Wht1m1bo8UTng7GwzSJvnWl0x4OkWulu8V+JAfeLFqfcpWI8E8ELijrIDGIfsKjCEh2ctpCNvswSdLSjoufWrkByE/TckXNUZJOcU8doFfp4XsmLMG77AwWkiOXQp8G2YrQWvLInCQtOKttUvjFfrD3d+sfb7dWHTuJboHWs=
