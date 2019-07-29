@@ -78,7 +78,6 @@ import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
  */
 @Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE)
-@SuppressWarnings({"PMD.TooManyFields", "PMD.AvoidDuplicateLiterals"})
 public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
