@@ -4,32 +4,52 @@ language: java
 git:
   depth: false
 
-branches:
-  only:
-    - master
-
 addons:
   sonarcloud:
     organization: "simplify4u"
-    token:
-      secure: "X7o2WeH1LcHDbfaN2CNwGvd58zL6MpBtW4V9R16c6w5P9e+rmq9NZ4JAnQBSUPMQXrCDmIEzIqCkmCi/4XqZOfrXoGTVI/m7YBoSmMp2OlRCafgaxSOYO5Ip5q9I3DcTQfjxurRJc43vFLu9+lyyvCnJnAmm+5mNWCt/Nw700m4="
 
 install:
   - mkdir -p ../utils
   - curl -Ls https://github.com/s4u/travis/archive/master.tar.gz |
     tar -zx --strip-components 2 -C ../utils travis-master/src
 
-matrix:
+before_script:
+  - ../utils/print-env.sh
+
+jobs:
   include:
 
-    - jdk: openjdk8
+    - name: "jdk8"
+      jdk: openjdk8
       script:
-        - ../utils/mvn-push.sh clean deploy sonar:sonar
-        - ../utils/mvn-pr.sh   clean verify
+        - ../utils/mvn-push.sh    clean deploy
+        - ../utils/mvn-pr.sh      clean verify
+        - ../utils/mvn-tag.sh     clean verify site
+        - ../utils/mvn-sonar.sh   sonar:sonar
+      if: repo = "s4u/pgpverify-maven-plugin"
 
-    - jdk: openjdk11
+    - name: "jdk8 - forks"
+      jdk: openjdk8
       script:
-        - ../utils/mvn-run.sh clean verify
+        - ../utils/mvn-run.sh     clean verify
+      if: repo != "s4u/pgpverify-maven-plugin"
+
+    - name: "jdk11"
+      jdk: openjdk11
+      script:
+        - ../utils/mvn-run.sh     clean verify
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  keep_history: true
+  github_token: $GITHUB_TOKEN
+  verbose: true
+  local_dir: target/site
+  on:
+    tags: true
+    repo: s4u/pgpverify-maven-plugin
+    jdk: openjdk8
 
 cache:
   directories:
@@ -37,8 +57,3 @@ cache:
 
 before_cache:
   - rm -rfv $HOME/.m2/repository/org/simplify4u/plugins/pgpverify-maven-plugin*
-
-env:
-  global:
-    - secure: fDaiHxOgyoI/Rs3pyx2TWhQ+v36H6RFDk9l3fD/HokwvmVjxqjJUk1DcZ5re500kROUxGjPosxMB63P7vueRcBM+pXpRj1LVLFaDlOEyoPY0N0OLUJMf576y7c5uaouxF/Mc9BunaGlX6RNbBim/AbG0r3dblw7KZGNqOMZAgwI=
-    - secure: Rd9Wht1m1bo8UTng7GwzSJvnWl0x4OkWulu8V+JAfeLFqfcpWI8E8ELijrIDGIfsKjCEh2ctpCNvswSdLSjoufWrkByE/TckXNUZJOcU8doFfp4XsmLMG77AwWkiOXQp8G2YrQWvLInCQtOKttUvjFfrD3d+sfb7dWHTuJboHWs=
