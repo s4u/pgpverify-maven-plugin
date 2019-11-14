@@ -502,17 +502,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
     throws MojoFailureException {
         if (ascArtifact == null) {
-            if (keysMap.isNoKey(artifact)) {
-                final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.", artifact.getId());
-                if (quiet) {
-                    getLog().debug(logMessage);
-                } else {
-                    getLog().info(logMessage);
-                }
-                return true;
-            }
-            getLog().error("Artifact without signature not listed in keys map: " + artifact.getId());
-            return false;
+            return verifySignatureUnavailable(artifact);
         }
         final File artifactFile = artifact.getFile();
         final File signatureFile = ascArtifact.getFile();
@@ -587,6 +577,28 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (IOException | PGPException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Verify if unsigned artifact is correctly listed in keys map.
+     *
+     * @param artifact the artifact which is supposedly unsigned
+     * @return Returns <code>true</code> if correctly missing according to keys map,
+     * or <code>false</code> if verification fails.
+     */
+    private boolean verifySignatureUnavailable(final Artifact artifact) {
+        if (keysMap.isNoKey(artifact)) {
+            final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.",
+                    artifact.getId());
+            if (quiet) {
+                getLog().debug(logMessage);
+            } else {
+                getLog().info(logMessage);
+            }
+            return true;
+        }
+        getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
+        return false;
     }
 
     /**
