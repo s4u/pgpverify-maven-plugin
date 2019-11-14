@@ -489,7 +489,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     throws MojoFailureException {
         if (ascArtifact == null) {
             if (keysMap.isNoKey(artifact)) {
-                final String logMessage = String.format("%s PGP Signature missing, consistent with keys map.", artifact.getId());
+                final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.", artifact.getId());
                 if (quiet) {
                     getLog().debug(logMessage);
                 } else {
