@@ -488,8 +488,13 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
     throws MojoFailureException {
         if (ascArtifact == null) {
-            final boolean noKeyConfirmed = keysMap.isNoKey(artifact);
-            if (noKeyConfirmed) {
+            if (keysMap.isNoKey(artifact)) {
+                final String logMessage = String.format("%s PGP Signature missing, consistent with keys map.", artifact.getId());
+                if (quiet) {
+                    getLog().debug(logMessage);
+                } else {
+                    getLog().info(logMessage);
+                }
                 return true;
             }
             getLog().error("Artifact without signature not listed in keys map: " + artifact.getId());
