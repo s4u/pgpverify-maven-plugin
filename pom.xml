@@ -14,14 +14,15 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.simplify4u</groupId>
         <artifactId>parent</artifactId>
-        <version>2.4.1</version>
-        <relativePath />
+        <version>2.4.2</version>
+        <relativePath/>
     </parent>
 
     <groupId>org.simplify4u.plugins</groupId>
@@ -70,8 +71,6 @@
 
     <properties>
         <maven.version>3.5.0</maven.version>
-        <maven-plugin-plugin.version>3.6.0</maven-plugin-plugin.version>
-        <maven-invoker-plugin.version>3.2.0</maven-invoker-plugin.version>
     </properties>
 
 
@@ -199,12 +198,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-invoker-plugin</artifactId>
-                <version>${maven-invoker-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>install</goal>
-                            <goal>run</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
                         <configuration>
                             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
@@ -212,6 +211,8 @@
                             <settingsFile>src/it/settings.xml</settingsFile>
                             <showErrors>true</showErrors>
                             <mavenOpts>${argLine}</mavenOpts>
+                            <writeJunitReport>true</writeJunitReport>
+                            <parallelThreads>4</parallelThreads>
                         </configuration>
                     </execution>
                 </executions>
@@ -219,11 +220,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>${maven-plugin-plugin.version}</version>
-                <configuration>
-                    <!-- see http://jira.codehaus.org/browse/MNG-5346 -->
-                    <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
-                </configuration>
                 <executions>
                     <execution>
                         <id>mojo-descriptor</id>
@@ -261,7 +257,6 @@
             <plugin>
                 <groupId>org.simplify4u.plugins</groupId>
                 <artifactId>sitemapxml-maven-plugin</artifactId>
-                <version>2.0.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -278,7 +273,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>${maven-plugin-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
