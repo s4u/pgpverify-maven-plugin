@@ -133,7 +133,18 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean failNoSignature;
 
     /**
-     * Fail the build if any artifact without key is not present in the keys list.
+     * Fail the build if any artifact without key is not present in the keys map.
+     * <p>
+     * When enabled, PGPVerify will look up all artifacts in the <code>keys
+     * map</code>. Unsigned artifacts will need to be present in the keys map
+     * but are expected to have no public key, i.e. an empty string.
+     * <p>
+     * When <code>strictNoSignature</code> is enabled, PGPVerify will no longer
+     * output warnings when unsigned artifacts are encountered. Instead, it will
+     * check if the unsigned artifact is listed in the <code>keys map</code>. If
+     * so it will proceed, if not it will fail the build.
+     *
+     * @since 1.5.0
      */
     @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
     private boolean strictNoSignature;
@@ -211,7 +222,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * wildcard.</p>
      *
      * <p><code>pgpKey</code> must be written as hex number starting with 0x.
-     * You can use <code>*</code> or <code>any</code> for match any pgp key.</p>
+     * You can use <code>*</code> or <code>any</code> for match any pgp key.
+     * If the pgpKey is an empty string, pgp-verify will expect the package to
+     * be unsigned. Please refer to <code>strictNoSignature</code> configuration
+     * parameter for its use.</p>
      *
      * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value
      * for those fields.</p>
