@@ -17,7 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -79,6 +78,9 @@ import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 @Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE)
 public class PGPVerifyMojo extends AbstractMojo {
+
+    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
+
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
 
@@ -537,18 +539,9 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-
-            try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(artifactFile))) {
-
-                int t;
-                while ((t = inArtifact.read()) >= 0) {
-                    pgpSignature.update((byte) t);
-                }
-            }
-
-            String msgFormat = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
+            PGPSignatures.readFileContentInto(pgpSignature, artifactFile);
             if (pgpSignature.verify()) {
-                final String logMessageOK = String.format(msgFormat, artifact.getId(),
+                final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                         "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs()));
                 if (quiet) {
                     getLog().debug(logMessageOK);
@@ -567,7 +560,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 }
                 return true;
             } else {
-                getLog().warn(String.format(msgFormat, artifact.getId(),
+                getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                         "ERROR", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
