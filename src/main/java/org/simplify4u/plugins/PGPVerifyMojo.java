@@ -529,6 +529,17 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
             PGPSignature pgpSignature = sigList.get(0);
 
+            if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
+                final String logMessageWeakSignature = "Weak signature algorithm used: "
+                        + weakSignatures.get(pgpSignature.getHashAlgorithm());
+                if (failWeakSignature) {
+                    getLog().error(logMessageWeakSignature);
+                    throw new MojoFailureException(logMessageWeakSignature);
+                } else {
+                    getLog().warn(logMessageWeakSignature);
+                }
+            }
+
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
 
             if (!keysMap.isValidKey(artifact, publicKey)) {
@@ -547,16 +558,6 @@ public class PGPVerifyMojo extends AbstractMojo {
                     getLog().debug(logMessageOK);
                 } else {
                     getLog().info(logMessageOK);
-                }
-                if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
-                    final String logMessageWeakSignature = "Weak signature algorithm used: "
-                            + weakSignatures.get(pgpSignature.getHashAlgorithm());
-                    if (failWeakSignature) {
-                        getLog().error(logMessageWeakSignature);
-                        throw new MojoFailureException(logMessageWeakSignature);
-                    } else {
-                        getLog().warn(logMessageWeakSignature);
-                    }
                 }
                 return true;
             } else {
