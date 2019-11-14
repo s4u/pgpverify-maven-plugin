@@ -133,6 +133,12 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean failNoSignature;
 
     /**
+     * Fail the build if any artifact without key is not present in the keys list.
+     */
+    @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
+    private boolean strictNoSignature;
+
+    /**
      * Fail the build if any dependency has a weak signature.
      *
      * @since 1.2.0
@@ -356,7 +362,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         for (Artifact artifact : artifacts) {
             final Artifact ascArtifact = resolveAscArtifact(artifact);
 
-            if (ascArtifact != null) {
+            if (ascArtifact != null || strictNoSignature) {
                 artifactToAsc.put(artifact, ascArtifact);
             }
         }
@@ -391,7 +397,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 if (failNoSignature) {
                     getLog().error("No signature for " + artifact.getId());
                     throw new MojoExecutionException("No signature for " + artifact.getId());
-                } else {
+                } else if (!strictNoSignature) {
                     getLog().warn("No signature for " + artifact.getId());
                 }
             }
@@ -481,6 +487,14 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
     throws MojoFailureException {
+        if (ascArtifact == null) {
+            final boolean noKeyConfirmed = keysMap.isNoKey(artifact);
+            if (noKeyConfirmed) {
+                return true;
+            }
+            getLog().error("Artifact without signature not listed in keys map: " + artifact.getId());
+            return false;
+        }
         final File artifactFile = artifact.getFile();
         final File signatureFile = ascArtifact.getFile();
         final Map<Integer, String> weakSignatures = ImmutableMap.<Integer, String>builder()

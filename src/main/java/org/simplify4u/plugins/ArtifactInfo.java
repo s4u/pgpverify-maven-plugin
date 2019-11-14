@@ -76,4 +76,8 @@ public class ArtifactInfo {
     public boolean isKeyMatch(PGPPublicKey key) {
         return keyInfo.isKeyMatch(key);
     }
+
+    public boolean isNoKey() {
+        return keyInfo.isNoKey();
+    }
 }

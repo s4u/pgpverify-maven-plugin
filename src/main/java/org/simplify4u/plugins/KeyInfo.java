@@ -45,6 +45,10 @@ public class KeyInfo {
             throw new IllegalArgumentException("null key not allowed");
         }
 
+        if (strKeys.trim().isEmpty()) {
+            return;
+        }
+
         for (String key : strKeys.split(",")) {
             key = key.trim();
             if (key.startsWith("0x")) {
@@ -96,5 +100,9 @@ public class KeyInfo {
             }
         }
         return true;
+    }
+
+    public boolean isNoKey() {
+        return keysID.isEmpty();
     }
 }
