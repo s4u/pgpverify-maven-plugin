@@ -30,6 +30,10 @@ import java.io.InputStream;
  */
 final class PGPSignatures {
 
+    private PGPSignatures() {
+        // No need to instantiate utility class.
+    }
+
     /**
      * Read the content of a file into the PGP signature instance (for verification).
      *
