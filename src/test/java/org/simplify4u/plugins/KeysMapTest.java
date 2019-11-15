@@ -106,4 +106,20 @@ public class KeysMapTest {
             getArtifact("test", "test-package", "1.0.0"),
             getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
     }
+
+    @Test
+    public void artifactsWithoutKeysProcessed() throws Exception {
+        keysMap.load("/keysMap3.list");
+
+        assertTrue(
+          keysMap.isNoKey(
+            getArtifact("test", "test-package", "1.0.0")));
+        assertFalse(
+          keysMap.isValidKey(
+            getArtifact("test", "test-package", "1.0.0"),
+            getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
+        assertFalse(
+          keysMap.isNoKey(
+            getArtifact("test", "test-package-2", "1.0.0")));
+    }
 }

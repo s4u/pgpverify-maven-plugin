@@ -17,7 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -79,6 +78,9 @@ import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 @Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE)
 public class PGPVerifyMojo extends AbstractMojo {
+
+    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
+
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
 
@@ -131,6 +133,23 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
     private boolean failNoSignature;
+
+    /**
+     * Fail the build if any artifact without key is not present in the keys map.
+     * <p>
+     * When enabled, PGPVerify will look up all artifacts in the <code>keys
+     * map</code>. Unsigned artifacts will need to be present in the keys map
+     * but are expected to have no public key, i.e. an empty string.
+     * <p>
+     * When <code>strictNoSignature</code> is enabled, PGPVerify will no longer
+     * output warnings when unsigned artifacts are encountered. Instead, it will
+     * check if the unsigned artifact is listed in the <code>keys map</code>. If
+     * so it will proceed, if not it will fail the build.
+     *
+     * @since 1.5.0
+     */
+    @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
+    private boolean strictNoSignature;
 
     /**
      * Fail the build if any dependency has a weak signature.
@@ -205,7 +224,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * wildcard.</p>
      *
      * <p><code>pgpKey</code> must be written as hex number starting with 0x.
-     * You can use <code>*</code> or <code>any</code> for match any pgp key.</p>
+     * You can use <code>*</code> or <code>any</code> for match any pgp key.
+     * If the pgpKey is an empty string, pgp-verify will expect the package to
+     * be unsigned. Please refer to <code>strictNoSignature</code> configuration
+     * parameter for its use.</p>
      *
      * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value
      * for those fields.</p>
@@ -356,7 +378,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         for (Artifact artifact : artifacts) {
             final Artifact ascArtifact = resolveAscArtifact(artifact);
 
-            if (ascArtifact != null) {
+            if (ascArtifact != null || strictNoSignature) {
                 artifactToAsc.put(artifact, ascArtifact);
             }
         }
@@ -391,7 +413,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 if (failNoSignature) {
                     getLog().error("No signature for " + artifact.getId());
                     throw new MojoExecutionException("No signature for " + artifact.getId());
-                } else {
+                } else if (!strictNoSignature) {
                     getLog().warn("No signature for " + artifact.getId());
                 }
             }
@@ -481,6 +503,9 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
     throws MojoFailureException {
+        if (ascArtifact == null) {
+            return verifySignatureUnavailable(artifact);
+        }
         final File artifactFile = artifact.getFile();
         final File signatureFile = ascArtifact.getFile();
         final Map<Integer, String> weakSignatures = ImmutableMap.<Integer, String>builder()
@@ -504,6 +529,17 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
             PGPSignature pgpSignature = sigList.get(0);
 
+            if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
+                final String logMessageWeakSignature = "Weak signature algorithm used: "
+                        + weakSignatures.get(pgpSignature.getHashAlgorithm());
+                if (failWeakSignature) {
+                    getLog().error(logMessageWeakSignature);
+                    throw new MojoFailureException(logMessageWeakSignature);
+                } else {
+                    getLog().warn(logMessageWeakSignature);
+                }
+            }
+
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
 
             if (!keysMap.isValidKey(artifact, publicKey)) {
@@ -514,37 +550,18 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-
-            try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(artifactFile))) {
-
-                int t;
-                while ((t = inArtifact.read()) >= 0) {
-                    pgpSignature.update((byte) t);
-                }
-            }
-
-            String msgFormat = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
+            PGPSignatures.readFileContentInto(pgpSignature, artifactFile);
             if (pgpSignature.verify()) {
-                final String logMessageOK = String.format(msgFormat, artifact.getId(),
+                final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                         "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs()));
                 if (quiet) {
                     getLog().debug(logMessageOK);
                 } else {
                     getLog().info(logMessageOK);
                 }
-                if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
-                    final String logMessageWeakSignature = "Weak signature algorithm used: "
-                            + weakSignatures.get(pgpSignature.getHashAlgorithm());
-                    if (failWeakSignature) {
-                        getLog().error(logMessageWeakSignature);
-                        throw new MojoFailureException(logMessageWeakSignature);
-                    } else {
-                        getLog().warn(logMessageWeakSignature);
-                    }
-                }
                 return true;
             } else {
-                getLog().warn(String.format(msgFormat, artifact.getId(),
+                getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                         "ERROR", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
@@ -554,6 +571,28 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (IOException | PGPException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Verify if unsigned artifact is correctly listed in keys map.
+     *
+     * @param artifact the artifact which is supposedly unsigned
+     * @return Returns <code>true</code> if correctly missing according to keys map,
+     * or <code>false</code> if verification fails.
+     */
+    private boolean verifySignatureUnavailable(final Artifact artifact) {
+        if (keysMap.isNoKey(artifact)) {
+            final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.",
+                    artifact.getId());
+            if (quiet) {
+                getLog().debug(logMessage);
+            } else {
+                getLog().info(logMessage);
+            }
+            return true;
+        }
+        getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
+        return false;
     }
 
     /**

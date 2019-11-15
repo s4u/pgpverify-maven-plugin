@@ -56,6 +56,15 @@ public class KeysMap {
         }
     }
 
+    public boolean isNoKey(Artifact artifact) {
+        for (ArtifactInfo artifactInfo : keysMapList) {
+            if (artifactInfo.isMatch(artifact)) {
+                return artifactInfo.isNoKey();
+            }
+        }
+        return false;
+    }
+
     public boolean isValidKey(Artifact artifact, PGPPublicKey key) {
         if (keysMapList.isEmpty()) {
             return true;
@@ -80,12 +89,12 @@ public class KeysMap {
             if (!currentLine.isEmpty() && !isCommentLine(currentLine)) {
                 final String[] parts = currentLine.split("=");
 
-                if (parts.length != 2) {
+                if (parts.length > 2) {
                     throw new IllegalArgumentException(
                         "Property line is malformed: " + currentLine);
                 }
 
-                keysMaps.put(parts[0], parts[1]);
+                keysMaps.put(parts[0], parts.length == 1 ? "" : parts[1]);
             }
         }
 

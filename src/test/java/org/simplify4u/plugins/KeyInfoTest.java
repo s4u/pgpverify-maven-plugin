@@ -20,6 +20,8 @@ import org.testng.annotations.Test;
 
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertFalse;
 
 /**
  * @author Slawomir Jaranowski.
@@ -46,5 +48,19 @@ public class KeyInfoTest {
 
         KeyInfo keyInfo = new KeyInfo(strKeys);
         assertEquals(keyInfo.isKeyMatch(getPGPgpPublicKey(key)), match);
+    }
+
+    @Test
+    public void testIsNoKey() {
+
+        KeyInfo keyInfo = new KeyInfo("");
+        assertTrue(keyInfo.isNoKey());
+    }
+
+    @Test
+    public void testIsNoKeyIncorrect() {
+
+        KeyInfo keyInfo = new KeyInfo("0x123456789abcdef0");
+        assertFalse(keyInfo.isNoKey());
     }
 }
