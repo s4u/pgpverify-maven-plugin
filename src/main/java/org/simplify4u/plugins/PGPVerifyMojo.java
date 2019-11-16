@@ -22,8 +22,6 @@ import com.google.common.collect.Lists;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -44,6 +42,7 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -60,8 +59,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -259,14 +256,29 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             // FIXME debugging code
             System.err.println("Scopes: " + scope);
+
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
+            // FIXME commented out error handling code
 //            try {
-                verifyArtifacts(resolver.resolve(this.project, filter, this.verifyPomFiles));
+            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, filter, this.verifyPomFiles);
+            final SignatureRequirement signaturePolicy = determineSignaturePolicy();
+            final Map<Artifact, Artifact> map = resolver.resolveSignatures(artifacts, signaturePolicy);
+            verifyArtifactSignatures(map);
 //            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
 //                throw new MojoExecutionException(e.getMessage(), e);
 //            }
         }
+    }
+
+    private SignatureRequirement determineSignaturePolicy() {
+        if (failNoSignature) {
+            return SignatureRequirement.REQUIRED;
+        }
+        if (strictNoSignature) {
+            return SignatureRequirement.STRICT;
+        }
+        return SignatureRequirement.NONE;
     }
 
     private SkipFilter prepareSkipFilters() {
@@ -305,94 +317,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (ResourceNotFoundException | IOException e) {
             throw new MojoExecutionException("load keys map", e);
         }
-    }
-
-    /**
-     * Performs PGP verification of all of the provided artifacts.
-     *
-     * @param   artifacts
-     *          The artifacts to verify.
-     *
-     * @throws  MojoExecutionException
-     * @throws  MojoFailureException
-     */
-    private void verifyArtifacts(Set<Artifact> artifacts)
-    throws MojoExecutionException, MojoFailureException {
-        final Map<Artifact, Artifact> artifactToAsc = new HashMap<>();
-
-        getLog().debug("Start resolving ASC files");
-
-        for (Artifact artifact : artifacts) {
-            final Artifact ascArtifact = resolveAscArtifact(artifact);
-
-            if (ascArtifact != null || strictNoSignature) {
-                artifactToAsc.put(artifact, ascArtifact);
-            }
-        }
-
-        verifyArtifactSignatures(artifactToAsc);
-    }
-
-    /**
-     * Retrieves the PGP signature file that corresponds to the given Maven artifact.
-     *
-     * @param   artifact
-     *          The artifact for which a signature file is desired.
-     * @return  Either a Maven artifact for the signature file, or {@code null} if the signature
-     *          file could not be retrieved.
-     *
-     * @throws  MojoExecutionException
-     *          If the signature could not be retrieved and the Mojo has been configured to fail
-     *          on a missing signature.
-     */
-    private Artifact resolveAscArtifact(Artifact artifact) throws MojoExecutionException {
-        Artifact ascArtifact = null;
-
-        // FIXME check whether this skip-check is even needed? (The artifact that is the lead should only be listed if it needs to be checked.)
-//        if (!shouldSkipArtifact(artifact)) {
-            final ArtifactResolutionRequest ascReq = getArtifactResolutionRequestForAsc(artifact);
-            final ArtifactResolutionResult ascResult = repositorySystem.resolve(ascReq);
-
-            if (ascResult.isSuccess()) {
-                ascArtifact = ascReq.getArtifact();
-
-                getLog().debug(ascArtifact.toString() + " " + ascArtifact.getFile());
-            } else {
-                if (failNoSignature) {
-                    getLog().error("No signature for " + artifact.getId());
-                    throw new MojoExecutionException("No signature for " + artifact.getId());
-                } else if (!strictNoSignature) {
-                    getLog().warn("No signature for " + artifact.getId());
-                }
-            }
-//        }
-
-        return ascArtifact;
-    }
-
-    /**
-     * Create ArtifactResolutionRequest for asc file corresponding to artifact.
-     *
-     * @param artifact artifact
-     * @return new ArtifactResolutionRequest
-     */
-    private ArtifactResolutionRequest getArtifactResolutionRequestForAsc(Artifact artifact) {
-        getLog().debug("Artifact: " + artifact);
-        getLog().debug("Version: " + artifact.getVersion());
-        Artifact aAsc = repositorySystem.createArtifactWithClassifier(
-                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                artifact.getType(), artifact.getClassifier());
-
-        ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
-
-        aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
-
-        rreq.setArtifact(aAsc);
-        rreq.setResolveTransitively(false);
-        rreq.setLocalRepository(localRepository);
-        rreq.setRemoteRepositories(remoteRepositories);
-
-        return rreq;
     }
 
     private void initCache() throws MojoFailureException {
@@ -514,4 +438,3 @@ public class PGPVerifyMojo extends AbstractMojo {
         return false;
     }
 }
-

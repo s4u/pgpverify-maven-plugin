@@ -22,13 +22,16 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -62,11 +65,38 @@ final class ArtifactResolver {
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolve(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) {
+    Set<Artifact> resolveProjectArtifacts(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) {
         final HashSet<Artifact> artifacts = new HashSet<>(
                 resolveDependencies(project.getDependencies(), filter, verifyPomFiles));
         artifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
         return artifacts;
+    }
+
+    /**
+     * Retrieves the PGP signature file that corresponds to the given Maven artifact.
+     *
+     * @param   artifacts
+     *          The artifacts for which a signatures are desired.
+     * @return  Either a Maven artifact for the signature file, or {@code null} if the signature
+     *          file could not be retrieved.
+     *
+     * @throws MojoExecutionException
+     *          If the signature could not be retrieved and the Mojo has been configured to fail
+     *          on a missing signature.
+     */
+    Map<Artifact, Artifact> resolveSignatures(final Set<Artifact> artifacts, final SignatureRequirement requirement) throws MojoExecutionException {
+        log.debug("Start resolving ASC files");
+
+        final HashMap<Artifact, Artifact> artifactToAsc = new HashMap<>();
+        for (Artifact artifact : artifacts) {
+            final Artifact ascArtifact = resolveSignature(artifact, requirement);
+
+            if (ascArtifact != null || requirement == SignatureRequirement.STRICT) {
+                artifactToAsc.put(artifact, ascArtifact);
+            }
+        }
+
+        return artifactToAsc;
     }
 
     private Set<Artifact> resolveBuildPlugins(final Iterable<Plugin> plugins, final SkipFilter filter, final boolean verifyPom) {
@@ -81,6 +111,7 @@ final class ArtifactResolver {
             }
             collection.add(artifact);
             if (verifyPom) {
+                // FIXME check how to treat missing POM files.
                 collection.add(resolvePom(plugin));
             }
             // FIXME add configuration parameter for skipping/including dependencies of build plugins.
@@ -106,6 +137,7 @@ final class ArtifactResolver {
             }
             collection.add(artifact);
             if (verifyPom) {
+                // FIXME check how to treat missing POM files.
                 collection.add(resolvePom(dependency));
             }
         }
@@ -130,14 +162,56 @@ final class ArtifactResolver {
                 plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
     }
 
+    private Artifact resolveSignature(final Artifact artifact, final SignatureRequirement requirement) throws MojoExecutionException {
+        final Artifact aAsc = repositorySystem.createArtifactWithClassifier(
+                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
+                artifact.getType(), artifact.getClassifier());
+        aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
+
+        // FIXME consider if we need to re-acquire the artifact from the request in order for version (range) resolution to have been performed.
+        final ArtifactResolutionResult ascResult = request(aAsc);
+        if (ascResult.isSuccess()) {
+            log.debug(aAsc.toString() + " " + aAsc.getFile());
+            return aAsc;
+        }
+
+        switch (requirement) {
+        case NONE:
+            log.warn("No signature for " + artifact.getId());
+            break;
+        case STRICT:
+            // no action needed here
+            break;
+        case REQUIRED:
+            log.error("No signature for " + artifact.getId());
+            throw new MojoExecutionException("No signature for " + artifact.getId());
+        default:
+            throw new UnsupportedOperationException("Unsupported signature requirement.");
+        }
+
+        return null;
+    }
+
     private Artifact resolve(final Artifact artifact) {
+        final ArtifactResolutionResult result = request(artifact);
+        // FIXME perform result verification before returning artifact.
+        return artifact;
+    }
+
+    private ArtifactResolutionResult request(final Artifact artifact) {
         final ArtifactResolutionRequest request = new ArtifactResolutionRequest();
         request.setArtifact(artifact);
         request.setResolveTransitively(false);
         request.setLocalRepository(localRepository);
         request.setRemoteRepositories(remoteRepositories);
         final ArtifactResolutionResult result = repositorySystem.resolve(request);
-        // FIXME check result and perform exception handling in case of resolution failures.
-        return artifact;
+        System.err.println("Artifact after request: " + request.getArtifact());
+        return result;
+    }
+
+    enum SignatureRequirement {
+        NONE,
+        STRICT,
+        REQUIRED,
     }
 }
