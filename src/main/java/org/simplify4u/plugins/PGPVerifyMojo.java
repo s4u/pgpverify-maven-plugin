@@ -17,31 +17,11 @@
 
 package org.simplify4u.plugins;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactNotFoundException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
@@ -70,6 +50,22 @@ import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Check PGP signature of dependency.
  *
@@ -86,9 +82,6 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession session;
-
-    @Component
-    private ProjectDependenciesResolver resolver;
 
     @Component
     private RepositorySystem repositorySystem;
@@ -255,25 +248,27 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private PGPKeysCache pgpKeysCache;
 
-    private List<SkipFilter> skipFilters;
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
         } else {
-            prepareSkipFilters();
+            final List<SkipFilter> skipFilters = prepareSkipFilters();
             prepareForKeys();
 
-            try {
-                verifyArtifacts(getArtifactsToVerify());
-            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
-                throw new MojoExecutionException(e.getMessage(), e);
-            }
+            // FIXME debugging code
+            System.err.println("Scopes: " + scope);
+            final ArtifactResolver resolver = new ArtifactResolver(repositorySystem,
+                    project, localRepository, remoteRepositories, skipFilters);
+//            try {
+                verifyArtifacts(resolver.resolve(getLog(), this.verifyPomFiles));
+//            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
+//                throw new MojoExecutionException(e.getMessage(), e);
+//            }
         }
     }
 
-    private void prepareSkipFilters() {
+    private List<SkipFilter> prepareSkipFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
 
         if (!this.verifySnapshots) {
@@ -292,7 +287,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             filters.add(new ReactorDependencySkipper(this.project, this.session));
         }
 
-        this.skipFilters = filters;
+        return filters;
     }
 
     /**
@@ -309,26 +304,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (ResourceNotFoundException | IOException e) {
             throw new MojoExecutionException("load keys map", e);
         }
-    }
-
-    /**
-     * Gets all of the artifacts that PGPVerify is going to check.
-     *
-     * @return The set of artifacts on which to check PGP signatures.
-     *
-     * @throws ArtifactResolutionException
-     * @throws ArtifactNotFoundException
-     */
-    private Set<Artifact> getArtifactsToVerify()
-    throws ArtifactResolutionException, ArtifactNotFoundException {
-        Set<Artifact> artifacts =
-            resolver.resolve(project, Arrays.asList(scope.split(",")), session);
-
-        if (verifyPomFiles) {
-            artifacts.addAll(getPomArtifacts(artifacts));
-        }
-
-        return artifacts;
     }
 
     /**
@@ -429,6 +404,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return new ArtifactResolutionRequest
      */
     private ArtifactResolutionRequest getArtifactResolutionRequestForAsc(Artifact artifact) {
+        getLog().debug("Artifact: " + artifact);
+        getLog().debug("Version: " + artifact.getVersion());
         Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType(), artifact.getClassifier());
@@ -580,26 +557,6 @@ public class PGPVerifyMojo extends AbstractMojo {
             return true;
         }
         getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
-        return false;
-    }
-
-    /**
-     * Indicates whether or not an artifact should be skipped, based on the configuration of this
-     * mojo.
-     *
-     * @param   artifact
-     *          The artifact being considered for verification.
-     *
-     * @return  {@code true} if the artifact should be skipped; {@code false} if it should be
-     *          processed.
-     */
-    private boolean shouldSkipArtifact(final Artifact artifact) {
-        for (final SkipFilter filter : this.skipFilters) {
-            if (filter.shouldSkipArtifact(artifact)) {
-                return true;
-            }
-        }
-
         return false;
     }
 }
