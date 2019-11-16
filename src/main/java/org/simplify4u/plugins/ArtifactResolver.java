@@ -33,34 +33,45 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
+ */
 final class ArtifactResolver {
 
-    private RepositorySystem repositorySystem;
+    private final Log log;
 
-    private MavenProject project;
+    private final RepositorySystem repositorySystem;
 
-    private ArtifactRepository localRepository;
+    private final ArtifactRepository localRepository;
 
-    private List<ArtifactRepository> remoteRepositories;
+    private final List<ArtifactRepository> remoteRepositories;
 
-    private Iterable<SkipFilter> skipFilters;
-
-    ArtifactResolver(final RepositorySystem repositorySystem,
-            final MavenProject project,
+    ArtifactResolver(final Log log, final RepositorySystem repositorySystem,
             final ArtifactRepository localRepository,
-            final List<ArtifactRepository> remoteRepositories,
-            final Iterable<SkipFilter> skipFilters) {
+            final List<ArtifactRepository> remoteRepositories) {
+        this.log = requireNonNull(log);
         this.repositorySystem = requireNonNull(repositorySystem);
-        this.project = requireNonNull(project);
         this.localRepository = requireNonNull(localRepository);
         this.remoteRepositories = requireNonNull(remoteRepositories);
-        this.skipFilters = requireNonNull(skipFilters);
     }
 
-    Set<Artifact> resolve(final Log log, final boolean verifyPomFiles) {
-        final HashSet<Artifact> artifacts = new HashSet<>();
-        processDependencies(log, artifacts, project.getDependencies(), verifyPomFiles);
-        for (final Plugin plugin : project.getBuildPlugins()) {
+    /**
+     * Types of dependencies: compile, provided, test, runtime, system, dependencies-of-build-plugins.
+     *
+     * @param filter         the artifact filter
+     * @param verifyPomFiles indicator whether to verify POM file signatures as well
+     * @return Returns set of all artifacts whose signature needs to be verified.
+     */
+    Set<Artifact> resolve(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) {
+        final HashSet<Artifact> artifacts = new HashSet<>(
+                resolveDependencies(project.getDependencies(), filter, verifyPomFiles));
+        artifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
+        return artifacts;
+    }
+
+    private Set<Artifact> resolveBuildPlugins(final Iterable<Plugin> plugins, final SkipFilter filter, final boolean verifyPom) {
+        final HashSet<Artifact> collection = new HashSet<>();
+        for (final Plugin plugin : plugins) {
             final Artifact artifact = resolve(plugin);
             // FIXME add skipping/including for build plug-ins (SNAPSHOTs)
             if (artifact.getVersion() == null) {
@@ -68,22 +79,23 @@ final class ArtifactResolver {
                 log.warn("Skipping build plugin with missing version or applying version-range: " + artifact);
                 continue;
             }
-            artifacts.add(artifact);
-            if (verifyPomFiles) {
-                artifacts.add(resolvePom(plugin));
+            collection.add(artifact);
+            if (verifyPom) {
+                collection.add(resolvePom(plugin));
             }
             // FIXME add configuration parameter for skipping/including dependencies of build plugins.
-            processDependencies(log, artifacts, plugin.getDependencies(), verifyPomFiles);
+            collection.addAll(resolveDependencies(plugin.getDependencies(), filter, verifyPom));
         }
-        return artifacts;
+        return collection;
     }
 
     // TODO consider if we should transitively process all dependencies or trust that dependencies of dependencies are trusted based on trust in the direct dependency.
-    private void processDependencies(final Log log, final Set<Artifact> destination, final Iterable<Dependency> dependencies, final boolean verifyPom) {
+    private Set<Artifact> resolveDependencies(final Iterable<Dependency> dependencies, final SkipFilter filter, final boolean verifyPom) {
+        final HashSet<Artifact> collection = new HashSet<>();
         for (final Dependency dependency : dependencies) {
             final Artifact artifact = resolve(dependency);
             // FIXME test skipping for various scopes.
-            if (skipArtifact(artifact)) {
+            if (filter.shouldSkipArtifact(artifact)) {
                 log.debug("Skipping artifact: " + artifact);
                 continue;
             }
@@ -92,11 +104,12 @@ final class ArtifactResolver {
                 log.warn("Skipping artifact with missing version or applying version-range: " + artifact);
                 continue;
             }
-            destination.add(artifact);
+            collection.add(artifact);
             if (verifyPom) {
-                destination.add(resolvePom(dependency));
+                collection.add(resolvePom(dependency));
             }
         }
+        return collection;
     }
 
     private Artifact resolve(final Dependency dependency) {
@@ -126,24 +139,5 @@ final class ArtifactResolver {
         final ArtifactResolutionResult result = repositorySystem.resolve(request);
         // FIXME check result and perform exception handling in case of resolution failures.
         return artifact;
-    }
-
-    /**
-     * Indicates whether or not an artifact should be skipped, based on the configuration of this
-     * mojo.
-     *
-     * @param   artifact
-     *          The artifact being considered for verification.
-     *
-     * @return  {@code true} if the artifact should be skipped; {@code false} if it should be
-     *          processed.
-     */
-    private boolean skipArtifact(final Artifact artifact) {
-        for (final SkipFilter filter : this.skipFilters) {
-            if (filter.shouldSkipArtifact(artifact)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -44,6 +44,7 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
@@ -253,22 +254,22 @@ public class PGPVerifyMojo extends AbstractMojo {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
         } else {
-            final List<SkipFilter> skipFilters = prepareSkipFilters();
+            final SkipFilter filter = prepareSkipFilters();
             prepareForKeys();
 
             // FIXME debugging code
             System.err.println("Scopes: " + scope);
-            final ArtifactResolver resolver = new ArtifactResolver(repositorySystem,
-                    project, localRepository, remoteRepositories, skipFilters);
+            final ArtifactResolver resolver = new ArtifactResolver(getLog(),
+                    repositorySystem, localRepository, remoteRepositories);
 //            try {
-                verifyArtifacts(resolver.resolve(getLog(), this.verifyPomFiles));
+                verifyArtifacts(resolver.resolve(this.project, filter, this.verifyPomFiles));
 //            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
 //                throw new MojoExecutionException(e.getMessage(), e);
 //            }
         }
     }
 
-    private List<SkipFilter> prepareSkipFilters() {
+    private SkipFilter prepareSkipFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
 
         if (!this.verifySnapshots) {
@@ -287,7 +288,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             filters.add(new ReactorDependencySkipper(this.project, this.session));
         }
 
-        return filters;
+        return new CompositeSkipper(filters);
     }
 
     /**
@@ -304,35 +305,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (ResourceNotFoundException | IOException e) {
             throw new MojoExecutionException("load keys map", e);
         }
-    }
-
-    /**
-     * Create Artifact objects for all pom files corresponding to the artifacts that you send in.
-     *
-     * @param   artifacts
-     *          Set of artifacts to obtain pom's for
-     *
-     * @return  Artifacts for all the pom files
-     */
-    private Set<Artifact> getPomArtifacts(Set<Artifact> artifacts) {
-        Set<Artifact> poms = new HashSet<>();
-
-        for (Artifact artifact : artifacts) {
-            if (shouldSkipArtifact(artifact)) {
-                continue;
-            }
-
-            ArtifactResolutionRequest rreq = getArtifactResolutionRequestForPom(artifact);
-            ArtifactResolutionResult result = repositorySystem.resolve(rreq);
-
-            if (result.isSuccess()) {
-                poms.add(rreq.getArtifact());
-            } else {
-                getLog().warn("No pom for " + artifact.getId());
-            }
-        }
-
-        return poms;
     }
 
     /**
@@ -376,7 +348,8 @@ public class PGPVerifyMojo extends AbstractMojo {
     private Artifact resolveAscArtifact(Artifact artifact) throws MojoExecutionException {
         Artifact ascArtifact = null;
 
-        if (!shouldSkipArtifact(artifact)) {
+        // FIXME check whether this skip-check is even needed? (The artifact that is the lead should only be listed if it needs to be checked.)
+//        if (!shouldSkipArtifact(artifact)) {
             final ArtifactResolutionRequest ascReq = getArtifactResolutionRequestForAsc(artifact);
             final ArtifactResolutionResult ascResult = repositorySystem.resolve(ascReq);
 
@@ -392,7 +365,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                     getLog().warn("No signature for " + artifact.getId());
                 }
             }
-        }
+//        }
 
         return ascArtifact;
     }
@@ -414,25 +387,6 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
 
-        rreq.setArtifact(aAsc);
-        rreq.setResolveTransitively(false);
-        rreq.setLocalRepository(localRepository);
-        rreq.setRemoteRepositories(remoteRepositories);
-
-        return rreq;
-    }
-
-    /**
-     * Create ArtifactResolutionRequest for pom file corresponding to artifact.
-     *
-     * @param artifact artifact
-     * @return new ArtifactResolutionRequest
-     */
-    private ArtifactResolutionRequest getArtifactResolutionRequestForPom(Artifact artifact) {
-        Artifact aAsc = repositorySystem.createProjectArtifact(
-                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion());
-
-        ArtifactResolutionRequest rreq = new ArtifactResolutionRequest();
         rreq.setArtifact(aAsc);
         rreq.setResolveTransitively(false);
         rreq.setLocalRepository(localRepository);
