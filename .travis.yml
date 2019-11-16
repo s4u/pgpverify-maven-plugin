@@ -21,11 +21,11 @@ jobs:
 
     - name: "jdk8"
       jdk: openjdk8
-      script:
-        - ../utils/mvn-push.sh    clean deploy      || travis_terminate 1
-        - ../utils/mvn-pr.sh      clean verify      || travis_terminate 1
-        - ../utils/mvn-tag.sh     clean verify site || travis_terminate 1
-        - ../utils/mvn-sonar.sh   sonar:sonar
+      script: >-
+        ../utils/mvn-push.sh    clean deploy      &&
+        ../utils/mvn-pr.sh      clean verify      &&
+        ../utils/mvn-tag.sh     clean verify site &&
+        ../utils/mvn-sonar.sh   sonar:sonar
       if: repo = "s4u/pgpverify-maven-plugin"
 
     - name: "jdk8 - forks"
