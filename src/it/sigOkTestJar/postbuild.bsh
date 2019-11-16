@@ -1,5 +1,0 @@
-import java.io.*;
-
-File asc = new File(basedir, "../../it-repo/org/apache/logging/log4j/log4j-core/2.9.0/log4j-core-2.9.0-tests.jar.asc");
-
-return asc.exists() && asc.isFile() && asc.length() > 0;

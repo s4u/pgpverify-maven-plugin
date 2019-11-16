@@ -23,6 +23,15 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-parent</artifactId>
+            <version>32-SNAPSHOT</version>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
+
     <repositories>
         <repository>
             <id>local-snapshots</id>
@@ -38,15 +47,6 @@
             </releases>
         </repository>
     </repositories>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-parent</artifactId>
-            <version>32-SNAPSHOT</version>
-            <type>pom</type>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>

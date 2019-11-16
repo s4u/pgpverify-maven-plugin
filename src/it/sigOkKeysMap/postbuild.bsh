@@ -1,9 +1,0 @@
-import java.io.*;
-
-File asc1 = new File(basedir, "../../it-repo/junit/junit/4.12/junit-4.12.jar.asc");
-boolean asc1Test = asc1.exists() && asc1.isFile() && asc1.length() > 0;
-
-File asc2 = new File(basedir, "../../it-repo/commons-chain/commons-chain/1.2/commons-chain-1.2.jar.asc");
-boolean asc2Test = asc2.exists() && asc2.isFile() && asc2.length() > 0;
-
-return asc1Test && asc2Test;
