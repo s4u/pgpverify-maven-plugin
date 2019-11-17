@@ -76,7 +76,7 @@ import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
  * @author Slawomir Jaranowski.
  */
 @Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
-        defaultPhase = LifecyclePhase.VALIDATE)
+        defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PGPVerifyMojo extends AbstractMojo {
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
@@ -465,18 +465,6 @@ public class PGPVerifyMojo extends AbstractMojo {
     }
 
     private void initCache() throws MojoFailureException {
-        if (pgpKeysCachePath.exists()) {
-            if (!pgpKeysCachePath.isDirectory()) {
-                throw new MojoFailureException("PGP keys cache path exist but is not a directory: " + pgpKeysCachePath);
-            }
-        } else {
-            if (pgpKeysCachePath.mkdirs()) {
-                getLog().info("Create cache for PGP keys: " + pgpKeysCachePath);
-            } else {
-                throw new MojoFailureException("Cache directory create error");
-            }
-        }
-
         try {
             pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, pgpKeyServer);
         } catch (URISyntaxException | IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {

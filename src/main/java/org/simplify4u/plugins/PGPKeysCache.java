@@ -23,10 +23,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Optional;
 
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
@@ -44,12 +46,28 @@ public class PGPKeysCache {
     private final File cachePath;
     private final PGPKeysServerClient keysServerClient;
 
+    private static final Object LOCK = new Object();
+
     public PGPKeysCache(Log log, File cachePath, String keyServer)
             throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
 
         this.log = log;
         this.cachePath = cachePath;
         keysServerClient = PGPKeysServerClient.getClient(keyServer);
+
+        synchronized (LOCK) {
+            if (this.cachePath.exists()) {
+                if (!this.cachePath.isDirectory()) {
+                    throw new IOException("PGP keys cache path exist but is not a directory: " + this.cachePath);
+                }
+            } else {
+                if (this.cachePath.mkdirs()) {
+                    this.log.info("Create cache directory for PGP keys: " + this.cachePath);
+                } else {
+                    throw new IOException("Cache directory create error");
+                }
+            }
+        }
     }
 
     String getUrlForShowKey(long keyID) {
@@ -58,24 +76,24 @@ public class PGPKeysCache {
 
     PGPPublicKey getKey(long keyID) throws IOException, PGPException {
 
-        File keyFile = null;
         PGPPublicKey key = null;
 
-        try {
-            String path = String.format("%02X/%02X/%016X.asc",
-                    (byte) (keyID >> 56), (byte) (keyID >> 48 & 0xff), keyID);
+        String path = String.format("%02X/%02X/%016X.asc", (byte) (keyID >> 56), (byte) (keyID >> 48 & 0xff), keyID);
+        File keyFile = new File(cachePath, path);
 
-            keyFile = new File(cachePath, path);
+        synchronized (LOCK) {
+
             if (!keyFile.exists()) {
                 receiveKey(keyFile, keyID);
             }
 
-            InputStream keyIn = PGPUtil.getDecoderStream(new FileInputStream(keyFile));
-            PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
-            key = pgpRing.getPublicKey(keyID);
-        } finally {
-            if (key == null) {
-                deleteFile(keyFile);
+            try (InputStream keyIn = PGPUtil.getDecoderStream(new FileInputStream(keyFile))) {
+                PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
+                key = pgpRing.getPublicKey(keyID);
+            } finally {
+                if (key == null) {
+                    deleteFile(keyFile);
+                }
             }
         }
         return key;
@@ -96,10 +114,8 @@ public class PGPKeysCache {
             throw new IOException("Can't create directory: " + dir);
         }
 
-        try (BufferedOutputStream outputStream = new BufferedOutputStream(
-                 new FileOutputStream(keyFile))) {
-            keysServerClient.copyKeyToOutputStream(
-                keyId, outputStream, new PGPServerRetryHandler(this.log));
+        try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
+            keysServerClient.copyKeyToOutputStream(keyId, outputStream, new PGPServerRetryHandler(this.log));
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
@@ -111,12 +127,15 @@ public class PGPKeysCache {
 
     private void deleteFile(File keyFile) {
 
-        if (keyFile == null || !keyFile.exists()) {
-            return;
-        }
-
-        if (!keyFile.delete()) {
-            log.warn("Can't delete: " + keyFile);
-        }
+        Optional.ofNullable(keyFile)
+                .map(File::toPath)
+                .ifPresent(keyPath -> {
+                            try {
+                                Files.deleteIfExists(keyPath);
+                            } catch (IOException e) {
+                                log.warn("Can't delete: " + keyPath);
+                            }
+                        }
+                );
     }
 }
