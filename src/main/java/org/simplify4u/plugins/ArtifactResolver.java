@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.StreamSupport.stream;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -60,7 +61,7 @@ final class ArtifactResolver {
     }
 
     /**
-     * Types of dependencies: compile, provided, test, runtime, system, dependencies-of-build-plugins.
+     * Types of dependencies: compile, provided, test, runtime, system, dependencies of build plug-ins.
      *
      * @param filter         the artifact filter
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
@@ -72,10 +73,22 @@ final class ArtifactResolver {
         return updateArtifactResolvedVersions(allArtifacts, project.getArtifacts());
     }
 
-    private Set<Artifact> updateArtifactResolvedVersions(final Iterable<Artifact> allArtifacts, final Set<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
+    /**
+     * Update provided artifacts with artifact versions as provided in input.
+     *
+     * @param allArtifacts             the full set of artifacts.
+     * @param projectResolvedArtifacts a separate set of artifacts with versions as resolved by dependency resolution.
+     *                                 Input is expected to have significant overlap, but may contain deviations such as
+     *                                 missing artifacts.
+     * @return Returns set of artifacts with versions updated according to provided input set.
+     * @throws MojoExecutionException In case of failure to resolve artifact both through dependency resolution process
+     * and manual resolving.
+     */
+    private Set<Artifact> updateArtifactResolvedVersions(final Iterable<Artifact> allArtifacts,
+            final Iterable<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
         final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
         for (final Artifact artifact : allArtifacts) {
-            final Optional<Artifact> projectResolved = projectResolvedArtifacts.stream()
+            final Optional<Artifact> projectResolved = stream(projectResolvedArtifacts.spliterator(), false)
                     .filter(s -> s.getArtifactId().equals(artifact.getArtifactId())
                             && s.getGroupId().equals(artifact.getGroupId()))
                     .findFirst();
@@ -121,6 +134,14 @@ final class ArtifactResolver {
         return artifactToAsc;
     }
 
+    /**
+     * Resolve build plug-ins.
+     *
+     * @param plugins   The build plug-ins to be resolved.
+     * @param filter    The skip filter.
+     * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
+     * @return Returns resolved build plug-in artifacts.
+     */
     private Set<Artifact> resolveBuildPlugins(final Iterable<Plugin> plugins, final SkipFilter filter, final boolean verifyPom) {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Plugin plugin : plugins) {
@@ -142,6 +163,15 @@ final class ArtifactResolver {
         return collection;
     }
 
+    /**
+     * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
+     *
+     * @param dependencies Dependencies to be resolved.
+     * @param filter       Skip filter to test against to determine whether dependency must be skipped.
+     * @param verifyPom    Boolean indicating whether or not POMs corresponding to dependencies should be resolved.
+     * @return Returns set of resolved artifacts, which may contain artifacts of which the definite version cannot be
+     * determined yet.
+     */
     // TODO consider if we should transitively process all dependencies or trust that dependencies of dependencies are trusted based on trust in the direct dependency.
     private Set<Artifact> resolveDependencies(final Iterable<Dependency> dependencies, final SkipFilter filter, final boolean verifyPom) {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
