@@ -28,10 +28,11 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -65,11 +66,32 @@ final class ArtifactResolver {
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) {
-        final HashSet<Artifact> artifacts = new HashSet<>(
-                resolveDependencies(project.getDependencies(), filter, verifyPomFiles));
-        artifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
-        return artifacts;
+    Set<Artifact> resolveProjectArtifacts(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) throws MojoExecutionException {
+        final Set<Artifact> allArtifacts = resolveDependencies(project.getDependencies(), filter, verifyPomFiles);
+        allArtifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
+        return updateArtifactResolvedVersions(allArtifacts, project.getArtifacts());
+    }
+
+    private Set<Artifact> updateArtifactResolvedVersions(final Iterable<Artifact> allArtifacts, final Set<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
+        final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
+        for (final Artifact artifact : allArtifacts) {
+            final Optional<Artifact> projectResolved = projectResolvedArtifacts.stream()
+                    .filter(s -> s.getArtifactId().equals(artifact.getArtifactId())
+                            && s.getGroupId().equals(artifact.getGroupId()))
+                    .findFirst();
+            if (projectResolved.isPresent()) {
+                // add artifact with version as resolved by Maven dependency resolution
+                artifact.setVersion(projectResolved.get().getVersion());
+                result.add(resolve(artifact));
+            } else if (artifact.isResolved()) {
+                // add artifact with listed version
+                result.add(artifact);
+            } else {
+                // failed to resolve artifact with definite version
+                throw new MojoExecutionException("Failed to determine definite version for artifact " + artifact);
+            }
+        }
+        return result;
     }
 
     /**
@@ -84,10 +106,10 @@ final class ArtifactResolver {
      *          If the signature could not be retrieved and the Mojo has been configured to fail
      *          on a missing signature.
      */
-    Map<Artifact, Artifact> resolveSignatures(final Set<Artifact> artifacts, final SignatureRequirement requirement) throws MojoExecutionException {
+    Map<Artifact, Artifact> resolveSignatures(final Iterable<Artifact> artifacts, final SignatureRequirement requirement) throws MojoExecutionException {
         log.debug("Start resolving ASC files");
 
-        final HashMap<Artifact, Artifact> artifactToAsc = new HashMap<>();
+        final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
         for (Artifact artifact : artifacts) {
             final Artifact ascArtifact = resolveSignature(artifact, requirement);
 
@@ -100,7 +122,7 @@ final class ArtifactResolver {
     }
 
     private Set<Artifact> resolveBuildPlugins(final Iterable<Plugin> plugins, final SkipFilter filter, final boolean verifyPom) {
-        final HashSet<Artifact> collection = new HashSet<>();
+        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Plugin plugin : plugins) {
             final Artifact artifact = resolve(plugin);
             // FIXME add skipping/including for build plug-ins (SNAPSHOTs)
@@ -122,17 +144,12 @@ final class ArtifactResolver {
 
     // TODO consider if we should transitively process all dependencies or trust that dependencies of dependencies are trusted based on trust in the direct dependency.
     private Set<Artifact> resolveDependencies(final Iterable<Dependency> dependencies, final SkipFilter filter, final boolean verifyPom) {
-        final HashSet<Artifact> collection = new HashSet<>();
+        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Dependency dependency : dependencies) {
             final Artifact artifact = resolve(dependency);
             // FIXME test skipping for various scopes.
             if (filter.shouldSkipArtifact(artifact)) {
                 log.debug("Skipping artifact: " + artifact);
-                continue;
-            }
-            if (artifact.getVersion() == null) {
-                // FIXME in case version is missing or version range is specified, we cannot yet resolve the exact artifact, hence cannot acquire the corresponding signature file.
-                log.warn("Skipping artifact with missing version or applying version-range: " + artifact);
                 continue;
             }
             collection.add(artifact);
@@ -204,9 +221,7 @@ final class ArtifactResolver {
         request.setResolveTransitively(false);
         request.setLocalRepository(localRepository);
         request.setRemoteRepositories(remoteRepositories);
-        final ArtifactResolutionResult result = repositorySystem.resolve(request);
-        System.err.println("Artifact after request: " + request.getArtifact());
-        return result;
+        return repositorySystem.resolve(request);
     }
 
     enum SignatureRequirement {

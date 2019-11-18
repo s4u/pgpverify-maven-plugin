@@ -254,20 +254,14 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SkipFilter filter = prepareSkipFilters();
             prepareForKeys();
 
-            // FIXME debugging code
-            System.err.println("Scopes: " + scope);
-
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
-            // FIXME commented out error handling code
-//            try {
-            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, filter, this.verifyPomFiles);
+
+            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
+                    this.project, filter, this.verifyPomFiles);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> map = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(map);
-//            } catch (ArtifactResolutionException | ArtifactNotFoundException e) {
-//                throw new MojoExecutionException(e.getMessage(), e);
-//            }
         }
     }
 
