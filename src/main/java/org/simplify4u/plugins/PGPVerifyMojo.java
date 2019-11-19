@@ -254,6 +254,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SkipFilter filter = prepareSkipFilters();
             prepareForKeys();
 
+            // FIXME how to treat 'scope' parameter now that we have taken a different approach to resolution.
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
 
@@ -300,8 +301,8 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Prepare cache and keys map.
      *
-     * @throws MojoFailureException
-     * @throws MojoExecutionException
+     * @throws MojoFailureException   In case of failures during initialization of the PGP keys cache.
+     * @throws MojoExecutionException In case of errors while loading the keys map.
      */
     private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
         initCache();

@@ -89,8 +89,8 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
         for (final Artifact artifact : allArtifacts) {
             final Optional<Artifact> projectResolved = stream(projectResolvedArtifacts.spliterator(), false)
-                    .filter(a -> a.getArtifactId().equals(artifact.getArtifactId()))
-                    .filter(a -> a.getGroupId().equals(artifact.getGroupId()))
+                    .filter(a -> artifact.getArtifactId().equals(a.getArtifactId()))
+                    .filter(a -> artifact.getGroupId().equals(a.getGroupId()))
                     .findFirst();
             if (projectResolved.isPresent()) {
                 // add artifact with version as resolved by Maven dependency resolution
@@ -101,6 +101,7 @@ final class ArtifactResolver {
                 result.add(artifact);
             } else {
                 // failed to resolve artifact with definite version
+                // FIXME check how to treat missing POM files.
                 throw new MojoExecutionException("Failed to determine definite version for artifact " + artifact);
             }
         }
@@ -155,7 +156,6 @@ final class ArtifactResolver {
             }
             collection.add(artifact);
             if (verifyPom) {
-                // FIXME check how to treat missing POM files.
                 collection.add(resolvePom(plugin));
             }
             // FIXME add configuration parameter for skipping/including dependencies of build plugins.
@@ -173,7 +173,6 @@ final class ArtifactResolver {
      * @return Returns set of resolved artifacts, which may contain artifacts of which the definite version cannot be
      * determined yet.
      */
-    // TODO consider if we should transitively process all dependencies or trust that dependencies of dependencies are trusted based on trust in the direct dependency.
     private Set<Artifact> resolveDependencies(Iterable<Dependency> dependencies, SkipFilter filter, boolean verifyPom) {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Dependency dependency : dependencies) {
@@ -185,7 +184,6 @@ final class ArtifactResolver {
             }
             collection.add(artifact);
             if (verifyPom) {
-                // FIXME check how to treat missing POM files.
                 collection.add(resolvePom(dependency));
             }
         }
@@ -216,7 +214,6 @@ final class ArtifactResolver {
                 artifact.getType(), artifact.getClassifier());
         aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
 
-        // FIXME consider if we need to re-acquire the artifact from the request in order for version (range) resolution to have been performed.
         final ArtifactResolutionResult ascResult = request(aAsc);
         if (ascResult.isSuccess()) {
             log.debug(aAsc.toString() + " " + aAsc.getFile());
@@ -228,7 +225,9 @@ final class ArtifactResolver {
             log.warn("No signature for " + artifact.getId());
             break;
         case STRICT:
-            // no action needed here
+            log.debug("No signature for " + artifact.getId());
+            // no action needed here. If we need to show a warning message,
+            // we will determine this when verifying signatures (or lack thereof)
             break;
         case REQUIRED:
             log.error("No signature for " + artifact.getId());
