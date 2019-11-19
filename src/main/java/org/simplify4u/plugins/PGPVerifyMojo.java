@@ -44,6 +44,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
+import org.simplify4u.plugins.skipfilters.MavenPluginFilter;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
@@ -166,6 +167,14 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     @Parameter(property = "pgpverify.verifySnapshots", defaultValue = "false")
     private boolean verifySnapshots;
+
+    /**
+     * Verify Maven build plug-ins.
+     *
+     * @since 1.5.0
+     */
+    @Parameter(property = "pgpverify.verifyPlugins", defaultValue = "false")
+    private boolean verifyPlugins;
 
     /**
      * Verify "provided" dependencies, which the JDK or a container provide at runtime.
@@ -293,6 +302,10 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         if (!this.verifyReactorDependencies) {
             filters.add(new ReactorDependencySkipper(this.project, this.session));
+        }
+
+        if (!this.verifyPlugins) {
+            filters.add(new MavenPluginFilter());
         }
 
         return new CompositeSkipper(filters);

@@ -148,10 +148,13 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Plugin plugin : plugins) {
             final Artifact artifact = resolve(plugin);
-            // FIXME add skipping/including for build plug-ins (SNAPSHOTs)
             if (artifact.getVersion() == null) {
                 log.error("Failed to resolve build plug-in with missing version or using version-range: " + artifact);
                 throw new MojoExecutionException("Failed to resolve build plug-in: " + artifact);
+            }
+            if (filter.shouldSkipArtifact(artifact)) {
+                log.debug("Skipping plugin: " + artifact);
+                continue;
             }
             collection.add(artifact);
             if (verifyPom) {
@@ -178,7 +181,7 @@ final class ArtifactResolver {
             final Artifact artifact = resolve(dependency);
             // FIXME test skipping for various scopes.
             if (filter.shouldSkipArtifact(artifact)) {
-                log.debug("Skipping artifact: " + artifact);
+                log.debug("Skipping dependency: " + artifact);
                 continue;
             }
             collection.add(artifact);
