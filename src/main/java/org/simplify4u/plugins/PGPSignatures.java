@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2019 Slawomir Jaranowski
  * Portions Copyright 2017-2018 Wren Security.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
