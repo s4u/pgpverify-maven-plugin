@@ -150,9 +150,8 @@ final class ArtifactResolver {
             final Artifact artifact = resolve(plugin);
             // FIXME add skipping/including for build plug-ins (SNAPSHOTs)
             if (artifact.getVersion() == null) {
-                // FIXME in case version is missing or version range is specified, we cannot yet resolve the exact artifact, hence cannot acquire the corresponding signature file.
-                log.warn("Skipping build plugin with missing version or applying version-range: " + artifact);
-                continue;
+                log.error("Failed to resolve build plug-in with missing version or using version-range: " + artifact);
+                throw new MojoExecutionException("Failed to resolve build plug-in: " + artifact);
             }
             collection.add(artifact);
             if (verifyPom) {
