@@ -89,8 +89,8 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
         for (final Artifact artifact : allArtifacts) {
             final Optional<Artifact> projectResolved = stream(projectResolvedArtifacts.spliterator(), false)
-                    .filter(s -> s.getArtifactId().equals(artifact.getArtifactId())
-                            && s.getGroupId().equals(artifact.getGroupId()))
+                    .filter(a -> a.getArtifactId().equals(artifact.getArtifactId()))
+                    .filter(a -> a.getGroupId().equals(artifact.getGroupId()))
                     .findFirst();
             if (projectResolved.isPresent()) {
                 // add artifact with version as resolved by Maven dependency resolution
