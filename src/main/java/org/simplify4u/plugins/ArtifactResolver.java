@@ -51,8 +51,7 @@ final class ArtifactResolver {
 
     private final List<ArtifactRepository> remoteRepositories;
 
-    ArtifactResolver(final Log log, final RepositorySystem repositorySystem,
-            final ArtifactRepository localRepository,
+    ArtifactResolver(Log log, RepositorySystem repositorySystem, ArtifactRepository localRepository,
             final List<ArtifactRepository> remoteRepositories) {
         this.log = requireNonNull(log);
         this.repositorySystem = requireNonNull(repositorySystem);
@@ -67,7 +66,8 @@ final class ArtifactResolver {
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(final MavenProject project, final SkipFilter filter, final boolean verifyPomFiles) throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles)
+            throws MojoExecutionException {
         final Set<Artifact> allArtifacts = resolveDependencies(project.getDependencies(), filter, verifyPomFiles);
         allArtifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
         return updateArtifactResolvedVersions(allArtifacts, project.getArtifacts());
@@ -84,8 +84,8 @@ final class ArtifactResolver {
      * @throws MojoExecutionException In case of failure to resolve artifact both through dependency resolution process
      * and manual resolving.
      */
-    private Set<Artifact> updateArtifactResolvedVersions(final Iterable<Artifact> allArtifacts,
-            final Iterable<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
+    private Set<Artifact> updateArtifactResolvedVersions(Iterable<Artifact> allArtifacts,
+            Iterable<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
         final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
         for (final Artifact artifact : allArtifacts) {
             final Optional<Artifact> projectResolved = stream(projectResolvedArtifacts.spliterator(), false)
@@ -119,7 +119,8 @@ final class ArtifactResolver {
      *          If the signature could not be retrieved and the Mojo has been configured to fail
      *          on a missing signature.
      */
-    Map<Artifact, Artifact> resolveSignatures(final Iterable<Artifact> artifacts, final SignatureRequirement requirement) throws MojoExecutionException {
+    Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts, SignatureRequirement requirement)
+            throws MojoExecutionException {
         log.debug("Start resolving ASC files");
 
         final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
@@ -142,7 +143,7 @@ final class ArtifactResolver {
      * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
      * @return Returns resolved build plug-in artifacts.
      */
-    private Set<Artifact> resolveBuildPlugins(final Iterable<Plugin> plugins, final SkipFilter filter, final boolean verifyPom) {
+    private Set<Artifact> resolveBuildPlugins(Iterable<Plugin> plugins, SkipFilter filter, boolean verifyPom) throws MojoExecutionException {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Plugin plugin : plugins) {
             final Artifact artifact = resolve(plugin);
@@ -173,7 +174,7 @@ final class ArtifactResolver {
      * determined yet.
      */
     // TODO consider if we should transitively process all dependencies or trust that dependencies of dependencies are trusted based on trust in the direct dependency.
-    private Set<Artifact> resolveDependencies(final Iterable<Dependency> dependencies, final SkipFilter filter, final boolean verifyPom) {
+    private Set<Artifact> resolveDependencies(Iterable<Dependency> dependencies, SkipFilter filter, boolean verifyPom) {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Dependency dependency : dependencies) {
             final Artifact artifact = resolve(dependency);
@@ -191,25 +192,25 @@ final class ArtifactResolver {
         return collection;
     }
 
-    private Artifact resolve(final Dependency dependency) {
+    private Artifact resolve(Dependency dependency) {
         return resolve(repositorySystem.createDependencyArtifact(dependency));
     }
 
-    private Artifact resolvePom(final Dependency dependency) {
+    private Artifact resolvePom(Dependency dependency) {
         return resolve(repositorySystem.createProjectArtifact(
                 dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion()));
     }
 
-    private Artifact resolve(final Plugin plugin) {
+    private Artifact resolve(Plugin plugin) {
         return resolve(repositorySystem.createPluginArtifact(plugin));
     }
 
-    private Artifact resolvePom(final Plugin plugin) {
+    private Artifact resolvePom(Plugin plugin) {
         return resolve(repositorySystem.createProjectArtifact(
                 plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
     }
 
-    private Artifact resolveSignature(final Artifact artifact, final SignatureRequirement requirement) throws MojoExecutionException {
+    private Artifact resolveSignature(Artifact artifact, SignatureRequirement requirement) throws MojoExecutionException {
         final Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType(), artifact.getClassifier());
@@ -239,13 +240,14 @@ final class ArtifactResolver {
         return null;
     }
 
-    private Artifact resolve(final Artifact artifact) {
-        final ArtifactResolutionResult result = request(artifact);
-        // FIXME perform result verification before returning artifact.
+    private Artifact resolve(Artifact artifact) {
+        request(artifact);
+        // Evaluation of resolution results of all artifacts is done at a later stage,
+        // as resolution is performed in multiple stages.
         return artifact;
     }
 
-    private ArtifactResolutionResult request(final Artifact artifact) {
+    private ArtifactResolutionResult request(Artifact artifact) {
         final ArtifactResolutionRequest request = new ArtifactResolutionRequest();
         request.setArtifact(artifact);
         request.setResolveTransitively(false);
