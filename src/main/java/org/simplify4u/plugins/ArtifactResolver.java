@@ -21,7 +21,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -33,11 +32,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.StreamSupport.stream;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -61,7 +59,7 @@ final class ArtifactResolver {
     }
 
     /**
-     * Types of dependencies: compile, provided, test, runtime, system, dependencies of build plug-ins.
+     * Types of dependencies: compile, provided, test, runtime, system, maven-plugin.
      *
      * @param filter         the artifact filter
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
@@ -69,44 +67,11 @@ final class ArtifactResolver {
      */
     Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles)
             throws MojoExecutionException {
-        final Set<Artifact> allArtifacts = resolveDependencies(project.getDependencies(), filter, verifyPomFiles);
-        allArtifacts.addAll(resolveBuildPlugins(project.getBuildPlugins(), filter, verifyPomFiles));
-        return updateArtifactResolvedVersions(allArtifacts, project.getArtifacts());
-    }
-
-    /**
-     * Update provided artifacts with artifact versions as provided in input.
-     *
-     * @param allArtifacts             the full set of artifacts.
-     * @param projectResolvedArtifacts a separate set of artifacts with versions as resolved by dependency resolution.
-     *                                 Input is expected to have significant overlap, but may contain deviations such as
-     *                                 missing artifacts.
-     * @return Returns set of artifacts with versions updated according to provided input set.
-     * @throws MojoExecutionException In case of failure to resolve artifact both through dependency resolution process
-     * and manual resolving.
-     */
-    private Set<Artifact> updateArtifactResolvedVersions(Iterable<Artifact> allArtifacts,
-            Iterable<Artifact> projectResolvedArtifacts) throws MojoExecutionException {
-        final LinkedHashSet<Artifact> result = new LinkedHashSet<>();
-        for (final Artifact artifact : allArtifacts) {
-            final Optional<Artifact> projectResolved = stream(projectResolvedArtifacts.spliterator(), false)
-                    .filter(a -> artifact.getArtifactId().equals(a.getArtifactId()))
-                    .filter(a -> artifact.getGroupId().equals(a.getGroupId()))
-                    .findFirst();
-            if (projectResolved.isPresent()) {
-                // add artifact with version as resolved by Maven dependency resolution
-                artifact.setVersion(projectResolved.get().getVersion());
-                result.add(resolve(artifact));
-            } else if (artifact.isResolved()) {
-                // add artifact with listed version
-                result.add(artifact);
-            } else {
-                // failed to resolve artifact with definite version
-                // FIXME check how to treat missing POM files.
-                throw new MojoExecutionException("Failed to determine definite version for artifact " + artifact);
-            }
-        }
-        return result;
+        final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
+                resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
+        allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
+        log.debug("Discovered project artifacts: " + allArtifacts);
+        return allArtifacts;
     }
 
     /**
@@ -135,80 +100,6 @@ final class ArtifactResolver {
         }
 
         return artifactToAsc;
-    }
-
-    /**
-     * Resolve build plug-ins.
-     *
-     * @param plugins   The build plug-ins to be resolved.
-     * @param filter    The skip filter.
-     * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
-     * @return Returns resolved build plug-in artifacts.
-     */
-    private Set<Artifact> resolveBuildPlugins(Iterable<Plugin> plugins, SkipFilter filter, boolean verifyPom) throws MojoExecutionException {
-        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
-        for (final Plugin plugin : plugins) {
-            final Artifact artifact = resolve(plugin);
-            if (artifact.getVersion() == null) {
-                log.error("Failed to resolve build plug-in with missing version or using version-range: " + artifact);
-                throw new MojoExecutionException("Failed to resolve build plug-in: " + artifact);
-            }
-            if (filter.shouldSkipArtifact(artifact)) {
-                log.debug("Skipping plugin: " + artifact);
-                continue;
-            }
-            collection.add(artifact);
-            if (verifyPom) {
-                collection.add(resolvePom(plugin));
-            }
-            // FIXME add configuration parameter for skipping/including dependencies of build plugins.
-            collection.addAll(resolveDependencies(plugin.getDependencies(), filter, verifyPom));
-        }
-        return collection;
-    }
-
-    /**
-     * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
-     *
-     * @param dependencies Dependencies to be resolved.
-     * @param filter       Skip filter to test against to determine whether dependency must be skipped.
-     * @param verifyPom    Boolean indicating whether or not POMs corresponding to dependencies should be resolved.
-     * @return Returns set of resolved artifacts, which may contain artifacts of which the definite version cannot be
-     * determined yet.
-     */
-    private Set<Artifact> resolveDependencies(Iterable<Dependency> dependencies, SkipFilter filter, boolean verifyPom) {
-        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
-        for (final Dependency dependency : dependencies) {
-            final Artifact artifact = resolve(dependency);
-            // FIXME test skipping for various scopes.
-            if (filter.shouldSkipArtifact(artifact)) {
-                log.debug("Skipping dependency: " + artifact);
-                continue;
-            }
-            collection.add(artifact);
-            if (verifyPom) {
-                collection.add(resolvePom(dependency));
-            }
-        }
-        return collection;
-    }
-
-    private Artifact resolve(Dependency dependency) {
-        return resolve(repositorySystem.createDependencyArtifact(dependency));
-    }
-
-    private Artifact resolvePom(Dependency dependency) {
-        return resolve(repositorySystem.createProjectArtifact(
-                dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion()));
-    }
-
-    private Artifact resolve(Plugin plugin) {
-        return resolve(repositorySystem.createPluginArtifact(plugin));
-    }
-
-    private Artifact resolvePom(Plugin plugin) {
-        return resolve(repositorySystem.createProjectArtifact(
-                plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
     }
 
     private Artifact resolveSignature(Artifact artifact, SignatureRequirement requirement) throws MojoExecutionException {
@@ -240,6 +131,90 @@ final class ArtifactResolver {
         }
 
         return null;
+    }
+
+    /**
+     * Resolve build plug-ins.
+     *
+     * @param plugins   The build plug-ins to be resolved.
+     * @param filter    The skip filter.
+     * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
+     * @return Returns resolved build plug-in artifacts.
+     */
+    // FIXME redesign to handle plug-in dependencies as well as use project.getPluginArtifacts() as dependency version resolution has already been performed.
+    private Set<Artifact> resolveBuildPlugins(Iterable<Plugin> plugins, SkipFilter filter, boolean verifyPom) throws MojoExecutionException {
+        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
+        for (final Plugin plugin : plugins) {
+            final Artifact artifact = resolve(plugin);
+            if (artifact.getVersion() == null) {
+                log.error("Failed to resolve build plug-in with missing version or using version-range: " + artifact);
+                throw new MojoExecutionException("Failed to resolve build plug-in: " + artifact);
+            }
+            if (filter.shouldSkipArtifact(artifact)) {
+                log.debug("Skipping plugin: " + artifact);
+                continue;
+            }
+            collection.add(artifact);
+            if (verifyPom) {
+                collection.add(resolvePom(plugin));
+            }
+            // FIXME add configuration parameter for skipping/including dependencies of build plugins.
+            final List<Artifact> dependencies = plugin.getDependencies().stream()
+                    .map(repositorySystem::createDependencyArtifact)
+                    .collect(Collectors.toList());
+            collection.addAll(resolveArtifacts(dependencies, filter, verifyPom));
+        }
+        return collection;
+    }
+
+    private Artifact resolve(Plugin plugin) {
+        return resolve(repositorySystem.createPluginArtifact(plugin));
+    }
+
+    private Artifact resolvePom(Plugin plugin) {
+        return resolve(repositorySystem.createProjectArtifact(
+                plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
+    }
+
+    /**
+     * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
+     *
+     * @param artifacts Dependencies to be resolved.
+     * @param filter       Skip filter to test against to determine whether dependency must be skipped.
+     * @param verifyPom    Boolean indicating whether or not POMs corresponding to dependencies should be resolved.
+     * @return Returns set of resolved artifacts, which may contain artifacts of which the definite version cannot be
+     * determined yet.
+     */
+    private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter filter, boolean verifyPom)
+            throws MojoExecutionException {
+        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
+        for (final Artifact artifact : artifacts) {
+            final Artifact resolved = resolve(artifact);
+            // FIXME test skipping for various scopes.
+            if (filter.shouldSkipArtifact(artifact)) {
+                log.debug("Skipping artifact: " + artifact);
+                continue;
+            }
+            if (!resolved.isResolved()) {
+                throw new MojoExecutionException("Failed to determine definite version for artifact " + artifact);
+            }
+            collection.add(resolved);
+            if (verifyPom) {
+                final Artifact resolvedPom = resolvePom(artifact);
+                // FIXME what to do if pom is not resolved?
+                if (!resolvedPom.isResolved()) {
+                    log.warn("Failed to resolve pom artifact: " + resolvedPom);
+                    continue;
+                }
+                collection.add(resolvedPom);
+            }
+        }
+        return collection;
+    }
+
+    private Artifact resolvePom(Artifact artifact) {
+        return resolve(repositorySystem.createProjectArtifact(
+                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
     }
 
     private Artifact resolve(Artifact artifact) {
