@@ -35,12 +35,13 @@ public final class CompositeSkipper implements SkipFilter {
      *
      * @param filters the filters
      */
-    public CompositeSkipper(final Iterable<SkipFilter> filters) {
+    public CompositeSkipper(Iterable<SkipFilter> filters) {
         this.filters = requireNonNull(filters);
     }
 
     @Override
-    public boolean shouldSkipArtifact(final Artifact artifact) {
+    public boolean shouldSkipArtifact(Artifact artifact) {
+        requireNonNull(artifact);
         for (final SkipFilter filter : this.filters) {
             if (filter.shouldSkipArtifact(artifact)) {
                 return true;
