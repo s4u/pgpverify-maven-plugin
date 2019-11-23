@@ -21,7 +21,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -33,7 +32,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -70,6 +68,7 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
+        // TODO plug-in artifacts are included, but plug-in dependencies are still ignored.
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
     }
@@ -102,7 +101,8 @@ final class ArtifactResolver {
         return artifactToAsc;
     }
 
-    private Artifact resolveSignature(Artifact artifact, SignatureRequirement requirement) throws MojoExecutionException {
+    private Artifact resolveSignature(Artifact artifact, SignatureRequirement requirement)
+            throws MojoExecutionException {
         final Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType(), artifact.getClassifier());
@@ -134,49 +134,6 @@ final class ArtifactResolver {
     }
 
     /**
-     * Resolve build plug-ins.
-     *
-     * @param plugins   The build plug-ins to be resolved.
-     * @param filter    The skip filter.
-     * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
-     * @return Returns resolved build plug-in artifacts.
-     */
-    // TODO redesign to handle plug-in dependencies as well as use project.getPluginArtifacts() as dependency version resolution has already been performed.
-    private Set<Artifact> resolveBuildPlugins(Iterable<Plugin> plugins, SkipFilter filter, boolean verifyPom) throws MojoExecutionException {
-        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
-        for (final Plugin plugin : plugins) {
-            final Artifact artifact = resolve(plugin);
-            if (artifact.getVersion() == null) {
-                log.error("Failed to resolve build plug-in with missing version or using version-range: " + artifact);
-                throw new MojoExecutionException("Failed to resolve build plug-in: " + artifact);
-            }
-            if (filter.shouldSkipArtifact(artifact)) {
-                log.debug("Skipping plugin: " + artifact);
-                continue;
-            }
-            collection.add(artifact);
-            if (verifyPom) {
-                collection.add(resolvePom(plugin));
-            }
-            // FIXME add configuration parameter for skipping/including dependencies of build plugins.
-            final List<Artifact> dependencies = plugin.getDependencies().stream()
-                    .map(repositorySystem::createDependencyArtifact)
-                    .collect(Collectors.toList());
-            collection.addAll(resolveArtifacts(dependencies, filter, verifyPom));
-        }
-        return collection;
-    }
-
-    private Artifact resolve(Plugin plugin) {
-        return resolve(repositorySystem.createPluginArtifact(plugin));
-    }
-
-    private Artifact resolvePom(Plugin plugin) {
-        return resolve(repositorySystem.createProjectArtifact(
-                plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion()));
-    }
-
-    /**
      * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
      *
      * @param artifacts Dependencies to be resolved.
@@ -195,7 +152,7 @@ final class ArtifactResolver {
                 continue;
             }
             if (!resolved.isResolved()) {
-                throw new MojoExecutionException("Failed to determine definite version for artifact " + artifact);
+                throw new MojoExecutionException("Failed to resolve artifact: " + artifact);
             }
             collection.add(resolved);
             if (verifyPom) {
