@@ -36,12 +36,12 @@ public class ScopeSkipper implements SkipFilter {
      * @param scope the maximum scope, meaning that if, e.g. 'test' scope is specified, then every scope
      *              chronologically prior to 'test' will also be included.
      */
-    public ScopeSkipper(final String scope) {
+    public ScopeSkipper(String scope) {
         filter = new CumulativeScopeArtifactFilter(singleton(requireNonNull(scope)));
     }
 
     @Override
-    public boolean shouldSkipArtifact(final Artifact artifact) {
+    public boolean shouldSkipArtifact(Artifact artifact) {
         if (TYPE_MAVEN_PLUGIN.equals(artifact.getType())) {
             return false;
         }
