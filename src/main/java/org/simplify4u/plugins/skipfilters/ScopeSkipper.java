@@ -21,6 +21,7 @@ import org.apache.maven.artifact.resolver.filter.CumulativeScopeArtifactFilter;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
+import static org.simplify4u.plugins.skipfilters.MavenPluginFilter.TYPE_MAVEN_PLUGIN;
 
 /**
  * Cumulative scope filter.
@@ -41,6 +42,9 @@ public class ScopeSkipper implements SkipFilter {
 
     @Override
     public boolean shouldSkipArtifact(final Artifact artifact) {
+        if (TYPE_MAVEN_PLUGIN.equals(artifact.getType())) {
+            return false;
+        }
         return !filter.include(artifact);
     }
 }

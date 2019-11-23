@@ -23,7 +23,7 @@ import org.apache.maven.artifact.Artifact;
  */
 public class MavenPluginFilter implements SkipFilter {
 
-    private static final String TYPE_MAVEN_PLUGIN = "maven-plugin";
+    static final String TYPE_MAVEN_PLUGIN = "maven-plugin";
 
     @Override
     public boolean shouldSkipArtifact(final Artifact artifact) {

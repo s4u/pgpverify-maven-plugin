@@ -18,12 +18,17 @@ package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
+import static org.simplify4u.plugins.skipfilters.MavenPluginFilter.TYPE_MAVEN_PLUGIN;
+
 /**
  * A filter that always skips verification of snapshot dependencies.
  */
 public class SnapshotDependencySkipper implements SkipFilter {
     @Override
     public boolean shouldSkipArtifact(Artifact artifact) {
+        if (TYPE_MAVEN_PLUGIN.equals(artifact.getType())) {
+            return false;
+        }
         return artifact.isSnapshot();
     }
 }
