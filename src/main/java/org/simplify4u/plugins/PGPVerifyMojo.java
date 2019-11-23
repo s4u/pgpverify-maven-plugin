@@ -273,8 +273,8 @@ public class PGPVerifyMojo extends AbstractMojo {
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
                     this.project, filter, this.verifyPomFiles);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
-            final Map<Artifact, Artifact> map = resolver.resolveSignatures(artifacts, signaturePolicy);
-            verifyArtifactSignatures(map);
+            final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
+            verifyArtifactSignatures(artifactMap);
         }
     }
 
