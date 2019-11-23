@@ -188,9 +188,24 @@ final class ArtifactResolver {
         return repositorySystem.resolve(request);
     }
 
+    /**
+     * Enum specifying the levels of signature requirements.
+     */
     enum SignatureRequirement {
+        /**
+         * NONE indicates there are no requirements, meaning that missing
+         * signatures are perfectly acceptable.
+         */
         NONE,
+        /**
+         * STRICT indicates that requirements of signatures (availability) are
+         * defined per artifact according to the keys map.
+         */
         STRICT,
+        /**
+         * REQUIRED indicates that signatures are strictly required, meaning
+         * that missing signature is an immediate failure case.
+         */
         REQUIRED,
     }
 }
