@@ -107,6 +107,9 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Scope used to build dependency list.
      *
+     * This scope indicates up to which scope artifacts will be included. For example, the 'test' scope will include
+     * <code>provided</code>-, <code>compile</code>-, <code>runtime</code>-, and <code>system</code>-scoped dependencies.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.scope", defaultValue = "test")
