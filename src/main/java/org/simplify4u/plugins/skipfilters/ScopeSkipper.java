@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Cumulative scope filter.
  */
-public class ScopeFilter implements SkipFilter {
+public class ScopeSkipper implements SkipFilter {
 
     private final CumulativeScopeArtifactFilter filter;
 
@@ -35,7 +35,7 @@ public class ScopeFilter implements SkipFilter {
      * @param scope the maximum scope, meaning that if, e.g. 'test' scope is specified, then every scope
      *              chronologically prior to 'test' will also be included.
      */
-    public ScopeFilter(final String scope) {
+    public ScopeSkipper(final String scope) {
         filter = new CumulativeScopeArtifactFilter(singleton(requireNonNull(scope)));
     }
 

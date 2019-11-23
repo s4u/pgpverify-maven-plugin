@@ -48,7 +48,7 @@ import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.MavenPluginFilter;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
-import org.simplify4u.plugins.skipfilters.ScopeFilter;
+import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
@@ -288,7 +288,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private SkipFilter prepareSkipFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
 
-        filters.add(new ScopeFilter(this.scope));
+        filters.add(new ScopeSkipper(this.scope));
 
         if (!this.verifySnapshots) {
             filters.add(new SnapshotDependencySkipper());
@@ -433,7 +433,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return Returns <code>true</code> if correctly missing according to keys map,
      * or <code>false</code> if verification fails.
      */
-    private boolean verifySignatureUnavailable(final Artifact artifact) {
+    private boolean verifySignatureUnavailable(Artifact artifact) {
         if (keysMap.isNoKey(artifact)) {
             final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.",
                     artifact.getId());
