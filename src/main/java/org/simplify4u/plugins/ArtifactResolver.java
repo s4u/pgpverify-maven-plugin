@@ -141,7 +141,7 @@ final class ArtifactResolver {
      * @param verifyPom Boolean indicating whether or not to resolve corresponding POMs.
      * @return Returns resolved build plug-in artifacts.
      */
-    // FIXME redesign to handle plug-in dependencies as well as use project.getPluginArtifacts() as dependency version resolution has already been performed.
+    // TODO redesign to handle plug-in dependencies as well as use project.getPluginArtifacts() as dependency version resolution has already been performed.
     private Set<Artifact> resolveBuildPlugins(Iterable<Plugin> plugins, SkipFilter filter, boolean verifyPom) throws MojoExecutionException {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Plugin plugin : plugins) {
@@ -190,7 +190,6 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Artifact artifact : artifacts) {
             final Artifact resolved = resolve(artifact);
-            // FIXME test skipping for various scopes.
             if (filter.shouldSkipArtifact(artifact)) {
                 log.debug("Skipping artifact: " + artifact);
                 continue;
@@ -201,7 +200,6 @@ final class ArtifactResolver {
             collection.add(resolved);
             if (verifyPom) {
                 final Artifact resolvedPom = resolvePom(artifact);
-                // FIXME what to do if pom is not resolved?
                 if (!resolvedPom.isResolved()) {
                     log.warn("Failed to resolve pom artifact: " + resolvedPom);
                     continue;

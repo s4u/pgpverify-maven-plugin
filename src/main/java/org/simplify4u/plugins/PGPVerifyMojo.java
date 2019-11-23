@@ -48,6 +48,7 @@ import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.MavenPluginFilter;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
+import org.simplify4u.plugins.skipfilters.ScopeFilter;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
@@ -264,10 +265,8 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SkipFilter filter = prepareSkipFilters();
             prepareForKeys();
 
-            // FIXME how to treat 'scope' parameter now that we have taken a different approach to resolution.
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
-
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
                     this.project, filter, this.verifyPomFiles);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
@@ -288,6 +287,8 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private SkipFilter prepareSkipFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
+
+        filters.add(new ScopeFilter(this.scope));
 
         if (!this.verifySnapshots) {
             filters.add(new SnapshotDependencySkipper());
