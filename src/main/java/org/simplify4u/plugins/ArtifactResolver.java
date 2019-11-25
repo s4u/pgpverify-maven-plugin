@@ -25,6 +25,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 
 import java.util.LinkedHashMap;
@@ -63,12 +64,15 @@ final class ArtifactResolver {
      * @param verifyPomFiles indicator whether to verify POM file signatures as well
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles)
-            throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles,
+            boolean verifyPlugins) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
-        allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
-        // TODO plug-in artifacts are included, but plug-in dependencies are still ignored.
+        if (verifyPlugins) {
+            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(),
+                    new CompositeSkipper(), verifyPomFiles));
+            // TODO plug-in artifacts are included, but plug-in dependencies are still ignored.
+        }
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
     }

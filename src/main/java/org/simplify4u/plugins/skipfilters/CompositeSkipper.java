@@ -18,6 +18,11 @@ package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
+import java.util.Arrays;
+import java.util.Objects;
+
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,6 +42,18 @@ public final class CompositeSkipper implements SkipFilter {
      */
     public CompositeSkipper(Iterable<SkipFilter> filters) {
         this.filters = requireNonNull(filters);
+    }
+
+    /**
+     * Constructor to compose any number of {@link SkipFilter}s.
+     *
+     * @param filters the filters
+     */
+    public CompositeSkipper(SkipFilter... filters) {
+        if (stream(filters).anyMatch(Objects::isNull)) {
+            throw new NullPointerException("filter cannot be null");
+        }
+        this.filters = asList(filters);
     }
 
     @Override

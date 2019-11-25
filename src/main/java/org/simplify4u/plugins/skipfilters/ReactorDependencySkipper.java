@@ -22,8 +22,6 @@ import org.apache.maven.project.MavenProject;
 
 import java.util.List;
 
-import static org.simplify4u.plugins.skipfilters.MavenPluginFilter.TYPE_MAVEN_PLUGIN;
-
 /**
  * A filter that always skips verification of upstream dependencies that are being built as part of
  * the current build reactor.
@@ -47,9 +45,6 @@ public class ReactorDependencySkipper implements SkipFilter {
 
     @Override
     public boolean shouldSkipArtifact(Artifact artifact) {
-        if (TYPE_MAVEN_PLUGIN.equals(artifact.getType())) {
-            return false;
-        }
         return this.isUpstreamReactorDependency(artifact);
     }
 

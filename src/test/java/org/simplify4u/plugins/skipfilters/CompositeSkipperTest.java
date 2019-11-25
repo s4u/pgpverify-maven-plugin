@@ -26,9 +26,11 @@ import static org.testng.Assert.*;
 
 public class CompositeSkipperTest {
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testNullFilters() {
-        new CompositeSkipper(null);
+        assertThrows(NullPointerException.class, () -> new CompositeSkipper((Iterable<SkipFilter>) null));
+        assertThrows(NullPointerException.class, () -> new CompositeSkipper((SkipFilter[]) null));
+        assertThrows(NullPointerException.class, () -> new CompositeSkipper((SkipFilter) null));
     }
 
     @Test(expectedExceptions = NullPointerException.class)

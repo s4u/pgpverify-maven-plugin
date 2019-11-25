@@ -79,7 +79,7 @@ public class ArtifactResolverTest {
         final MavenProject project = mock(MavenProject.class);
 
         final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), false);
+                new CompositeSkipper(emptyList()), false, false);
         assertEquals(emptySet(), resolved);
     }
 
@@ -99,7 +99,7 @@ public class ArtifactResolverTest {
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), false);
+                new CompositeSkipper(emptyList()), false, false);
         assertEquals(1, resolved.size());
         assertTrue(resolved.iterator().next().isResolved());
     }
@@ -121,7 +121,7 @@ public class ArtifactResolverTest {
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         final Set<Artifact> resolvedSet = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), true);
+                new CompositeSkipper(emptyList()), true, false);
         verify(repositorySystem, times(1))
                 .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
         assertEquals(resolvedSet.size(), 2);

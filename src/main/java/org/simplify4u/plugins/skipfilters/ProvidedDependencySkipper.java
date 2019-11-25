@@ -18,17 +18,12 @@ package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
-import static org.simplify4u.plugins.skipfilters.MavenPluginFilter.TYPE_MAVEN_PLUGIN;
-
 /**
  * A filter that always skips verification of runtime-provided dependencies.
  */
 public class ProvidedDependencySkipper implements SkipFilter {
     @Override
     public boolean shouldSkipArtifact(Artifact artifact) {
-        if (TYPE_MAVEN_PLUGIN.equals(artifact.getType())) {
-            return false;
-        }
         final String artifactScope = artifact.getScope();
 
         return artifactScope != null && artifactScope.equals(Artifact.SCOPE_PROVIDED);
