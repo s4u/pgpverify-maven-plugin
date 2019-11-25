@@ -50,7 +50,7 @@ public final class CompositeSkipper implements SkipFilter {
      */
     public CompositeSkipper(SkipFilter... filters) {
         if (stream(filters).anyMatch(Objects::isNull)) {
-            throw new NullPointerException("filter cannot be null");
+            throw new IllegalArgumentException("filters cannot contain null");
         }
         this.filters = asList(filters);
     }

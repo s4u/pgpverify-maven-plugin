@@ -71,7 +71,7 @@ final class ArtifactResolver {
         if (verifyPlugins) {
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(),
                     new CompositeSkipper(), verifyPomFiles));
-            // TODO plug-in artifacts are included, but plug-in dependencies are still ignored.
+            // NOTE: plug-in artifacts are included, but plug-in's dependencies aren't yet.
         }
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
@@ -119,19 +119,19 @@ final class ArtifactResolver {
         }
 
         switch (requirement) {
-        case NONE:
-            log.warn("No signature for " + artifact.getId());
-            break;
-        case STRICT:
-            log.debug("No signature for " + artifact.getId());
-            // no action needed here. If we need to show a warning message,
-            // we will determine this when verifying signatures (or lack thereof)
-            break;
-        case REQUIRED:
-            log.error("No signature for " + artifact.getId());
-            throw new MojoExecutionException("No signature for " + artifact.getId());
-        default:
-            throw new UnsupportedOperationException("Unsupported signature requirement.");
+            case NONE:
+                log.warn("No signature for " + artifact.getId());
+                break;
+            case STRICT:
+                log.debug("No signature for " + artifact.getId());
+                // no action needed here. If we need to show a warning message,
+                // we will determine this when verifying signatures (or lack thereof)
+                break;
+            case REQUIRED:
+                log.error("No signature for " + artifact.getId());
+                throw new MojoExecutionException("No signature for " + artifact.getId());
+            default:
+                throw new UnsupportedOperationException("Unsupported signature requirement.");
         }
 
         return null;
@@ -161,11 +161,11 @@ final class ArtifactResolver {
             collection.add(resolved);
             if (verifyPom) {
                 final Artifact resolvedPom = resolvePom(artifact);
-                if (!resolvedPom.isResolved()) {
+                if (resolvedPom.isResolved()) {
+                    collection.add(resolvedPom);
+                } else {
                     log.warn("Failed to resolve pom artifact: " + resolvedPom);
-                    continue;
                 }
-                collection.add(resolvedPom);
             }
         }
         return collection;
