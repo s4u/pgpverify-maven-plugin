@@ -30,7 +30,7 @@ public class CompositeSkipperTest {
     public void testNullFilters() {
         assertThrows(NullPointerException.class, () -> new CompositeSkipper((Iterable<SkipFilter>) null));
         assertThrows(NullPointerException.class, () -> new CompositeSkipper((SkipFilter[]) null));
-        assertThrows(NullPointerException.class, () -> new CompositeSkipper((SkipFilter) null));
+        assertThrows(IllegalArgumentException.class, () -> new CompositeSkipper((SkipFilter) null));
     }
 
     @Test(expectedExceptions = NullPointerException.class)
