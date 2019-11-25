@@ -18,7 +18,6 @@ package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static java.util.Arrays.asList;
