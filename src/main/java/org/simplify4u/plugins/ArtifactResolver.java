@@ -174,8 +174,11 @@ final class ArtifactResolver {
     private Artifact resolvePom(Artifact artifact) {
         final Artifact pomArtifact = repositorySystem.createProjectArtifact(artifact.getGroupId(),
                 artifact.getArtifactId(), artifact.getVersion());
-        request(pomArtifact);
-        // Ignore resolution failures of pom files as it is not considered critical.
+        final ArtifactResolutionResult result = request(pomArtifact);
+        if (!result.isSuccess()) {
+            result.getExceptions().forEach(
+                    e -> log.debug("Failed to resolve pom " + pomArtifact.getId() + ": " + e.getMessage()));
+        }
         return pomArtifact;
     }
 
