@@ -49,7 +49,8 @@ public class PGPKeysCache {
     private static final Object LOCK = new Object();
 
     public PGPKeysCache(Log log, File cachePath, String keyServer)
-            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException {
+            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
+            KeyManagementException {
 
         this.log = log;
         this.cachePath = cachePath;
@@ -90,6 +91,9 @@ public class PGPKeysCache {
             try (InputStream keyIn = PGPUtil.getDecoderStream(new FileInputStream(keyFile))) {
                 PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
                 key = pgpRing.getPublicKey(keyID);
+                if (key == null) {
+                    throw new PGPException(String.format("Can't find public key in download file: %s" , keyFile));
+                }
             } finally {
                 if (key == null) {
                     deleteFile(keyFile);
@@ -114,26 +118,35 @@ public class PGPKeysCache {
             throw new IOException("Can't create directory: " + dir);
         }
 
-        try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(keyFile))) {
+        File partFile = File.createTempFile(String.valueOf(keyId), "pgp-public-key");
+
+        try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
             keysServerClient.copyKeyToOutputStream(keyId, outputStream, new PGPServerRetryHandler(this.log));
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
+            deleteFile(partFile);
             throw e;
+        }
+
+        if (!partFile.renameTo(keyFile) && !keyFile.exists()) {
+            deleteFile(keyFile);
+            deleteFile(partFile);
+            throw new IOException(String.format("Can't move file %s to %s", partFile, keyFile));
         }
 
         log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
     }
 
-    private void deleteFile(File keyFile) {
+    private void deleteFile(File file) {
 
-        Optional.ofNullable(keyFile)
+        Optional.ofNullable(file)
                 .map(File::toPath)
-                .ifPresent(keyPath -> {
+                .ifPresent(filePath -> {
                             try {
-                                Files.deleteIfExists(keyPath);
+                                Files.deleteIfExists(filePath);
                             } catch (IOException e) {
-                                log.warn("Can't delete: " + keyPath);
+                                log.warn("Can't delete: " + filePath);
                             }
                         }
                 );
