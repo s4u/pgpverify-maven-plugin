@@ -150,7 +150,7 @@ final class ArtifactResolver {
             throws MojoExecutionException {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Artifact artifact : artifacts) {
-            final Artifact resolved = resolve(artifact);
+            final Artifact resolved = resolveArtifact(artifact);
             if (filter.shouldSkipArtifact(artifact)) {
                 log.debug("Skipping artifact: " + artifact);
                 continue;
@@ -172,14 +172,21 @@ final class ArtifactResolver {
     }
 
     private Artifact resolvePom(Artifact artifact) {
-        return resolve(repositorySystem.createProjectArtifact(
-                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion()));
+        final Artifact pomArtifact = repositorySystem.createProjectArtifact(artifact.getGroupId(),
+                artifact.getArtifactId(), artifact.getVersion());
+        request(pomArtifact);
+        // Ignore resolution failures of pom files as it is not considered critical.
+        return pomArtifact;
     }
 
-    private Artifact resolve(Artifact artifact) {
-        request(artifact);
-        // Evaluation of resolution results of all artifacts is done at a later stage,
-        // as resolution is performed in multiple stages.
+    private Artifact resolveArtifact(Artifact artifact) {
+        final ArtifactResolutionResult result = request(artifact);
+        if (!result.isSuccess()) {
+            result.getExceptions().forEach(e -> {
+                log.warn("Failed to resolve " + artifact.getId() + ": " + e.getMessage());
+                log.debug(e);
+            });
+        }
         return artifact;
     }
 
