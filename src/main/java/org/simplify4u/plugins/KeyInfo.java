@@ -15,12 +15,12 @@
  */
 package org.simplify4u.plugins;
 
-import org.bouncycastle.openpgp.PGPPublicKey;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.bouncycastle.openpgp.PGPPublicKey;
 
 /**
  * Store info about key number.
@@ -62,17 +62,21 @@ public class KeyInfo {
 
     private byte[] strKeyToBytes(String key) {
 
-        BigInteger bigInteger = new BigInteger(key, 16);
-
-        if (bigInteger.bitLength() < 32 || bigInteger.bitLength() > 160) {
-            throw new IllegalArgumentException("Invalid key length key=" + key);
-        }
+        BigInteger bigInteger = new BigInteger(key.replace(" ", ""), 16);
 
         byte[] bytes = bigInteger.toByteArray();
-        if (bytes[0] == 0 && bytes.length % 2 != 0) {
+
+        if (bytes[0] == 0) {
             // we can remove sign byte
             bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
         }
+
+        if (bytes.length < 8 || bytes.length > 20) {
+            throw new IllegalArgumentException(
+                    String.format("Key length for = 0x%s is %d bits, should be between 64 and 160 bits",
+                            key, bytes.length * 8));
+        }
+
         return bytes;
     }
 

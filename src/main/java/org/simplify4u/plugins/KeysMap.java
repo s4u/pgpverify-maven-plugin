@@ -15,23 +15,21 @@
  */
 package org.simplify4u.plugins;
 
-import com.google.common.base.Strings;
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.base.Strings;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Slawomir Jaranowski.
@@ -46,13 +44,10 @@ public class KeysMap {
 
     public void load(String locale) throws ResourceNotFoundException, IOException {
         if (!Strings.isNullOrEmpty(locale) && !Strings.isNullOrEmpty(locale.trim())) {
-            final Map<String, String> propertyMap;
 
             try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
-                propertyMap = loadKeysMap(inputStream);
+                loadKeysMap(inputStream);
             }
-
-            processKeysMap(propertyMap);
         }
     }
 
@@ -79,10 +74,8 @@ public class KeysMap {
         return false;
     }
 
-    private Map<String, String> loadKeysMap(final InputStream inputStream)
-    throws IOException {
-        final Map<String, String> keysMaps = new LinkedHashMap<>();
-        final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream));
+    private void loadKeysMap(final InputStream inputStream) throws IOException {
+        final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
         String currentLine;
 
         while ((currentLine = mapReader.readLine()) != null) {
@@ -94,19 +87,9 @@ public class KeysMap {
                         "Property line is malformed: " + currentLine);
                 }
 
-                keysMaps.put(parts[0], parts.length == 1 ? "" : parts[1]);
+                ArtifactInfo artifactInfo = createArtifactInfo(parts[0], parts.length == 1 ? "" : parts[1]);
+                keysMapList.add(artifactInfo);
             }
-        }
-
-        return keysMaps;
-    }
-
-    private void processKeysMap(Map<String, String> keysMap) {
-        for (Entry<String, String> mapEntry : keysMap.entrySet()) {
-            ArtifactInfo artifactInfo =
-                createArtifactInfo(mapEntry.getKey(), mapEntry.getValue());
-
-            keysMapList.add(artifactInfo);
         }
     }
 
@@ -115,6 +98,6 @@ public class KeysMap {
     }
 
     private ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
-        return new ArtifactInfo(strArtifact, new KeyInfo(strKeys));
+        return new ArtifactInfo(strArtifact.trim(), new KeyInfo(strKeys.trim()));
     }
 }

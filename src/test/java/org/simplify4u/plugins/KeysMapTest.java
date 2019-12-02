@@ -15,6 +15,12 @@
  */
 package org.simplify4u.plugins;
 
+import static org.simplify4u.plugins.TestUtils.getArtifact;
+import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.PlexusContainerException;
@@ -22,12 +28,6 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import static org.simplify4u.plugins.TestUtils.getArtifact;
-import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 /**
  * @author Slawomir Jaranowski.
@@ -75,6 +75,12 @@ public class KeysMapTest {
           keysMap.isValidKey(
             getArtifact("junit", "junit", "4.12"),
             getPGPgpPublicKey(0x123456789abcdef0L)));
+
+        assertTrue(
+                keysMap.isValidKey(
+                        getArtifact("testlong", "fingerprint", "x.x.x"),
+                        getPGPgpPublicKey(0x123456789abcdef0L)));
+
     }
 
     @Test
@@ -121,5 +127,12 @@ public class KeysMapTest {
         assertFalse(
           keysMap.isNoKey(
             getArtifact("test", "test-package-2", "1.0.0")));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "Key length for = 0x10 is 8 bits, should be between 64 and 160 bits")
+    public void shortKeyShouldThrownException() throws Exception {
+        keysMap.load("/keyMap-keyToShort.list");
+
     }
 }
