@@ -22,9 +22,9 @@ assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Sig
 assert buildLog.text.contains('[INFO] commons-chain:commons-chain:jar:1.2 PGP Signature OK')
 assert buildLog.text.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
 
-assert buildLog.text.contains('KeyId: 0xA6ADFC93EF34893E')
-assert buildLog.text.contains('KeyId: 0xEFE8086F9E93774E')
-assert buildLog.text.contains('KeyId: 0xB95BBD3FA43C4492')
-assert buildLog.text.contains('KeyId: 0x1861C322C56014B2')
+assert buildLog.text.contains('KeyId: 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E')
+assert buildLog.text.contains('KeyId: 0xD4C89EA4AAF455FD88B22087EFE8086F9E93774E')
+assert buildLog.text.contains('KeyId: 0x6E13156C0EE653F0B984663AB95BBD3FA43C4492')
+assert buildLog.text.contains('KeyId: 0xD196A5E3E70732EEB2E5007F1861C322C56014B2')
 
 assert buildLog.text.contains('[INFO] BUILD SUCCESS')

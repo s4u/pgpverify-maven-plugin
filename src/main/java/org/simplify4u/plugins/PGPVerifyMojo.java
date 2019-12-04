@@ -18,6 +18,20 @@
 
 package org.simplify4u.plugins;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.maven.artifact.Artifact;
@@ -52,20 +66,6 @@ import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Check PGP signature of dependency.
  *
@@ -75,7 +75,7 @@ import java.util.Set;
         defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PGPVerifyMojo extends AbstractMojo {
 
-    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: 0x%X UserIds: %s";
+    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: %s UserIds: %s";
 
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
@@ -395,7 +395,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
 
             if (!keysMap.isValidKey(artifact, publicKey)) {
-                String msg = String.format("%s=0x%X", ArtifactUtils.key(artifact), publicKey.getKeyID());
+                String msg = String.format("%s = %s", ArtifactUtils.key(artifact), PublicKeyUtils.fingerprint(publicKey));
                 String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
                 getLog().error(String.format("Not allowed artifact %s and keyID:%n\t%s%n\t%s%n",
                         artifact.getId(), msg, keyUrl));
@@ -406,7 +406,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             PGPSignatures.readFileContentInto(pgpSignature, artifactFile);
             if (pgpSignature.verify()) {
                 final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "OK", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs()));
+                        "OK", PublicKeyUtils.fingerprint(publicKey), Lists.newArrayList(publicKey.getUserIDs()));
                 if (quiet) {
                     getLog().debug(logMessageOK);
                 } else {
@@ -415,7 +415,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 return true;
             } else {
                 getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "ERROR", publicKey.getKeyID(), Lists.newArrayList(publicKey.getUserIDs())));
+                        "ERROR", PublicKeyUtils.fingerprint(publicKey), Lists.newArrayList(publicKey.getUserIDs())));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
                 return false;
