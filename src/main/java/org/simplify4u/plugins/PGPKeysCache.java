@@ -120,19 +120,16 @@ public class PGPKeysCache {
 
         File partFile = File.createTempFile(String.valueOf(keyId), "pgp-public-key");
 
-        try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
-            keysServerClient.copyKeyToOutputStream(keyId, outputStream, new PGPServerRetryHandler(this.log));
+        try {
+            try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
+                keysServerClient.copyKeyToOutputStream(keyId, outputStream, new PGPServerRetryHandler(this.log));
+            }
+            Files.move(partFile.toPath(), keyFile.toPath());
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
             deleteFile(partFile);
             throw e;
-        }
-
-        if (!partFile.renameTo(keyFile) && !keyFile.exists()) {
-            deleteFile(keyFile);
-            deleteFile(partFile);
-            throw new IOException(String.format("Can't move file %s to %s", partFile, keyFile));
         }
 
         log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
