@@ -72,9 +72,13 @@ public class KeysMapTest {
         keysMap.load("/keysMap1.list");
 
         assertTrue(
-          keysMap.isValidKey(
-            getArtifact("junit", "junit", "4.12"),
-            getPGPgpPublicKey(0x123456789abcdef0L)));
+                keysMap.isValidKey(
+                        getArtifact("junit", "junit", "4.12"),
+                        getPGPgpPublicKey(0x123456789abcdef0L)));
+        assertTrue(
+                keysMap.isValidKey(
+                        getArtifact("junit", "junit", "4.12"),
+                        getPGPgpPublicKey(0x123456789abcdeffL)));
 
         assertTrue(
                 keysMap.isValidKey(
@@ -88,9 +92,9 @@ public class KeysMapTest {
         keysMap.load("/keysMap1.list");
 
         assertTrue(
-          keysMap.isValidKey(
-            getArtifact("test.test", "test", "1.2.3"),
-            getPGPgpPublicKey(0x123456789abcdef0L)));
+                keysMap.isValidKey(
+                        getArtifact("test.test", "test", "1.2.3"),
+                        getPGPgpPublicKey(0x123456789abcdef0L)));
     }
 
     @Test
@@ -98,9 +102,9 @@ public class KeysMapTest {
         keysMap.load("/keysMap1.list");
 
         assertFalse(
-          keysMap.isValidKey(
-            getArtifact("junit", "junit", "4.11"),
-            getPGPgpPublicKey(0x123456789abcdef0L)));
+                keysMap.isValidKey(
+                        getArtifact("junit", "junit", "4.11"),
+                        getPGPgpPublicKey(0x123456789abcdef0L)));
     }
 
     @Test
@@ -108,9 +112,9 @@ public class KeysMapTest {
         keysMap.load("/keysMap2.list");
 
         assertTrue(
-          keysMap.isValidKey(
-            getArtifact("test", "test-package", "1.0.0"),
-            getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
+                keysMap.isValidKey(
+                        getArtifact("test", "test-package", "1.0.0"),
+                        getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
     }
 
     @Test
@@ -118,15 +122,15 @@ public class KeysMapTest {
         keysMap.load("/keysMap3.list");
 
         assertTrue(
-          keysMap.isNoKey(
-            getArtifact("test", "test-package", "1.0.0")));
+                keysMap.isNoKey(
+                        getArtifact("test", "test-package", "1.0.0")));
         assertFalse(
-          keysMap.isValidKey(
-            getArtifact("test", "test-package", "1.0.0"),
-            getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
+                keysMap.isValidKey(
+                        getArtifact("test", "test-package", "1.0.0"),
+                        getPGPgpPublicKey(0xA6ADFC93EF34893EL)));
         assertFalse(
-          keysMap.isNoKey(
-            getArtifact("test", "test-package-2", "1.0.0")));
+                keysMap.isNoKey(
+                        getArtifact("test", "test-package-2", "1.0.0")));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,

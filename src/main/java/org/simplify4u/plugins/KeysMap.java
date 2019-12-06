@@ -78,23 +78,61 @@ public class KeysMap {
         final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
         String currentLine;
 
-        while ((currentLine = mapReader.readLine()) != null) {
-            if (!currentLine.isEmpty() && !isCommentLine(currentLine)) {
-                final String[] parts = currentLine.split("=");
 
-                if (parts.length > 2) {
-                    throw new IllegalArgumentException(
+        while ((currentLine = getNextLine(mapReader)) != null) {
+
+            final String[] parts = currentLine.split("=");
+
+            if (parts.length > 2) {
+                throw new IllegalArgumentException(
                         "Property line is malformed: " + currentLine);
-                }
-
-                ArtifactInfo artifactInfo = createArtifactInfo(parts[0], parts.length == 1 ? "" : parts[1]);
-                keysMapList.add(artifactInfo);
             }
+
+            ArtifactInfo artifactInfo = createArtifactInfo(parts[0], parts.length == 1 ? "" : parts[1]);
+            keysMapList.add(artifactInfo);
         }
     }
 
-    private boolean isCommentLine(final String line) {
-        return !line.isEmpty() && line.charAt(0) == '#';
+    private String getNextLine(BufferedReader mapReader) throws IOException {
+
+        StringBuilder nextLine = new StringBuilder();
+        String line;
+
+        while ((line = getNextNotEmptyLine(mapReader)) != null) {
+
+            if (line.charAt(line.length() - 1) == '\\') {
+                nextLine.append(line, 0, line.length() - 1);
+                nextLine.append(" ");
+            } else {
+                nextLine.append(line);
+                break;
+            }
+        }
+        String ret = nextLine.toString().trim();
+        return ret.length() == 0 ? null : ret;
+    }
+
+    private String getNextNotEmptyLine(BufferedReader readLine) throws IOException {
+
+        String nextLine = null;
+        String line;
+
+        while ((line = readLine.readLine()) != null) {
+            nextLine = stripComments(line.trim());
+            if (!nextLine.isEmpty()) {
+                break;
+            }
+        }
+
+        return nextLine == null || nextLine.length() == 0 ? null : nextLine;
+    }
+
+    private String stripComments(String line) {
+        if (line.length() < 1) {
+            return line;
+        }
+        int hashIndex = line.indexOf('#');
+        return hashIndex >= 0 ? line.substring(0, hashIndex).trim() : line;
     }
 
     private ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {

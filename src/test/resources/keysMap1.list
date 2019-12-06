@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-junit    : junit        : 4.12    = 0x123456789ABCDef0
+junit    : junit        : 4.12    = 0x123456789ABCDef0, \
+    0x123456789ABCDeff  # next key in new line
+
 testlong : fingerprint            = 0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0
 test.*                            = any

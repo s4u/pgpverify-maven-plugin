@@ -15,4 +15,6 @@
 #
 org.hamcrest:hamcrest-core:1.3  = 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E
 junit:junit:4.12                = 0xEFE8086F9E93774E
-commons-chain:commons-chain:1.2 = 0xB95BBD3FA43C4492, 0x1861C322C56014B2
+
+commons-chain:commons-chain:1.2 = 0xB95BBD3FA43C4492, \
+                                  0x1861C322C56014B2
