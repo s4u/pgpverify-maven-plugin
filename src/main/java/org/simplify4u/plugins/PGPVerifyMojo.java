@@ -426,7 +426,8 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
         } catch (IOException | PGPException e) {
-            throw new MojoFailureException(e.getMessage(), e);
+            throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
+                    + artifact.getId(), e);
         }
     }
 
