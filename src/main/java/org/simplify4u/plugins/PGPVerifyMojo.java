@@ -236,6 +236,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value
      * for those fields.</p>
      *
+     * <p>You can use maven version range syntax for version item.</p>
+     *
+     * <p>When line end with <code>\</code> next line is concatenated with current line - multiline format.</p>
+     *
      * @since 1.1.0
      */
     @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")

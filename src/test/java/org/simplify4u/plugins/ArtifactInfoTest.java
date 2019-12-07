@@ -16,6 +16,7 @@
 package org.simplify4u.plugins;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -32,19 +33,29 @@ public class ArtifactInfoTest {
     @DataProvider(name = "lists")
     public Object[][] artifactsList() {
         return new Object[][]{
-                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.1") },
-                {"test.group:test:1.1.*", getArtifact("test.group", "test", "1.1.5") },
-                {"test.group:test", getArtifact("test.group", "test", "1.2.3") },
-                {"test.*:test", getArtifact("test.group", "test", "1.2.3") },
-                {"test.*", getArtifact("test.group", "test-test", "1.2.3") },
+                {"test.group:test:*", getArtifact("test.group", "test", "1.1.1"), true },
+                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.1"), true },
+                {"test.group:test:[1.1,2.0)", getArtifact("test.group", "test", "1.1.1"), true },
+                {"test.group:test:[1.1,2.0)", getArtifact("test.group", "test", "2.0"), false },
+                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.2"), false },
+                {"test.group:test", getArtifact("test.group", "test", "1"), true },
+                {"test.group:test", getArtifact("test.group", "test", "1.2.3"), true },
+                {"test.*:test", getArtifact("test.group", "test", "1.2.3"), true },
+                {"test.*", getArtifact("test.group", "test-test", "1.2.3"), true },
         };
     }
 
     @Test(dataProvider = "lists")
-    public void testMatchArtifact(String pattern, Artifact artifact) {
+    public void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
 
         ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
-        assertTrue(artifactInfo.isMatch(artifact));
+        assertTrue(artifactInfo.isMatch(artifact) == match);
         assertTrue(artifactInfo.isKeyMatch(null));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "Invalid artifact definition: test.group:test:1.0.*")
+    public void asteriskInVersionThrowException() {
+        new ArtifactInfo("test.group:test:1.0.*", ANY_KEY);
     }
 }
