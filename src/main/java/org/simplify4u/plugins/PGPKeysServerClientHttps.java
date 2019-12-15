@@ -39,47 +39,46 @@ import org.apache.http.impl.client.HttpClients;
 public class PGPKeysServerClientHttps extends PGPKeysServerClient {
     private final SSLConnectionSocketFactory sslSocketFactory;
 
-    protected PGPKeysServerClientHttps(final URI uri, final int connectTimeout,
-                                       final int readTimeout)
-    throws URISyntaxException, CertificateException, IOException, KeyStoreException,
-           NoSuchAlgorithmException, KeyManagementException {
-        super(uri, connectTimeout, readTimeout);
+    protected PGPKeysServerClientHttps(URI uri, int connectTimeout, int readTimeout, int maxAttempts)
+            throws IOException {
 
-        if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
-            final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            final Certificate ca = cf.generateCertificate(
-                getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+        super(prepareKeyServerURI(uri), connectTimeout, readTimeout, maxAttempts);
 
-            final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try {
+            if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
+                final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                final Certificate ca = cf.generateCertificate(
+                        getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
 
-            keyStore.load(null, null);
-            keyStore.setCertificateEntry("ca", ca);
+                final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            final TrustManagerFactory tmf
-                = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(keyStore);
+                keyStore.load(null, null);
+                keyStore.setCertificateEntry("ca", ca);
 
-            final SSLContext context = SSLContext.getInstance("TLS");
-            context.init(null, tmf.getTrustManagers(), null);
+                final TrustManagerFactory tmf
+                        = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(keyStore);
 
-            this.sslSocketFactory
-                = new SSLConnectionSocketFactory(
-                    context, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-        } else {
-            this.sslSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
+                final SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, tmf.getTrustManagers(), null);
+
+                this.sslSocketFactory
+                        = new SSLConnectionSocketFactory(
+                        context, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+            } else {
+                this.sslSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
+            }
+        } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
+            throw new IOException(e);
         }
     }
 
-    @Override
-    protected URI prepareKeyServerURI(URI keyserver) throws URISyntaxException {
-        return new URI(
-            "https",
-            keyserver.getUserInfo(),
-            keyserver.getHost(),
-            keyserver.getPort(),
-            null,
-            null,
-            null);
+    private static URI prepareKeyServerURI(URI keyserver) throws IOException {
+        try {
+            return new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(), null, null, null);
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

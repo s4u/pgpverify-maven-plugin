@@ -15,6 +15,7 @@
  */
 package org.simplify4u.plugins;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -24,14 +25,15 @@ import org.apache.http.impl.client.HttpClientBuilder;
  * Implementation of a client for requesting keys from PGP key servers over HKP/HTTP.
  */
 class PGPKeysServerClientHttp extends PGPKeysServerClient {
-    protected PGPKeysServerClientHttp(final URI keyserver, final int connectTimeout,
-                                      final int readTimeout)
-    throws URISyntaxException {
-        super(keyserver, connectTimeout, readTimeout);
+
+    protected PGPKeysServerClientHttp(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts)
+            throws IOException {
+
+        super(prepareKeyServerURI(keyserver), connectTimeout, readTimeout, maxAttempts);
     }
 
-    @Override
-    protected URI prepareKeyServerURI(URI keyServer) throws URISyntaxException {
+    private static URI prepareKeyServerURI(URI keyServer) throws IOException {
+
         int port = -1;
 
         if (keyServer.getPort() > 0) {
@@ -40,8 +42,11 @@ class PGPKeysServerClientHttp extends PGPKeysServerClient {
             port = 11371;
         }
 
-        return new URI(
-            "http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null);
+        try {
+            return new URI("http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null);
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

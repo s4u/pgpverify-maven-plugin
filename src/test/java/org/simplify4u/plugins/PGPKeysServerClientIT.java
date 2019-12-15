@@ -20,19 +20,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-import org.apache.http.protocol.HttpContext;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -58,23 +51,23 @@ public class PGPKeysServerClientIT {
         return new Object[][]{
             {
                 "https://10.255.255.1:65535",
-                "org.apache.http.conn.ConnectTimeoutException: Connect to 10.255.255.1:65535 "
-                + "[/10.255.255.1] failed: connect timed out",
+                "java.io.IOException: Connect to 10.255.255.1:65535 [/10.255.255.1] failed: connect timed out " +
+                "for: https://10.255.255.1:65535",
                 true    // Should retry
             },
             {
                 "https://httpstat.us/200?sleep=10000",
-                "java.net.SocketTimeoutException: Read timed out",
+                "java.io.IOException: Read timed out for: https://httpstat.us/200?sleep=10000",
                 true    // Should retry
             },
             {
                 "https://httpstat.us/502",
-                "java.io.IOException: PGP server returned an error: HTTP/1.1 502 Bad Gateway",
+                "java.io.IOException: PGP server returned an error: HTTP/1.1 502 Bad Gateway for: https://httpstat.us/502",
                 true    // Should retry
             },
             {
                 "https://httpstat.us/404",
-                "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found",
+                "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found for: https://httpstat.us/404",
                 false    // Should not retry
             }
         };
@@ -100,13 +93,7 @@ public class PGPKeysServerClientIT {
         final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl);
 
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-            client.copyKeyToOutputStream(
-                TEST_KEYID,
-                outputStream,
-                new PGPServerRetryHandler(
-                    new SystemStreamLog(),
-                    PGPServerRetryHandler.DEFAULT_MAX_RETRIES,
-                    PGPServerRetryHandler.DEFAULT_BACKOFF_INTERVAL));
+            client.copyKeyToOutputStream(TEST_KEYID, outputStream, null);
         }
 
         assertTrue(tempFile.length() > 0, "Downloaded key was not expected to be empty");
@@ -120,23 +107,16 @@ public class PGPKeysServerClientIT {
         final int maxRetries = 2;
         final AtomicInteger attemptedRetries = new AtomicInteger(0);
 
-        final PGPServerRetryHandler retryHandler = new PGPServerRetryHandler(maxRetries) {
-            @Override
-            protected void onRetry(final String retryReason, final int retryCount,
-                                   final long backoffDelay, final HttpContext requestContext) {
-                attemptedRetries.incrementAndGet();
-            }
-        };
-
         // We use short timeouts for both timeouts since we don't want to hold up the tests on URLs
         // we know will take a while.
         final PGPKeysServerClient client
-            = new StubbedClient(new URI(targetUrl), SHORT_TEST_TIMEOUT, SHORT_TEST_TIMEOUT);
+            = new StubbedClient(new URI(targetUrl), SHORT_TEST_TIMEOUT, SHORT_TEST_TIMEOUT, maxRetries);
 
         IOException caughtException = null;
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            client.copyKeyToOutputStream(TEST_KEYID, outputStream, retryHandler);
+            client.copyKeyToOutputStream(TEST_KEYID, outputStream,
+                    (address, retry, exception) -> attemptedRetries.getAndIncrement());
         } catch (IOException ex) {
             caughtException = ex;
         }
@@ -158,15 +138,11 @@ public class PGPKeysServerClientIT {
      * which URL is being requested. Each URL provided by tests simulates a different type of
      * failure.
      */
-    private static class StubbedClient
-    extends PGPKeysServerClientHttps {
+    private static class StubbedClient extends PGPKeysServerClientHttps {
         private final URI stubbedUri;
 
-        StubbedClient(final URI stubbedUri, final int connectTimeout, final int readTimeout)
-        throws CertificateException, NoSuchAlgorithmException, IOException, KeyManagementException,
-               KeyStoreException, URISyntaxException {
-            super(stubbedUri, connectTimeout, readTimeout);
-
+        StubbedClient(URI stubbedUri, int connectTimeout, int readTimeout, int maxAttempts) throws IOException {
+            super(stubbedUri, connectTimeout, readTimeout, maxAttempts);
             this.stubbedUri = stubbedUri;
         }
 

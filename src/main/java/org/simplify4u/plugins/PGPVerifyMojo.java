@@ -22,11 +22,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -334,8 +329,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private void initCache() throws MojoFailureException {
         try {
             pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, pgpKeyServer);
-        } catch (URISyntaxException | IOException | CertificateException | NoSuchAlgorithmException
-                | KeyStoreException | KeyManagementException e) {
+        } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
     }

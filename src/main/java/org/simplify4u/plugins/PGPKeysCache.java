@@ -22,13 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.Optional;
 
 import org.apache.maven.plugin.logging.Log;
@@ -49,9 +45,7 @@ public class PGPKeysCache {
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(Log log, File cachePath, String keyServer)
-            throws URISyntaxException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException,
-            KeyManagementException {
+    public PGPKeysCache(Log log, File cachePath, String keyServer) throws IOException {
 
         this.log = log;
         this.cachePath = cachePath;
@@ -123,7 +117,7 @@ public class PGPKeysCache {
 
         try {
             try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
-                keysServerClient.copyKeyToOutputStream(keyId, outputStream, new PGPServerRetryHandler(this.log));
+                keysServerClient.copyKeyToOutputStream(keyId, outputStream, this::onRetry);
             }
             Files.move(partFile.toPath(), keyFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
@@ -134,6 +128,11 @@ public class PGPKeysCache {
         }
 
         log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
+    }
+
+    private void onRetry(InetAddress address, int numberOfRetryAttempts, Throwable lastThrowable) {
+        log.warn(String.format("[Retry #%d] Last address %s with problem: %s",
+                numberOfRetryAttempts, address, lastThrowable));
     }
 
     private void deleteFile(File file) {
