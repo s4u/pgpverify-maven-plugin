@@ -17,6 +17,14 @@
 
 package org.simplify4u.plugins;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
@@ -25,16 +33,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
-import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
-
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -69,8 +68,7 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
-            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(),
-                    new CompositeSkipper(), verifyPomFiles));
+            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
             // NOTE: plug-in artifacts are included, but plug-in's dependencies aren't yet.
         }
         log.debug("Discovered project artifacts: " + allArtifacts);

@@ -66,6 +66,7 @@
                     <strictNoSignature>true</strictNoSignature>
                     <keysMapLocation>${project.basedir}/keysmap.list</keysMapLocation>
                     <verifyPlugins>true</verifyPlugins>
+                    <verifySnapshots>true</verifySnapshots>
                 </configuration>
                 <executions>
                     <execution>
