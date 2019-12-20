@@ -102,7 +102,6 @@ public class ReactorDependencySkipper implements SkipFilter {
      *   If either the two artifacts are equal or correspond to the same Maven
      *   coordinates.
      */
-    @SuppressWarnings("PMD.UselessParentheses")
     private boolean artifactsMatch(final Artifact artifact1,
                                    final Artifact artifact2) {
         return artifact1.equals(artifact2)
