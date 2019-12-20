@@ -121,6 +121,7 @@ final class ArtifactResolver {
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
+            // NOTE only immediate plug-in dependencies are validated. Indirect dependenies are not validated yet.
             allArtifacts.addAll(resolveArtifacts(
                     project.getBuildPlugins().stream()
                             .flatMap(p -> p.getDependencies().stream())
