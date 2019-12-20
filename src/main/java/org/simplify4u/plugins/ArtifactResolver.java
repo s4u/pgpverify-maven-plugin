@@ -121,13 +121,17 @@ final class ArtifactResolver {
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
-            // NOTE only immediate plug-in dependencies are validated. Indirect dependenies are not validated yet.
+            // Maven does not allow specifying version ranges for build plug-in
+            // dependencies, therefore we can use the literal specified
+            // dependency.
+            // TODO: only immediate plug-in dependencies are validated. Indirect dependencies are not validated yet.
             allArtifacts.addAll(resolveArtifacts(
                     project.getBuildPlugins().stream()
                             .flatMap(p -> p.getDependencies().stream())
                             .map(repositorySystem::createDependencyArtifact)
                             .collect(Collectors.toList()),
                     filter, verifyPomFiles));
+            // TODO: there is a common special source of additional jars: maven-compiler-plugin's annotationProcessorPaths configuration section, which references jars to be loaded as annotation processors.
         }
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
