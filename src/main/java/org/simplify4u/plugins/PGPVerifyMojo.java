@@ -235,6 +235,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * <p>When line end with <code>\</code> next line is concatenated with current line - multiline format.</p>
      *
+     * You can use ready keys map: https://github.com/s4u/pgp-keys-map
+     *
      * @since 1.1.0
      */
     @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
