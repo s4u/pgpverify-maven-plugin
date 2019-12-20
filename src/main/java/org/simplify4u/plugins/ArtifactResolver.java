@@ -121,7 +121,12 @@ final class ArtifactResolver {
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
-            // NOTE: plug-in artifacts are included, but plug-in's dependencies aren't yet.
+            allArtifacts.addAll(resolveArtifacts(
+                    project.getBuildPlugins().stream()
+                            .flatMap(p -> p.getDependencies().stream())
+                            .map(repositorySystem::createDependencyArtifact)
+                            .collect(Collectors.toList()),
+                    filter, verifyPomFiles));
         }
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
