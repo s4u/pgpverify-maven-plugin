@@ -24,3 +24,7 @@ org.apache.maven.plugins:maven-install-plugin:2.4=0x873A8E86B4372146
 org.apache.maven.plugins:maven-deploy-plugin:2.7=0xC7CA19B7B620D787
 org.apache.maven.plugins:maven-site-plugin:3.3=0xC92C5FEC70161C62
 org.apache.maven.plugins:maven-clean-plugin:2.5=0x873A8E86B4372146
+org.apache.maven.plugins:maven-pmd-plugin:* = 0xC870735180244047DA600FDEC171A58398EEC284
+#
+# Plugin dependencies:
+net.sourceforge.pmd:*:* = 0x912E716EF6D98746F8EEB4D182DE7BE82166E84E
