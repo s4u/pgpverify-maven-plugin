@@ -17,17 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -38,6 +27,19 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
+import static org.simplify4u.plugins.MavenCompilerUtils.extractAnnotationProcessors;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -112,29 +114,44 @@ final class ArtifactResolver {
      *         the artifact filter
      * @param verifyPomFiles
      *         indicator whether to verify POM file signatures as well
+     * @param verifyPlugins
+     *         indicator whether to verify build plug-ins
+     * @param verifyAtypical
+     *         indicator whether to verify "special" artifacts in non-typical locations:
+     *         annotation processors in maven-compiler-plugin.
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
     Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles,
-                                          boolean verifyPlugins) throws MojoExecutionException {
+                                          boolean verifyPlugins, boolean verifyAtypical) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
+            // TODO: applying dependency filters to build plug-ins may result in all build plug-ins being dropped because these are listed as 'runtime'-scoped.
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
-            // Maven does not allow specifying version ranges for build plug-in
-            // dependencies, therefore we can use the literal specified
-            // dependency.
-            // TODO: only immediate plug-in dependencies are validated. Indirect dependencies are not validated yet.
+            // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
+            // literal specified dependency.
             allArtifacts.addAll(resolveArtifacts(
                     project.getBuildPlugins().stream()
                             .flatMap(p -> p.getDependencies().stream())
                             .map(repositorySystem::createDependencyArtifact)
                             .collect(Collectors.toList()),
                     filter, verifyPomFiles));
-            // TODO: there is a common special source of additional jars: maven-compiler-plugin's annotationProcessorPaths configuration section, which references jars to be loaded as annotation processors.
         }
+        if (verifyAtypical) {
+            // verify artifacts in atypical (configuration) locations, i.e. not dependencies.
+            allArtifacts.addAll(resolveArtifacts(findCompilerAnnotationProcessors(project), filter, verifyPomFiles));
+        }
+        // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
+    }
+
+    private Collection<Artifact> findCompilerAnnotationProcessors(MavenProject project) {
+        return project.getBuildPlugins().stream()
+                .filter(MavenCompilerUtils::checkCompilerPlugin)
+                .flatMap(p -> extractAnnotationProcessors(repositorySystem, p).stream())
+                .collect(Collectors.toList());
     }
 
     /**

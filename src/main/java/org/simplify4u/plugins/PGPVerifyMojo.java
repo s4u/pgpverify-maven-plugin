@@ -176,6 +176,17 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPlugins;
 
     /**
+     * Verify dependency artifact in atypical locations:
+     * <ul>
+     *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
+     * </ul>
+     *
+     * @since 1.6.0
+     */
+    @Parameter(property = "pgpverify.verifyAtypical", defaultValue = "false")
+    private boolean verifyAtypical;
+
+    /**
      * Verify "provided" dependencies, which the JDK or a container provide at runtime.
      *
      * @since 1.2.0
@@ -271,7 +282,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
-                    this.project, filter, this.verifyPomFiles, this.verifyPlugins);
+                    this.project, filter, this.verifyPomFiles, this.verifyPlugins, this.verifyAtypical);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(artifactMap);
