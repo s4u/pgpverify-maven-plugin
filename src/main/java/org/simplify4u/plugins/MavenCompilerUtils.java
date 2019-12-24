@@ -85,8 +85,8 @@ final class MavenCompilerUtils {
         // It is expected that this will never occur due to all Configuration instances of all plugins being provided as
         // XML document. If this happens to occur on very old plugin versions, we can safely add the type support and
         // simply return an empty set.
-        throw new UnsupportedOperationException("Please report that an unsupported type of configuration container was encountered: "
-                + config.getClass());
+        throw new UnsupportedOperationException("Please report that an unsupported type of configuration container" +
+                " was encountered: " + config.getClass());
     }
 
     /**

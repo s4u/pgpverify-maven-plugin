@@ -127,7 +127,8 @@ final class ArtifactResolver {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
         if (verifyPlugins) {
-            // FIXME: applying dependency filters to build plug-ins may result in all build plug-ins being dropped because these are listed as 'runtime'-scoped.
+            // FIXME: applying dependency filters to build plug-ins may result in all build plug-ins being dropped,
+            //  because these are listed as 'runtime'-scoped.
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
             // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
             // literal specified dependency.
@@ -142,7 +143,8 @@ final class ArtifactResolver {
             // verify artifacts in atypical locations, such as references in configuration.
             allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), filter, verifyPomFiles));
         }
-        // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
+        // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin
+        //  annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
     }
