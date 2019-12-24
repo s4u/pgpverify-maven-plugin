@@ -32,5 +32,11 @@ assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-site-plugin
 assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-site-plugin:pom:3.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-clean-plugin:maven-plugin:2.5 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-clean-plugin:pom:2.5 PGP Signature OK')
+assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-pmd-plugin:maven-plugin:3.12.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-pmd-plugin:pom:3.12.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-java:jar:6.15.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-java:pom:6.15.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-core:jar:6.15.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-core:pom:6.15.0 PGP Signature OK')
 
 assert buildLog.text.contains('[INFO] BUILD SUCCESS')
