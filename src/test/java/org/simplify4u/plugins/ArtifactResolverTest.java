@@ -27,6 +27,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.mockito.stubbing.Answer;
+import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.testng.annotations.Test;
@@ -78,8 +79,9 @@ public class ArtifactResolverTest {
         final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
         final MavenProject project = mock(MavenProject.class);
 
-        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), new CompositeSkipper(emptyList()), false, false, false);
+        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+                new CompositeSkipper(emptyList()), false, false, false);
+        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
         assertEquals(emptySet(), resolved);
     }
 
@@ -98,8 +100,9 @@ public class ArtifactResolverTest {
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), new CompositeSkipper(emptyList()), false, false, false);
+        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+                new CompositeSkipper(emptyList()), false, false, false);
+        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
         assertEquals(1, resolved.size());
         assertTrue(resolved.iterator().next().isResolved());
     }
@@ -120,8 +123,9 @@ public class ArtifactResolverTest {
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Set<Artifact> resolvedSet = resolver.resolveProjectArtifacts(project,
-                new CompositeSkipper(emptyList()), new CompositeSkipper(emptyList()), true, false, false);
+        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+                new CompositeSkipper(emptyList()), true, false, false);
+        final Set<Artifact> resolvedSet = resolver.resolveProjectArtifacts(project, config);
         verify(repositorySystem, times(1))
                 .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
         assertEquals(resolvedSet.size(), 2);

@@ -112,26 +112,17 @@ final class ArtifactResolver {
      *
      * @param project
      *         the maven project instance
-     * @param dependencyFilter
-     *         the artifact filter for dependencies (of various kinds)
-     * @param pluginFilter
-     *         the artifact filter for build plug-ins
-     * @param verifyPomFiles
-     *         indicator whether to verify POM file signatures as well
-     * @param verifyPlugins
-     *         indicator whether to verify build plug-ins
-     * @param verifyAtypical
-     *         indicator whether to verify "special" artifacts in non-typical locations:
-     *         annotation processors in maven-compiler-plugin.
+     * @param config
+     *         configuration for the artifact resolver
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter dependencyFilter, SkipFilter pluginFilter,
-            boolean verifyPomFiles, boolean verifyPlugins, boolean verifyAtypical) throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
-                resolveArtifacts(project.getArtifacts(), dependencyFilter, verifyPomFiles));
-        if (verifyPlugins) {
-            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), pluginFilter, verifyPomFiles));
+                resolveArtifacts(project.getArtifacts(), config.dependencyFilter, config.verifyPomFiles));
+        if (config.verifyPlugins) {
+            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), config.pluginFilter,
+                    config.verifyPomFiles));
             // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
             // literal specified dependency.
             allArtifacts.addAll(resolveArtifacts(
@@ -139,11 +130,12 @@ final class ArtifactResolver {
                             .flatMap(p -> p.getDependencies().stream())
                             .map(repositorySystem::createDependencyArtifact)
                             .collect(Collectors.toList()),
-                    dependencyFilter, verifyPomFiles));
+                    config.dependencyFilter, config.verifyPomFiles));
         }
-        if (verifyAtypical) {
+        if (config.verifyAtypical) {
             // verify artifacts in atypical locations, such as references in configuration.
-            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), dependencyFilter, verifyPomFiles));
+            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), config.dependencyFilter,
+                    config.verifyPomFiles));
         }
         // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin
         //  annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
@@ -308,5 +300,35 @@ final class ArtifactResolver {
          * that missing signature is an immediate failure case.
          */
         REQUIRED,
+    }
+
+    /**
+     * Configuration struct for Artifact Resolver.
+     */
+    public static final class Configuration {
+        final SkipFilter dependencyFilter;
+        final SkipFilter pluginFilter;
+        final boolean verifyPomFiles;
+        final boolean verifyPlugins;
+        final boolean verifyAtypical;
+
+        /**
+         * Constructor.
+         *
+         * @param dependencyFilter filter for evaluating dependencies
+         * @param pluginFilter     filter for evaluating plugins
+         * @param verifyPomFiles   verify POM files as well
+         * @param verifyPlugins    verify build plugins as well
+         * @param verifyAtypical   verify dependencies in a-typical locations, such as maven-compiler-plugin's
+         *                         annotation processors.
+         */
+        public Configuration(SkipFilter dependencyFilter, SkipFilter pluginFilter, boolean verifyPomFiles,
+                boolean verifyPlugins, boolean verifyAtypical) {
+            this.dependencyFilter = requireNonNull(dependencyFilter);
+            this.pluginFilter = requireNonNull(pluginFilter);
+            this.verifyPomFiles = verifyPomFiles;
+            this.verifyPlugins = verifyPlugins;
+            this.verifyAtypical = verifyAtypical;
+        }
     }
 }

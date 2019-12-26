@@ -52,6 +52,7 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
@@ -282,9 +283,9 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
-            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
-                    this.project, dependencyFilter, pluginFilter, this.verifyPomFiles, this.verifyPlugins,
-                    this.verifyAtypical);
+            final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
+                    this.verifyPlugins, this.verifyAtypical);
+            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(artifactMap);
