@@ -110,8 +110,12 @@ final class ArtifactResolver {
     /**
      * Types of dependencies: compile, provided, test, runtime, system, maven-plugin.
      *
-     * @param filter
-     *         the artifact filter
+     * @param project
+     *         the maven project instance
+     * @param dependencyFilter
+     *         the artifact filter for dependencies (of various kinds)
+     * @param pluginFilter
+     *         the artifact filter for build plug-ins
      * @param verifyPomFiles
      *         indicator whether to verify POM file signatures as well
      * @param verifyPlugins
@@ -122,14 +126,12 @@ final class ArtifactResolver {
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles,
-                                          boolean verifyPlugins, boolean verifyAtypical) throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter dependencyFilter, SkipFilter pluginFilter,
+            boolean verifyPomFiles, boolean verifyPlugins, boolean verifyAtypical) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
-                resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
+                resolveArtifacts(project.getArtifacts(), dependencyFilter, verifyPomFiles));
         if (verifyPlugins) {
-            // FIXME: applying dependency filters to build plug-ins may result in all build plug-ins being dropped,
-            //  because these are listed as 'runtime'-scoped.
-            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
+            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), pluginFilter, verifyPomFiles));
             // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
             // literal specified dependency.
             allArtifacts.addAll(resolveArtifacts(
@@ -137,11 +139,11 @@ final class ArtifactResolver {
                             .flatMap(p -> p.getDependencies().stream())
                             .map(repositorySystem::createDependencyArtifact)
                             .collect(Collectors.toList()),
-                    filter, verifyPomFiles));
+                    dependencyFilter, verifyPomFiles));
         }
         if (verifyAtypical) {
             // verify artifacts in atypical locations, such as references in configuration.
-            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), filter, verifyPomFiles));
+            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), dependencyFilter, verifyPomFiles));
         }
         // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin
         //  annotation processors). Indirect dependencies (transitive closure) are not resolved yet.

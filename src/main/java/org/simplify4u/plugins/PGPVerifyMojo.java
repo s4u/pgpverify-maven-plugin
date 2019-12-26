@@ -276,13 +276,15 @@ public class PGPVerifyMojo extends AbstractMojo {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
         } else {
-            final SkipFilter filter = prepareSkipFilters();
+            final SkipFilter dependencyFilter = prepareDependencyFilters();
+            final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
 
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
-                    this.project, filter, this.verifyPomFiles, this.verifyPlugins, this.verifyAtypical);
+                    this.project, dependencyFilter, pluginFilter, this.verifyPomFiles, this.verifyPlugins,
+                    this.verifyAtypical);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(artifactMap);
@@ -299,7 +301,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         return SignatureRequirement.NONE;
     }
 
-    private SkipFilter prepareSkipFilters() {
+    private SkipFilter prepareDependencyFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
 
         filters.add(new ScopeSkipper(this.scope));
@@ -318,6 +320,16 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         if (!this.verifyReactorDependencies) {
             filters.add(new ReactorDependencySkipper(this.project, this.session));
+        }
+
+        return new CompositeSkipper(filters);
+    }
+
+    private SkipFilter preparePluginFilters() {
+        final List<SkipFilter> filters = new LinkedList<>();
+
+        if (!this.verifySnapshots) {
+            filters.add(new SnapshotDependencySkipper());
         }
 
         return new CompositeSkipper(filters);
