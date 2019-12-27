@@ -38,5 +38,8 @@ assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-java:jar:6.15.0 PG
 assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-java:pom:6.15.0 PGP Signature OK')
 assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-core:jar:6.15.0 PGP Signature OK')
 assert buildLog.text.contains('[INFO] net.sourceforge.pmd:pmd-core:pom:6.15.0 PGP Signature OK')
-
+assert buildLog.text.contains('[INFO] com.google.errorprone:error_prone_core:jar:2.3.3 PGP Signature OK')
+assert buildLog.text.contains('[INFO] com.google.errorprone:error_prone_core:pom:2.3.3 PGP Signature OK')
+assert buildLog.text.contains('[INFO] com.uber.nullaway:nullaway:jar:0.7.8 PGP Signature OK')
+assert buildLog.text.contains('[INFO] com.uber.nullaway:nullaway:pom:0.7.8 PGP Signature OK')
 assert buildLog.text.contains('[INFO] BUILD SUCCESS')

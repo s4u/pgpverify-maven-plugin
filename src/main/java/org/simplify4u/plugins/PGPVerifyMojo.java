@@ -52,6 +52,7 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
@@ -176,6 +177,17 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPlugins;
 
     /**
+     * Verify dependency artifact in atypical locations:
+     * <ul>
+     *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
+     * </ul>
+     *
+     * @since 1.6.0
+     */
+    @Parameter(property = "pgpverify.verifyAtypical", defaultValue = "false")
+    private boolean verifyAtypical;
+
+    /**
      * Verify "provided" dependencies, which the JDK or a container provide at runtime.
      *
      * @since 1.2.0
@@ -265,13 +277,15 @@ public class PGPVerifyMojo extends AbstractMojo {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
         } else {
-            final SkipFilter filter = prepareSkipFilters();
+            final SkipFilter dependencyFilter = prepareDependencyFilters();
+            final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
 
             final ArtifactResolver resolver = new ArtifactResolver(getLog(),
                     repositorySystem, localRepository, remoteRepositories);
-            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(
-                    this.project, filter, this.verifyPomFiles, this.verifyPlugins);
+            final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
+                    this.verifyPlugins, this.verifyAtypical);
+            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(artifactMap);
@@ -288,7 +302,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         return SignatureRequirement.NONE;
     }
 
-    private SkipFilter prepareSkipFilters() {
+    private SkipFilter prepareDependencyFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
 
         filters.add(new ScopeSkipper(this.scope));
@@ -307,6 +321,16 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         if (!this.verifyReactorDependencies) {
             filters.add(new ReactorDependencySkipper(this.project, this.session));
+        }
+
+        return new CompositeSkipper(filters);
+    }
+
+    private SkipFilter preparePluginFilters() {
+        final List<SkipFilter> filters = new LinkedList<>();
+
+        if (!this.verifySnapshots) {
+            filters.add(new SnapshotDependencySkipper());
         }
 
         return new CompositeSkipper(filters);

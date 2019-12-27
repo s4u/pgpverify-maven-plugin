@@ -17,17 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
-
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
@@ -38,6 +27,19 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.Objects.requireNonNull;
+import static org.simplify4u.plugins.MavenCompilerUtils.extractAnnotationProcessors;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -108,33 +110,44 @@ final class ArtifactResolver {
     /**
      * Types of dependencies: compile, provided, test, runtime, system, maven-plugin.
      *
-     * @param filter
-     *         the artifact filter
-     * @param verifyPomFiles
-     *         indicator whether to verify POM file signatures as well
+     * @param project
+     *         the maven project instance
+     * @param config
+     *         configuration for the artifact resolver
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    Set<Artifact> resolveProjectArtifacts(MavenProject project, SkipFilter filter, boolean verifyPomFiles,
-                                          boolean verifyPlugins) throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
-                resolveArtifacts(project.getArtifacts(), filter, verifyPomFiles));
-        if (verifyPlugins) {
-            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), filter, verifyPomFiles));
-            // Maven does not allow specifying version ranges for build plug-in
-            // dependencies, therefore we can use the literal specified
-            // dependency.
-            // TODO: only immediate plug-in dependencies are validated. Indirect dependencies are not validated yet.
+                resolveArtifacts(project.getArtifacts(), config.dependencyFilter, config.verifyPomFiles));
+        if (config.verifyPlugins) {
+            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), config.pluginFilter,
+                    config.verifyPomFiles));
+            // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
+            // literal specified dependency.
             allArtifacts.addAll(resolveArtifacts(
                     project.getBuildPlugins().stream()
                             .flatMap(p -> p.getDependencies().stream())
                             .map(repositorySystem::createDependencyArtifact)
                             .collect(Collectors.toList()),
-                    filter, verifyPomFiles));
-            // TODO: there is a common special source of additional jars: maven-compiler-plugin's annotationProcessorPaths configuration section, which references jars to be loaded as annotation processors.
+                    config.dependencyFilter, config.verifyPomFiles));
         }
+        if (config.verifyAtypical) {
+            // verify artifacts in atypical locations, such as references in configuration.
+            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), config.dependencyFilter,
+                    config.verifyPomFiles));
+        }
+        // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin
+        //  annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
         log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
+    }
+
+    private Collection<Artifact> searchCompilerAnnotationProcessors(MavenProject project) {
+        return project.getBuildPlugins().stream()
+                .filter(MavenCompilerUtils::checkCompilerPlugin)
+                .flatMap(p -> extractAnnotationProcessors(repositorySystem, p).stream())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -287,5 +300,35 @@ final class ArtifactResolver {
          * that missing signature is an immediate failure case.
          */
         REQUIRED,
+    }
+
+    /**
+     * Configuration struct for Artifact Resolver.
+     */
+    public static final class Configuration {
+        final SkipFilter dependencyFilter;
+        final SkipFilter pluginFilter;
+        final boolean verifyPomFiles;
+        final boolean verifyPlugins;
+        final boolean verifyAtypical;
+
+        /**
+         * Constructor.
+         *
+         * @param dependencyFilter filter for evaluating dependencies
+         * @param pluginFilter     filter for evaluating plugins
+         * @param verifyPomFiles   verify POM files as well
+         * @param verifyPlugins    verify build plugins as well
+         * @param verifyAtypical   verify dependencies in a-typical locations, such as maven-compiler-plugin's
+         *                         annotation processors.
+         */
+        public Configuration(SkipFilter dependencyFilter, SkipFilter pluginFilter, boolean verifyPomFiles,
+                boolean verifyPlugins, boolean verifyAtypical) {
+            this.dependencyFilter = requireNonNull(dependencyFilter);
+            this.pluginFilter = requireNonNull(pluginFilter);
+            this.verifyPomFiles = verifyPomFiles;
+            this.verifyPlugins = verifyPlugins;
+            this.verifyAtypical = verifyAtypical;
+        }
     }
 }
