@@ -428,6 +428,10 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
             PGPSignatures.readFileContentInto(pgpSignature, artifactFile);
+
+            getLog().debug("signature.KeyAlgorithm: " + pgpSignature.getKeyAlgorithm()
+                    + " signature.hashAlgorithm: " + pgpSignature.getHashAlgorithm());
+
             if (pgpSignature.verify()) {
                 final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                         "OK", PublicKeyUtils.fingerprint(publicKey), Lists.newArrayList(publicKey.getUserIDs()));
