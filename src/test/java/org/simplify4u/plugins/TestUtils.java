@@ -53,6 +53,7 @@ public abstract class TestUtils {
 
         PGPPublicKey pgpKey = mock(PGPPublicKey.class);
         when(pgpKey.getFingerprint()).thenReturn(bytes);
+        when(pgpKey.isMasterKey()).thenReturn(true);
 
         return pgpKey;
     }

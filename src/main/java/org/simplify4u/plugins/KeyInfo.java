@@ -19,8 +19,10 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 
 /**
  * Store info about key number.
@@ -80,19 +82,25 @@ public class KeyInfo {
         return bytes;
     }
 
-    public boolean isKeyMatch(PGPPublicKey pgpPublicKeyey) {
+    public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
 
         if (matchAny) {
             return true;
         }
 
-        byte[] fingerprint = pgpPublicKeyey.getFingerprint();
+        byte[] fingerprint = pgpPublicKey.getFingerprint();
 
         for (byte[] keyBytes : keysID) {
             if (compareArrays(keyBytes, fingerprint)) {
                 return true;
             }
         }
+
+        Optional<PGPPublicKey> masterKey = PublicKeyUtils.getMasterKey(pgpPublicKey, pgpPublicKeyRing);
+        if (masterKey.isPresent()) {
+            return isKeyMatch(masterKey.get(), pgpPublicKeyRing);
+        }
+
         return false;
     }
 

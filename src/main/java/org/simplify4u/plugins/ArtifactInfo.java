@@ -25,6 +25,7 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 
 /**
  * @author Slawomir Jaranowski.
@@ -105,8 +106,8 @@ public class ArtifactInfo {
         return m.matches();
     }
 
-    public boolean isKeyMatch(PGPPublicKey key) {
-        return keyInfo.isKeyMatch(key);
+    public boolean isKeyMatch(PGPPublicKey key, PGPPublicKeyRing keyRing) {
+        return keyInfo.isKeyMatch(key, keyRing);
     }
 
     public boolean isNoKey() {

@@ -50,7 +50,7 @@ public class ArtifactInfoTest {
 
         ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
         assertTrue(artifactInfo.isMatch(artifact) == match);
-        assertTrue(artifactInfo.isKeyMatch(null));
+        assertTrue(artifactInfo.isKeyMatch(null, null));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -46,6 +45,7 @@ import org.apache.maven.repository.RepositorySystem;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
@@ -415,10 +415,12 @@ public class PGPVerifyMojo extends AbstractMojo {
                     getLog().warn(logMessageWeakSignature);
                 }
             }
+            long sigKeyID = pgpSignature.getKeyID();
+            PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
 
-            PGPPublicKey publicKey = pgpKeysCache.getKey(pgpSignature.getKeyID());
+            PGPPublicKey publicKey = publicKeyRing.getPublicKey(sigKeyID);
 
-            if (!keysMap.isValidKey(artifact, publicKey)) {
+            if (!keysMap.isValidKey(artifact, publicKey, publicKeyRing)) {
                 String msg = String.format("%s = %s", ArtifactUtils.key(artifact), PublicKeyUtils.fingerprint(publicKey));
                 String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
                 getLog().error(String.format("Not allowed artifact %s and keyID:%n\t%s%n\t%s",
@@ -434,7 +436,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             if (pgpSignature.verify()) {
                 final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "OK", PublicKeyUtils.fingerprint(publicKey), Lists.newArrayList(publicKey.getUserIDs()));
+                        "OK", PublicKeyUtils.fingerprint(publicKey), PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
                 if (quiet) {
                     getLog().debug(logMessageOK);
                 } else {
@@ -443,7 +445,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 return true;
             } else {
                 getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "ERROR", PublicKeyUtils.fingerprint(publicKey), Lists.newArrayList(publicKey.getUserIDs())));
+                        "ERROR", PublicKeyUtils.fingerprint(publicKey), PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
                 return false;

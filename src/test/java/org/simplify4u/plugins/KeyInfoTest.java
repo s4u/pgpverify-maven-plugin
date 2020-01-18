@@ -15,13 +15,18 @@
  */
 package org.simplify4u.plugins;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.AssertJUnit.assertFalse;
+
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * @author Slawomir Jaranowski.
@@ -47,7 +52,7 @@ public class KeyInfoTest {
     public void testIsKeyMatch(String strKeys, long key, boolean match) throws Exception {
 
         KeyInfo keyInfo = new KeyInfo(strKeys);
-        assertEquals(keyInfo.isKeyMatch(getPGPgpPublicKey(key)), match);
+        assertEquals(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null), match);
     }
 
     @Test
@@ -62,5 +67,18 @@ public class KeyInfoTest {
 
         KeyInfo keyInfo = new KeyInfo("0x123456789abcdef0");
         assertFalse(keyInfo.isNoKey());
+    }
+
+    @Test
+    public void testSubKeyMach() throws IOException, PGPException {
+
+        try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
+            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
+
+            // keyInfo with master key fingerprint
+            KeyInfo keyInfo = new KeyInfo(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()));
+
+            assertTrue(keyInfo.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing));
+        }
     }
 }

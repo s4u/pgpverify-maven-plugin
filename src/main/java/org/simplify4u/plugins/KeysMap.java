@@ -26,6 +26,7 @@ import java.util.List;
 import com.google.common.base.Strings;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.resource.ResourceManager;
@@ -60,14 +61,14 @@ public class KeysMap {
         return false;
     }
 
-    public boolean isValidKey(Artifact artifact, PGPPublicKey key) {
+    public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {
         if (keysMapList.isEmpty()) {
             return true;
         }
 
         for (ArtifactInfo artifactInfo : keysMapList) {
             if (artifactInfo.isMatch(artifact)) {
-                return artifactInfo.isKeyMatch(key);
+                return artifactInfo.isKeyMatch(key, keyRing);
             }
         }
 

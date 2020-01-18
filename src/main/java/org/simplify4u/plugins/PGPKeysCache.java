@@ -29,10 +29,7 @@ import java.util.Optional;
 
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
-import org.bouncycastle.openpgp.PGPUtil;
-import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 
 /**
  * @author Slawomir Jaranowski.
@@ -70,9 +67,9 @@ public class PGPKeysCache {
         return keysServerClient.getUriForShowKey(keyID).toString();
     }
 
-    PGPPublicKey getKey(long keyID) throws IOException, PGPException {
+    PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
 
-        PGPPublicKey key = null;
+        PGPPublicKeyRing keyRing = null;
 
         String path = String.format("%02X/%02X/%016X.asc", (byte) (keyID >> 56), (byte) (keyID >> 48 & 0xff), keyID);
         File keyFile = new File(cachePath, path);
@@ -83,19 +80,18 @@ public class PGPKeysCache {
                 receiveKey(keyFile, keyID);
             }
 
-            try (InputStream keyIn = PGPUtil.getDecoderStream(new FileInputStream(keyFile))) {
-                PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
-                key = pgpRing.getPublicKey(keyID);
-                if (key == null) {
-                    throw new PGPException(String.format("Can't find public key in download file: %s" , keyFile));
+            try (InputStream keyFileStream = new FileInputStream(keyFile)) {
+                keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
+                if (keyRing == null) {
+                    throw new PGPException(String.format("Can't find public keys in download file: %s", keyFile));
                 }
             } finally {
-                if (key == null) {
+                if (keyRing == null) {
                     deleteFile(keyFile);
                 }
             }
         }
-        return key;
+        return keyRing;
     }
 
     private void receiveKey(File keyFile, long keyId) throws IOException {
