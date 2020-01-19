@@ -122,7 +122,7 @@ public class PGPKeysServerClientIT {
         }
 
         assertNotNull(caughtException);
-        assertEquals(caughtException.toString(), expectedExceptionString);
+        assertEquals(caughtException.toString().toUpperCase(), expectedExceptionString.toUpperCase());
 
         if (shouldRetry) {
             assertEquals(attemptedRetries.get(), maxRetries);

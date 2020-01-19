@@ -39,6 +39,11 @@ jobs:
       script:
         - ../utils/mvn-run.sh     clean verify
 
+    - name: "jdk13"
+      jdk: openjdk13
+      script:
+        - ../utils/mvn-run.sh     clean verify
+
 deploy:
   provider: pages
   skip_cleanup: true
