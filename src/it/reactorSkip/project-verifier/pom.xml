@@ -24,30 +24,8 @@
         <version>0.0.1</version>
     </parent>
 
-    <groupId>test</groupId>
     <artifactId>project-verifier</artifactId>
     <version>0.0.1</version>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.simplify4u.plugins</groupId>
-                <artifactId>pgpverify-maven-plugin</artifactId>
-                <version>@project.version@</version>
-                <configuration>
-                    <failNoSignature>true</failNoSignature>
-                    <verifyReactorDependencies>false</verifyReactorDependencies>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
@@ -82,4 +60,25 @@
             <version>0.0.1</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>@project.version@</version>
+                <configuration>
+                    <failNoSignature>true</failNoSignature>
+                    <verifyReactorDependencies>false</verifyReactorDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

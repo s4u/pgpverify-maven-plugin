@@ -24,9 +24,16 @@
         <version>0.0.1</version>
     </parent>
 
-    <groupId>test</groupId>
     <artifactId>project-verifier</artifactId>
     <version>0.0.1</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>test</groupId>
+            <artifactId>project-bundle</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -48,12 +55,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>test</groupId>
-            <artifactId>project-bundle</artifactId>
-            <version>0.0.1</version>
-        </dependency>
-    </dependencies>
 </project>

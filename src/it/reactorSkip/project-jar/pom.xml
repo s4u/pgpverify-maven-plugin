@@ -24,7 +24,6 @@
         <version>0.0.1</version>
     </parent>
 
-    <groupId>test</groupId>
     <artifactId>project-jar</artifactId>
     <version>0.0.1</version>
 </project>

@@ -24,7 +24,6 @@
         <version>0.0.1</version>
     </parent>
 
-    <groupId>test</groupId>
     <artifactId>project-test-jar</artifactId>
     <version>0.0.1</version>
 
@@ -33,7 +32,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
 
                 <configuration>
                     <includes>

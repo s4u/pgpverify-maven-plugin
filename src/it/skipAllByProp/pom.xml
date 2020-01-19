@@ -18,10 +18,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>test</groupId>
+    <parent>
+        <groupId>test</groupId>
+        <artifactId>it-test-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
     <artifactId>test</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <pgpverify.skip>true</pgpverify.skip>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -30,10 +40,6 @@
             <version>3.8</version>
         </dependency>
     </dependencies>
-
-    <properties>
-        <pgpverify.skip>true</pgpverify.skip>
-    </properties>
 
     <build>
         <plugins>
