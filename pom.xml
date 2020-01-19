@@ -246,6 +246,18 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>cpu-count</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-invoker-plugin</artifactId>
                 <executions>
@@ -262,7 +274,7 @@
                             <showErrors>true</showErrors>
                             <mavenOpts>${argLine}</mavenOpts>
                             <writeJunitReport>true</writeJunitReport>
-                            <parallelThreads>4</parallelThreads>
+                            <parallelThreads>${cpu.count}</parallelThreads>
                         </configuration>
                     </execution>
                 </executions>
