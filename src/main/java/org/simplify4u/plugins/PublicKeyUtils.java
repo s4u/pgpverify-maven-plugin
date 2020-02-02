@@ -17,11 +17,13 @@ package org.simplify4u.plugins;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import io.vavr.control.Try;
@@ -86,14 +88,19 @@ final class PublicKeyUtils {
     }
 
     static Collection<String> getUserIDs(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
-        Set<String> ret = new LinkedHashSet<>();
-        publicKey.getUserIDs().forEachRemaining(ret::add);
+        // use getRawUserIDs and standard java String to transform byte array to utf8
+        // because BC generate exception if there is some problem in decoding utf8
+        // https://github.com/s4u/pgpverify-maven-plugin/issues/61
+        Set<byte[]> ret = new LinkedHashSet<>();
+        publicKey.getRawUserIDs().forEachRemaining(ret::add);
 
         getMasterKey(publicKey, publicKeyRing).ifPresent(masterKey ->
-                masterKey.getUserIDs().forEachRemaining(ret::add)
+                masterKey.getRawUserIDs().forEachRemaining(ret::add)
         );
 
-        return ret;
+        return ret.stream()
+                .map(b -> new String(b, StandardCharsets.UTF_8))
+                .collect(Collectors.toSet());
     }
 
     /**

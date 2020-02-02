@@ -53,4 +53,17 @@ public class PublicKeyUtilsTest {
                     Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
         }
     }
+
+    @Test
+    public void invalidUTF8InUserId() throws IOException, PGPException {
+
+        try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
+            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xB0F3710FA64900E7L);
+
+            assertNotNull(publicKeyRing);
+
+            assertEquals(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xB0F3710FA64900E7L), publicKeyRing),
+                    Collections.singletonList("�amonn McManus <eamonn@mcmanus.net>"));
+        }
+    }
 }
