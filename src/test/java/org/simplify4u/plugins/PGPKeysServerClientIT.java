@@ -55,6 +55,7 @@ public class PGPKeysServerClientIT {
                 "for: https://10.255.255.1:65535",
                 true    // Should retry
             },
+                /* httpstat.us - not working ...
             {
                 "https://httpstat.us/200?sleep=10000",
                 "java.io.IOException: Read timed out for: https://httpstat.us/200?sleep=10000",
@@ -70,6 +71,7 @@ public class PGPKeysServerClientIT {
                 "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found for: https://httpstat.us/404",
                 false    // Should not retry
             }
+                 */
         };
     }
 
