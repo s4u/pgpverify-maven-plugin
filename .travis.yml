@@ -1,5 +1,10 @@
 language: java
 
+branches:
+  only:
+    - master
+    - /^v\d+(\.\d+)*$/
+
 # turn shallow clone off for sonar
 git:
   depth: false
