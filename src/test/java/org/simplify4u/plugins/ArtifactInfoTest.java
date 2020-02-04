@@ -15,13 +15,12 @@
  */
 package org.simplify4u.plugins;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import static org.simplify4u.plugins.TestUtils.getArtifact;
 import static org.testng.Assert.assertTrue;
+
+import org.apache.maven.artifact.Artifact;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * @author Slawomir Jaranowski.

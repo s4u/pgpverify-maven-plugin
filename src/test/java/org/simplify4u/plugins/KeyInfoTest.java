@@ -20,8 +20,8 @@ import java.io.InputStream;
 
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import static org.testng.AssertJUnit.assertFalse;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
