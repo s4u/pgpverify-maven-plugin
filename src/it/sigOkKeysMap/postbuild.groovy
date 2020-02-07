@@ -17,7 +17,7 @@ def buildLog = new File( basedir, 'build.log' )
 
 assert buildLog.text.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
 assert buildLog.text.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
-assert buildLog.text.contains('KeyId: 0xD4C89EA4AAF455FD88B22087EFE8086F9E93774E')
+assert buildLog.text.contains('SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711')
 
 assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Signature OK')
@@ -30,7 +30,7 @@ assert buildLog.text.contains('KeyId: 0x6E13156C0EE653F0B984663AB95BBD3FA43C4492
 
 assert buildLog.text.contains('ognl:ognl:jar:3.1.12 PGP Signature OK')
 assert buildLog.text.contains('ognl:ognl:pom:3.1.12 PGP Signature OK')
-assert buildLog.text.contains('KeyId: 0x8926173648953916A0A4F290F721C545D0CAA2E3')
+assert buildLog.text.contains('SubKeyId: 0xF721C545D0CAA2E3 of 0xE157EEB8D208EEB23F5723AC06F21382801CEF5F')
 
 assert buildLog.text.contains('org.javassist:javassist:jar:3.20.0-GA PGP Signature OK')
 assert buildLog.text.contains('org.javassist:javassist:pom:3.20.0-GA PGP Signature OK')

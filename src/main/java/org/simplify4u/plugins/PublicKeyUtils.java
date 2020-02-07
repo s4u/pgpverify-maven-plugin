@@ -77,6 +77,27 @@ final class PublicKeyUtils {
     }
 
     /**
+     * Generate string with key id description.
+     *
+     * @param publicKey
+     *         given key
+     * @param publicKeyRing
+     *         keys ring with master and sub keys
+     *
+     * @return string with key id description
+     */
+    static String keyIdDescription(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+
+        Optional<PGPPublicKey> masterKey = getMasterKey(publicKey, publicKeyRing);
+
+        if (masterKey.isPresent()) {
+            return String.format("SubKeyId: 0x%16X of %s", publicKey.getKeyID(), fingerprint(masterKey.get()));
+        } else {
+            return "KeyId: " + fingerprint(publicKey);
+        }
+    }
+
+    /**
      * Return master key for given sub public key.
      *
      * @param publicKey

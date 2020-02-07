@@ -92,6 +92,22 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
+    public void keyIdDescriptionForMasterKey() {
+        PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
+
+        assertTrue(key.isMasterKey());
+        assertEquals(PublicKeyUtils.keyIdDescription(key, publicKeyRing), "KeyId: 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+    }
+
+    @Test
+    public void keyIdDescriptionForSubKey() {
+        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
+
+        assertFalse(key.isMasterKey());
+        assertEquals(PublicKeyUtils.keyIdDescription(key, publicKeyRing), "SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+    }
+
+    @Test
     public void invalidUTF8InUserId() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {

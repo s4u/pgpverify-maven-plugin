@@ -71,7 +71,7 @@ import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
         defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class PGPVerifyMojo extends AbstractMojo {
 
-    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       KeyId: %s UserIds: %s";
+    private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       %s UserIds: %s";
 
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
@@ -436,7 +436,8 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             if (pgpSignature.verify()) {
                 final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "OK", PublicKeyUtils.fingerprint(publicKey), PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
+                        "OK", PublicKeyUtils.keyIdDescription(publicKey,publicKeyRing),
+                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
                 if (quiet) {
                     getLog().debug(logMessageOK);
                 } else {
@@ -445,7 +446,8 @@ public class PGPVerifyMojo extends AbstractMojo {
                 return true;
             } else {
                 getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "ERROR", PublicKeyUtils.fingerprint(publicKey), PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
+                        "ERROR", PublicKeyUtils.keyIdDescription(publicKey,publicKeyRing),
+                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
                 return false;
