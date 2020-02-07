@@ -377,8 +377,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
     }
 
-    private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact)
-    throws MojoFailureException {
+    private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact) throws MojoFailureException {
         if (ascArtifact == null) {
             return verifySignatureUnavailable(artifact);
         }
@@ -416,12 +415,13 @@ public class PGPVerifyMojo extends AbstractMojo {
                 }
             }
             long sigKeyID = pgpSignature.getKeyID();
-            PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
 
+            PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
             PGPPublicKey publicKey = publicKeyRing.getPublicKey(sigKeyID);
 
             if (!keysMap.isValidKey(artifact, publicKey, publicKeyRing)) {
-                String msg = String.format("%s = %s", ArtifactUtils.key(artifact), PublicKeyUtils.fingerprint(publicKey));
+                String msg = String.format("%s = %s", ArtifactUtils.key(artifact),
+                        PublicKeyUtils.fingerprintForMaster(publicKey, publicKeyRing));
                 String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
                 getLog().error(String.format("Not allowed artifact %s and keyID:%n\t%s%n\t%s",
                         artifact.getId(), msg, keyUrl));

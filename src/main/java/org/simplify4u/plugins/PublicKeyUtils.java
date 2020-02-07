@@ -63,6 +63,20 @@ final class PublicKeyUtils {
     }
 
     /**
+     * Generate string version of master key fingerprint
+     *
+     * @param publicKey
+     *         given key
+     * @param publicKeyRing
+     *         keys ring with master and sub keys
+     *
+     * @return master key fingerprint as string
+     */
+    static String fingerprintForMaster(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+        return fingerprint(getMasterKey(publicKey, publicKeyRing).orElse(publicKey));
+    }
+
+    /**
      * Return master key for given sub public key.
      *
      * @param publicKey
@@ -70,7 +84,7 @@ final class PublicKeyUtils {
      * @param publicKeyRing
      *         keys ring with master and sub keys
      *
-     * @return master key of empty if not found or fiven key is master key
+     * @return master key of empty if not found or given key is master key
      */
     static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 

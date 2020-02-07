@@ -19,39 +19,76 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 
-import static org.testng.Assert.*;
-import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class PublicKeyUtilsTest {
 
-    @Test
-    public void testSubKeysLoad() throws IOException, PGPException {
+    private static final long SUB_KEY_ID = 0xEFE8086F9E93774EL;
+    private static final long MASTER_KEY_ID = 0x164BD2247B936711L;
+
+    private PGPPublicKeyRing publicKeyRing;
+
+    @BeforeClass
+    public void loadKeyRing() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
-
+            publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, SUB_KEY_ID);
             assertNotNull(publicKeyRing);
-
-            assertTrue(publicKeyRing.getPublicKey().isMasterKey());
-            assertFalse(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL).isMasterKey());
         }
     }
 
+
     @Test
-    public void testSubKeysUserIds() throws IOException, PGPException {
+    public void fingerPrintForMasterWithSubKey() {
 
-        try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
+        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
 
-            assertNotNull(publicKeyRing);
+        assertFalse(key.isMasterKey());
+        assertEquals(
+                PublicKeyUtils.fingerprintForMaster(key, publicKeyRing),
+                "0x58E79B6ABC762159DC0B1591164BD2247B936711");
+    }
 
-            assertEquals(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing),
-                    Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
-        }
+    @Test
+    public void fingerPrintForMasterWithMasterKey() throws IOException, PGPException {
+
+        PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
+
+        assertTrue(key.isMasterKey());
+        assertEquals(
+                PublicKeyUtils.fingerprintForMaster(key, publicKeyRing),
+                "0x58E79B6ABC762159DC0B1591164BD2247B936711");
+    }
+
+    @Test
+    public void userIdsWithSubKey() throws IOException, PGPException {
+
+        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
+
+        assertFalse(key.isMasterKey());
+        assertEquals(
+                PublicKeyUtils.getUserIDs(key, publicKeyRing),
+                Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
+    }
+
+    @Test
+    public void userIdsWithMasterKey() throws IOException, PGPException {
+
+        PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
+
+        assertTrue(key.isMasterKey());
+        assertEquals(
+                PublicKeyUtils.getUserIDs(key, publicKeyRing),
+                Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
     }
 
     @Test
