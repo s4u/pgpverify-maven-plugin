@@ -20,12 +20,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+import org.mockserver.client.MockServerClient;
+import org.mockserver.configuration.ConfigurationProperties;
+import org.mockserver.integration.ClientAndServer;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -33,55 +40,76 @@ import org.testng.annotations.Test;
 public class PGPKeysServerClientIT {
     private static final long TEST_KEYID = 0xF8484389379ACEACL;
 
-    private static final int SHORT_TEST_TIMEOUT = 1000;
+    private static final int SHORT_TEST_TIMEOUT = 500;
+
+    private ClientAndServer mockServer;
 
     @DataProvider(name = "goodServerUrls")
     Object[][] goodServerUrls() {
         return new Object[][]{
-            {"hkp://pool.sks-keyservers.net"},
-            {"hkp://p80.pool.sks-keyservers.net:80"},
-            {"http://p80.pool.sks-keyservers.net"},
-            {"hkps://keyserver.ubuntu.com/"},
-            {"hkps://hkps.pool.sks-keyservers.net"}
+                {"hkp://pool.sks-keyservers.net"},
+                {"hkp://p80.pool.sks-keyservers.net:80"},
+                {"http://p80.pool.sks-keyservers.net"},
+                {"hkps://keyserver.ubuntu.com/"},
+                {"hkps://hkps.pool.sks-keyservers.net"}
         };
     }
 
     @DataProvider(name = "badServerUrls")
     Object[][] badServerUrls() {
         return new Object[][]{
-            {
-                "https://10.255.255.1:65535",
-                "java.io.IOException: Connect to 10.255.255.1:65535 [/10.255.255.1] failed: connect timed out " +
-                "for: https://10.255.255.1:65535",
-                true    // Should retry
-            },
-            {
-                "https://httpstat.us/200?sleep=10000",
-                "java.io.IOException: Read timed out for: https://httpstat.us/200?sleep=10000",
-                true    // Should retry
-            },
-            {
-                "https://httpstat.us/502",
-                "java.io.IOException: PGP server returned an error: HTTP/1.1 502 Bad Gateway for: https://httpstat.us/502",
-                true    // Should retry
-            },
-            {
-                "https://httpstat.us/404",
-                "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found for: https://httpstat.us/404",
-                false    // Should not retry
-            }
+                {
+                        "https://10.255.255.1:65535",
+                        "java.io.IOException: Connect to 10.255.255.1:65535 [/10.255.255.1] failed: connect timed out " +
+                                "for: https://10.255.255.1:65535",
+                        true    // Should retry
+                },
+                {
+                        "http://localhost:%d/sleep",
+                        "java.io.IOException: Read timed out for: http://localhost:%d/sleep",
+                        true    // Should retry
+                },
+                {
+                        "http://localhost:%d/502",
+                        "java.io.IOException: PGP server returned an error: HTTP/1.1 502 Bad Gateway for: http://localhost:%d/502",
+                        true    // Should retry
+                },
+                {
+                        "http://localhost:%d/404",
+                        "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found for: http://localhost:%d/404",
+                        false    // Should not retry
+                }
         };
     }
 
     @BeforeClass
-    public void suppressApacheLogging() {
-        System.setProperty(
-            "org.apache.commons.logging.Log",
-            "org.apache.commons.logging.impl.SimpleLog");
+    public void setupMockServer() {
+        mockServer = ClientAndServer.startClientAndServer(0);
 
-        System.setProperty(
-            "org.apache.commons.logging.simplelog.log.org.apache.http",
-            "ERROR");
+        ConfigurationProperties.disableSystemOut(true);
+        ConfigurationProperties.logLevel("WARNING");
+
+        MockServerClient mockServerClient = new MockServerClient("localhost", mockServer.getLocalPort());
+
+        mockServerClient
+                .when(request().withPath("/sleep"))
+                .respond(response()
+                        .withStatusCode(200)
+                        .withDelay(TimeUnit.SECONDS, 10));
+
+        mockServerClient
+                .when(request().withPath("/404"))
+                .respond(response().withStatusCode(404));
+
+        mockServerClient
+                .when(request().withPath("/502"))
+                .respond(response().withStatusCode(502));
+
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void cleanupMocServer() {
+        mockServer.stop();
     }
 
     @Test(dataProvider = "goodServerUrls")
@@ -102,15 +130,16 @@ public class PGPKeysServerClientIT {
     @Test(dataProvider = "badServerUrls")
     public void testClientRetry(final String targetUrl,
                                 final String expectedExceptionString,
-                                final boolean shouldRetry)
-    throws Exception {
-        final int maxRetries = 2;
-        final AtomicInteger attemptedRetries = new AtomicInteger(0);
+                                final boolean shouldRetry) throws Exception {
+        int maxRetries = 2;
+        AtomicInteger attemptedRetries = new AtomicInteger(0);
+
+        URI targetUri = new URI(String.format(targetUrl, mockServer.getLocalPort()));
 
         // We use short timeouts for both timeouts since we don't want to hold up the tests on URLs
         // we know will take a while.
         final PGPKeysServerClient client
-            = new StubbedClient(new URI(targetUrl), SHORT_TEST_TIMEOUT, SHORT_TEST_TIMEOUT, maxRetries);
+                = new StubbedClient(targetUri, SHORT_TEST_TIMEOUT, SHORT_TEST_TIMEOUT, maxRetries);
 
         IOException caughtException = null;
 
@@ -122,7 +151,8 @@ public class PGPKeysServerClientIT {
         }
 
         assertNotNull(caughtException);
-        assertEquals(caughtException.toString().toUpperCase(), expectedExceptionString.toUpperCase());
+        assertEquals(caughtException.toString().toUpperCase(),
+                String.format(expectedExceptionString, mockServer.getLocalPort()).toUpperCase());
 
         if (shouldRetry) {
             assertEquals(attemptedRetries.get(), maxRetries);
