@@ -51,7 +51,7 @@ abstract class PGPKeysServerClient {
 
     @FunctionalInterface
     public interface OnRetryConsumer {
-        void onRetry(InetAddress address, int numberOfRetryAttempts, Throwable lastThrowable);
+        void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable);
     }
 
     private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
@@ -218,8 +218,8 @@ abstract class PGPKeysServerClient {
         Retry retry = Retry.of("id", config);
 
         retry.getEventPublisher()
-                .onRetry(event -> processOnRetry(event, planer, onRetryConsumer))
-                .onError(event -> processOnRetry(event, planer, onRetryConsumer));
+                .onRetry(event -> processOnRetry(event, event.getWaitInterval(), planer, onRetryConsumer))
+                .onError(event -> processOnRetry(event, Duration.ZERO, planer, onRetryConsumer));
 
         CheckedRunnable checkedRunnable = Retry.decorateCheckedRunnable(retry, () -> {
             try (final CloseableHttpClient client = this.buildClient(planer);
@@ -237,15 +237,16 @@ abstract class PGPKeysServerClient {
         }
     }
 
-    private void processOnRetry(RetryEvent event, RoundRobinRouterPlaner planer, OnRetryConsumer onRetryConsumer) {
+    private void processOnRetry(RetryEvent event, Duration waitInterval,
+                                RoundRobinRouterPlaner planer, OnRetryConsumer onRetryConsumer) {
 
         // inform planer about error on last roue
         HttpRoute httpRoute = planer.lastRouteCauseError();
+        InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
 
         // inform caller about retry
         if (onRetryConsumer != null) {
-            onRetryConsumer.onRetry(httpRoute.getTargetHost().getAddress(),
-                    event.getNumberOfRetryAttempts(), event.getLastThrowable());
+            onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
         }
     }
 

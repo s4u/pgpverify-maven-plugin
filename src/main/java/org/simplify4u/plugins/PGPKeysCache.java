@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.Optional;
 
 import org.apache.maven.plugin.logging.Log;
@@ -126,9 +127,9 @@ public class PGPKeysCache {
         log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
     }
 
-    private void onRetry(InetAddress address, int numberOfRetryAttempts, Throwable lastThrowable) {
-        log.warn(String.format("[Retry #%d] Last address %s with problem: %s",
-                numberOfRetryAttempts, address, lastThrowable));
+    private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable) {
+        log.warn(String.format("[Retry #%d waiting: %s] Last address %s with problem: %s",
+                numberOfRetryAttempts, waitInterval, address, lastThrowable));
     }
 
     private void deleteFile(File file) {

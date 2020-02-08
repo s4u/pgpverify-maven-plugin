@@ -116,7 +116,7 @@ public class PGPKeysServerClientIT {
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             client.copyKeyToOutputStream(TEST_KEYID, outputStream,
-                    (address, retry, exception) -> attemptedRetries.getAndIncrement());
+                    (address, retry, waitInterval, exception) -> attemptedRetries.getAndIncrement());
         } catch (IOException ex) {
             caughtException = ex;
         }
