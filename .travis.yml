@@ -1,69 +1,15 @@
+version: ~> 1.0
 language: java
+os: linux
 
-branches:
-  only:
-    - master
-    - /^v\d+(\.\d+)*$/
+env:
+  global:
+  - M2_CACHE_CLEAN_DIR: "org/simplify4u/plugins/pgpverify-maven-plugin**"
+  - SONAR_ORG: "simplify4u"
+  - MY_REPO: "s4u/pgpverify-maven-plugin"
 
-# turn shallow clone off for sonar
-git:
-  depth: false
-
-addons:
-  sonarcloud:
-    organization: "simplify4u"
-
-install:
-  - mkdir -p ../utils
-  - curl -Ls https://github.com/s4u/travis/archive/master.tar.gz |
-    tar -zx --strip-components 2 -C ../utils travis-master/src
-
-before_script:
-  - ../utils/print-env.sh
-
-jobs:
-  include:
-
-    - name: "jdk8"
-      jdk: openjdk8
-      script: >-
-        ../utils/mvn-push.sh    clean deploy  &&
-        ../utils/mvn-pr.sh      clean verify  &&
-        ../utils/mvn-tag.sh     clean site    &&
-        ../utils/mvn-sonar.sh   sonar:sonar
-      if: repo = "s4u/pgpverify-maven-plugin"
-
-    - name: "jdk8 - forks"
-      jdk: openjdk8
-      script:
-        - ../utils/mvn-run.sh     clean verify
-      if: repo != "s4u/pgpverify-maven-plugin"
-
-    - name: "jdk11"
-      jdk: openjdk11
-      script:
-        - ../utils/mvn-run.sh     clean verify
-
-    - name: "jdk13"
-      jdk: openjdk13
-      script:
-        - ../utils/mvn-run.sh     clean verify
-
-deploy:
-  provider: pages
-  skip_cleanup: true
-  keep_history: true
-  github_token: $GITHUB_TOKEN
-  verbose: true
-  local_dir: target/site
-  on:
-    tags: true
-    repo: s4u/pgpverify-maven-plugin
-    jdk: openjdk8
-
-cache:
-  directories:
-    - $HOME/.m2/repository
-
-before_cache:
-  - rm -rfv $HOME/.m2/repository/org/simplify4u/plugins/pgpverify-maven-plugin*
+import:
+  - source: s4u/travis:install.yml@master
+  - source: s4u/travis:m2-cache.yml@master
+  - source: s4u/travis:standard-jobs.yml@master
+  - source: s4u/travis:deploy-ghpages.yml@master
