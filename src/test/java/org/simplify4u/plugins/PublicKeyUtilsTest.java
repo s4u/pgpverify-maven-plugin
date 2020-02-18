@@ -119,4 +119,17 @@ public class PublicKeyUtilsTest {
                     Collections.singletonList("�amonn McManus <eamonn@mcmanus.net>"));
         }
     }
+
+    @Test
+    public void invalidDerbyClient() throws IOException, PGPException {
+
+        try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
+            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x3D8B00E198E21827L);
+
+            assertNotNull(publicKeyRing);
+
+            assertEquals(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x3D8B00E198E21827L), publicKeyRing),
+                    Collections.singletonList("Rick Hillegas <rhillegas@apache.org>"));
+        }
+    }
 }

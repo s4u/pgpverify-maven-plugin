@@ -176,12 +176,14 @@ final class PublicKeyUtils {
         subKey.getSignatures().forEachRemaining(s -> Try.run(() -> {
                     PGPSignature sig = (PGPSignature) s;
                     PGPPublicKey masterKey = publicKeyRing.getPublicKey(sig.getKeyID());
-                    sig.init(new BcPGPContentVerifierBuilderProvider(), masterKey);
-                    if (!sig.verifyCertification(masterKey, subKey)) {
-                        throw new PGPException(
-                                String.format("Failed signature type: %d for subKey: %s in key: %s",
-                                        sig.getSignatureType(),
-                                        fingerprint(subKey), fingerprint(masterKey)));
+                    if (masterKey != null) {
+                        sig.init(new BcPGPContentVerifierBuilderProvider(), masterKey);
+                        if (!sig.verifyCertification(masterKey, subKey)) {
+                            throw new PGPException(
+                                    String.format("Failed signature type: %d for subKey: %s in key: %s",
+                                            sig.getSignatureType(),
+                                            fingerprint(subKey), fingerprint(masterKey)));
+                        }
                     }
                 }).get()
         );
