@@ -121,7 +121,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void invalidDerbyClient() throws IOException, PGPException {
+    public void validateSubKeyWithExternalSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
             PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x3D8B00E198E21827L);

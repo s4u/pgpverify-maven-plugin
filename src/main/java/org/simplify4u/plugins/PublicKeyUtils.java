@@ -173,17 +173,20 @@ final class PublicKeyUtils {
 
     private static void verifySigForSubKey(PGPPublicKey subKey, PGPPublicKeyRing publicKeyRing) {
 
-        subKey.getSignatures().forEachRemaining(s -> Try.run(() -> {
+        subKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING).forEachRemaining(s -> Try.run(() -> {
                     PGPSignature sig = (PGPSignature) s;
                     PGPPublicKey masterKey = publicKeyRing.getPublicKey(sig.getKeyID());
                     if (masterKey != null) {
                         sig.init(new BcPGPContentVerifierBuilderProvider(), masterKey);
                         if (!sig.verifyCertification(masterKey, subKey)) {
                             throw new PGPException(
-                                    String.format("Failed signature type: %d for subKey: %s in key: %s",
+                                    String.format("Failed signature type: %x for subKey: %s in key: %s",
                                             sig.getSignatureType(),
                                             fingerprint(subKey), fingerprint(masterKey)));
                         }
+                    } else {
+                        throw new PGPException(String.format("Signature type: %x Not found key 0x%016X for subKeyId: %s",
+                                sig.getSignatureType(), sig.getKeyID(), fingerprint(subKey)));
                     }
                 }).get()
         );
