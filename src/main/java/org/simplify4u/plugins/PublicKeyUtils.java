@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -35,11 +36,15 @@ import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility for PGPPublicKey
  */
 final class PublicKeyUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublicKeyUtils.class);
 
     private PublicKeyUtils() {
         // No need to instantiate utility class.
@@ -168,27 +173,37 @@ final class PublicKeyUtils {
 
         StreamSupport.stream(publicKeyRing.spliterator(), false)
                 .filter(key -> !key.isMasterKey())
-                .forEach(key -> verifySigForSubKey(key, publicKeyRing));
+                .forEach(key -> Try.run(() -> verifySigForSubKey(key, publicKeyRing)).get());
     }
 
-    private static void verifySigForSubKey(PGPPublicKey subKey, PGPPublicKeyRing publicKeyRing) {
+    private static void verifySigForSubKey(PGPPublicKey subKey, PGPPublicKeyRing publicKeyRing) throws PGPException {
 
-        subKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING).forEachRemaining(s -> Try.run(() -> {
+        int signatureTypeToCheck = subKey.hasRevocation() ? PGPSignature.SUBKEY_REVOCATION : PGPSignature.SUBKEY_BINDING;
+
+        AtomicBoolean hasValidSignature = new AtomicBoolean(false);
+
+        subKey.getSignaturesOfType(signatureTypeToCheck).forEachRemaining(s -> Try.run(() -> {
                     PGPSignature sig = (PGPSignature) s;
+
                     PGPPublicKey masterKey = publicKeyRing.getPublicKey(sig.getKeyID());
                     if (masterKey != null) {
                         sig.init(new BcPGPContentVerifierBuilderProvider(), masterKey);
-                        if (!sig.verifyCertification(masterKey, subKey)) {
-                            throw new PGPException(
-                                    String.format("Failed signature type: %x for subKey: %s in key: %s",
-                                            sig.getSignatureType(),
-                                            fingerprint(subKey), fingerprint(masterKey)));
+                        if (sig.verifyCertification(masterKey, subKey)) {
+                            hasValidSignature.set(true);
+                        } else {
+                            LOGGER.debug("Invalid signature [{}] type: {} for subKey: {}",
+                                    sig.getCreationTime(), sig.getSignatureType(), fingerprint(subKey));
                         }
                     } else {
-                        throw new PGPException(String.format("Signature type: %x Not found key 0x%016X for subKeyId: %s",
+                        throw new PGPException(String.format("Signature type: %d Not found key 0x%016X for subKeyId: %s",
                                 sig.getSignatureType(), sig.getKeyID(), fingerprint(subKey)));
                     }
                 }).get()
         );
+
+        if (!hasValidSignature.get()) {
+            throw new PGPException(String.format("No valid signature type: %d for subKey: %s",
+                    signatureTypeToCheck, fingerprint(subKey)));
+        }
     }
 }

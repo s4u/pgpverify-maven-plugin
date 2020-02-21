@@ -17,12 +17,8 @@ package org.simplify4u.plugins;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -42,7 +38,7 @@ public class PublicKeyUtilsTest {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
             publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, SUB_KEY_ID);
-            assertNotNull(publicKeyRing);
+            assertThat(publicKeyRing).isNotEmpty();
         }
     }
 
@@ -52,10 +48,9 @@ public class PublicKeyUtilsTest {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
 
-        assertFalse(key.isMasterKey());
-        assertEquals(
-                PublicKeyUtils.fingerprintForMaster(key, publicKeyRing),
-                "0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(key.isMasterKey()).isFalse();
+        assertThat(PublicKeyUtils.fingerprintForMaster(key, publicKeyRing))
+                .isEqualTo("0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
@@ -63,10 +58,9 @@ public class PublicKeyUtilsTest {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
-        assertTrue(key.isMasterKey());
-        assertEquals(
-                PublicKeyUtils.fingerprintForMaster(key, publicKeyRing),
-                "0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(key.isMasterKey()).isTrue();
+        assertThat(PublicKeyUtils.fingerprintForMaster(key, publicKeyRing))
+                .isEqualTo("0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
@@ -74,10 +68,9 @@ public class PublicKeyUtilsTest {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
 
-        assertFalse(key.isMasterKey());
-        assertEquals(
-                PublicKeyUtils.getUserIDs(key, publicKeyRing),
-                Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
+        assertThat(key.isMasterKey()).isFalse();
+        assertThat(PublicKeyUtils.getUserIDs(key, publicKeyRing))
+                .containsOnly("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>");
     }
 
     @Test
@@ -85,26 +78,27 @@ public class PublicKeyUtilsTest {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
-        assertTrue(key.isMasterKey());
-        assertEquals(
-                PublicKeyUtils.getUserIDs(key, publicKeyRing),
-                Collections.singletonList("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>"));
+        assertThat(key.isMasterKey()).isTrue();
+        assertThat(PublicKeyUtils.getUserIDs(key, publicKeyRing))
+                .containsOnly("Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>");
     }
 
     @Test
     public void keyIdDescriptionForMasterKey() {
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
-        assertTrue(key.isMasterKey());
-        assertEquals(PublicKeyUtils.keyIdDescription(key, publicKeyRing), "KeyId: 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(key.isMasterKey()).isTrue();
+        assertThat(PublicKeyUtils.keyIdDescription(key, publicKeyRing))
+                .isEqualTo("KeyId: 0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
     public void keyIdDescriptionForSubKey() {
         PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
 
-        assertFalse(key.isMasterKey());
-        assertEquals(PublicKeyUtils.keyIdDescription(key, publicKeyRing), "SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(key.isMasterKey()).isFalse();
+        assertThat(PublicKeyUtils.keyIdDescription(key, publicKeyRing))
+                .isEqualTo("SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
@@ -113,10 +107,9 @@ public class PublicKeyUtilsTest {
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
             PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xB0F3710FA64900E7L);
 
-            assertNotNull(publicKeyRing);
-
-            assertEquals(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xB0F3710FA64900E7L), publicKeyRing),
-                    Collections.singletonList("�amonn McManus <eamonn@mcmanus.net>"));
+            assertThat(publicKeyRing).isNotEmpty();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xB0F3710FA64900E7L), publicKeyRing))
+                    .containsOnly("�amonn McManus <eamonn@mcmanus.net>");
         }
     }
 
@@ -126,10 +119,22 @@ public class PublicKeyUtilsTest {
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
             PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x3D8B00E198E21827L);
 
-            assertNotNull(publicKeyRing);
+            assertThat(publicKeyRing).isNotEmpty();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x3D8B00E198E21827L), publicKeyRing))
+                    .containsOnly("Rick Hillegas <rhillegas@apache.org>");
+        }
+    }
 
-            assertEquals(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x3D8B00E198E21827L), publicKeyRing),
-                    Collections.singletonList("Rick Hillegas <rhillegas@apache.org>"));
+    @Test
+    public void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
+
+        try (InputStream inputStream = getClass().getResourceAsStream("/411063A3A0FFD119.asc")) {
+            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x411063A3A0FFD119L);
+
+            assertThat(publicKeyRing).isNotEmpty();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x411063A3A0FFD119L), publicKeyRing))
+                    .hasSize(17)
+                    .contains("Stian Soiland <stain@stud.ntnu.no>");
         }
     }
 }
