@@ -168,7 +168,7 @@
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
                 <classifier>no_aop</classifier>
-                <version>4.1.0</version>
+                <version>4.2.2</version>
             </dependency>
             <!-- /dependency coverage -->
 
