@@ -17,7 +17,9 @@ def buildLog = new File( basedir, 'build.log' )
 
 assert buildLog.text.contains('[INFO] com.google.auto.value:auto-value-annotations:pom:1.6.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] com.google.auto.value:auto-value-annotations:jar:1.6.3 PGP Signature OK')
-assert buildLog.text.contains('KeyId: 0xC7BE5BCC9FEC15518CFDA882B0F3710FA64900E7 UserIds: [�amonn McManus <eamonn@mcmanus.net>]')
+// split key info to skip search for special char - this assertion cause problem on windows system
+assert buildLog.text.contains('KeyId: 0xC7BE5BCC9FEC15518CFDA882B0F3710FA64900E7 UserIds:')
+assert buildLog.text.contains('amonn McManus <eamonn@mcmanus.net>]')
 
 assert buildLog.text.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
 assert buildLog.text.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
