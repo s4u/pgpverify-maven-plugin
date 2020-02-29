@@ -123,6 +123,8 @@ final class ArtifactResolver {
         if (config.verifyPlugins) {
             allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), config.pluginFilter,
                     config.verifyPomFiles));
+            allArtifacts.addAll(resolveArtifacts(project.getReportArtifacts(), config.pluginFilter,
+                    config.verifyPomFiles));
             // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
             // literal specified dependency.
             allArtifacts.addAll(resolveArtifacts(

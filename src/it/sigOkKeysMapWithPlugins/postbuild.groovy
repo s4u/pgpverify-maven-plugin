@@ -42,4 +42,6 @@ assert buildLog.text.contains('[INFO] com.google.errorprone:error_prone_core:jar
 assert buildLog.text.contains('[INFO] com.google.errorprone:error_prone_core:pom:2.3.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] com.uber.nullaway:nullaway:jar:0.7.8 PGP Signature OK')
 assert buildLog.text.contains('[INFO] com.uber.nullaway:nullaway:pom:0.7.8 PGP Signature OK')
+assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-project-info-reports-plugin:maven-plugin:3.0.0 PGP Signature OK')
+assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-project-info-reports-plugin:pom:3.0.0 PGP Signature OK')
 assert buildLog.text.contains('[INFO] BUILD SUCCESS')

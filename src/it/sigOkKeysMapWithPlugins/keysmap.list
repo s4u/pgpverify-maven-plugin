@@ -29,6 +29,7 @@ org.apache.maven.plugins:maven-install-plugin:3.0.0-M1 = 0xAE9E53FC28FF2AB101227
 org.apache.maven.plugins:maven-jar-plugin:3.2.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
 org.apache.maven.plugins:maven-pmd-plugin:* = 0xC870735180244047DA600FDEC171A58398EEC284
 org.apache.maven.plugins:maven-site-plugin:3.8.2 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.plugins:maven-project-info-reports-plugin:3.0.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 #
 # Plugin dependencies:
 net.sourceforge.pmd:*:* = 0x912E716EF6D98746F8EEB4D182DE7BE82166E84E
