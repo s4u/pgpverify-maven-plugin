@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
  * Store info about key number.

@@ -54,6 +54,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
+import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -61,6 +62,7 @@ import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
+import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
  * Check PGP signature of dependency.
@@ -354,7 +356,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private void initCache() throws MojoFailureException {
         try {
-            pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, pgpKeyServer);
+            pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, PGPKeysCache.prepareClient(pgpKeyServer));
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }

@@ -25,6 +25,7 @@ import static org.testng.Assert.assertTrue;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

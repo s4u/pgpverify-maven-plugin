@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.keyserver;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -31,6 +31,7 @@ import java.util.Optional;
 import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
  * @author Slawomir Jaranowski.
@@ -43,11 +44,11 @@ public class PGPKeysCache {
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(Log log, File cachePath, String keyServer) throws IOException {
+    public PGPKeysCache(Log log, File cachePath, PGPKeysServerClient keysServerClient) throws IOException {
 
         this.log = log;
         this.cachePath = cachePath;
-        keysServerClient = PGPKeysServerClient.getClient(keyServer);
+        this.keysServerClient = keysServerClient;
 
         synchronized (LOCK) {
             if (this.cachePath.exists()) {
@@ -64,11 +65,15 @@ public class PGPKeysCache {
         }
     }
 
-    String getUrlForShowKey(long keyID) {
+    public static PGPKeysServerClient prepareClient(String keyserver) throws IOException {
+        return PGPKeysServerClient.getClient(keyserver);
+    }
+
+    public String getUrlForShowKey(long keyID) {
         return keysServerClient.getUriForShowKey(keyID).toString();
     }
 
-    PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
+    public PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
 
         PGPPublicKeyRing keyRing = null;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.keyserver;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -32,6 +32,8 @@ import static org.testng.Assert.assertTrue;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
+import org.simplify4u.plugins.keyserver.PGPKeysServerClient;
+import org.simplify4u.plugins.keyserver.PGPKeysServerClientHttps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;

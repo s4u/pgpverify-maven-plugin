@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.utils;
 
 import java.io.IOException;
 import java.io.InputStream;

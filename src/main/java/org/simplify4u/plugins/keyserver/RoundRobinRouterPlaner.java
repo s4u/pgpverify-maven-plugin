@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.keyserver;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -29,7 +29,7 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.routing.HttpRoutePlanner;
 import org.apache.http.protocol.HttpContext;
 
-public class RoundRobinRouterPlaner implements HttpRoutePlanner {
+class RoundRobinRouterPlaner implements HttpRoutePlanner {
 
     private HttpRoute lastRoute;
     private List<InetAddress> errorAddresses = new ArrayList<>();

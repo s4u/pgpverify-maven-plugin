@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Utility for PGPPublicKey
  */
-final class PublicKeyUtils {
+public final class PublicKeyUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PublicKeyUtils.class);
 
@@ -58,7 +58,7 @@ final class PublicKeyUtils {
      *
      * @return fingerprint as string
      */
-    static String fingerprint(PGPPublicKey publicKey) {
+    public static String fingerprint(PGPPublicKey publicKey) {
 
         StringBuilder ret = new StringBuilder("0x");
         for (Byte b : publicKey.getFingerprint()) {
@@ -77,7 +77,7 @@ final class PublicKeyUtils {
      *
      * @return master key fingerprint as string
      */
-    static String fingerprintForMaster(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    public static String fingerprintForMaster(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
         return fingerprint(getMasterKey(publicKey, publicKeyRing).orElse(publicKey));
     }
 
@@ -91,7 +91,7 @@ final class PublicKeyUtils {
      *
      * @return string with key id description
      */
-    static String keyIdDescription(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    public static String keyIdDescription(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 
         Optional<PGPPublicKey> masterKey = getMasterKey(publicKey, publicKeyRing);
 
@@ -112,7 +112,7 @@ final class PublicKeyUtils {
      *
      * @return master key of empty if not found or given key is master key
      */
-    static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    public static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 
         if (publicKey.isMasterKey()) {
             return Optional.empty();
@@ -127,7 +127,7 @@ final class PublicKeyUtils {
         return Optional.empty();
     }
 
-    static Collection<String> getUserIDs(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    public static Collection<String> getUserIDs(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
         // use getRawUserIDs and standard java String to transform byte array to utf8
         // because BC generate exception if there is some problem in decoding utf8
         // https://github.com/s4u/pgpverify-maven-plugin/issues/61
@@ -153,7 +153,7 @@ final class PublicKeyUtils {
      *
      * @return key ring with given key id
      */
-    static PGPPublicKeyRing loadPublicKeyRing(InputStream keyStream, long keyId) throws IOException, PGPException {
+    public static PGPPublicKeyRing loadPublicKeyRing(InputStream keyStream, long keyId) throws IOException, PGPException {
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);
         PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
 
