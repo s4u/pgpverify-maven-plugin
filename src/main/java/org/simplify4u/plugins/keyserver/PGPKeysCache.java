@@ -77,7 +77,7 @@ public class PGPKeysCache {
 
     public PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
 
-        PGPPublicKeyRing keyRing = null;
+        Optional<PGPPublicKeyRing> keyRing = Optional.empty();
 
         String path = String.format("%02X/%02X/%016X.asc", (byte) (keyID >> 56), (byte) (keyID >> 48 & 0xff), keyID);
         File keyFile = new File(cachePath, path);
@@ -90,16 +90,14 @@ public class PGPKeysCache {
 
             try (InputStream keyFileStream = new FileInputStream(keyFile)) {
                 keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
-                if (keyRing == null) {
-                    throw new PGPException(String.format("Can't find public keys in download file: %s", keyFile));
-                }
+                return keyRing.orElseThrow(() ->
+                        new PGPException(String.format("Can't find public key 0x%016X in download file: %s", keyID, keyFile)));
             } finally {
-                if (keyRing == null) {
+                if (!keyRing.isPresent()) {
                     deleteFile(keyFile);
                 }
             }
         }
-        return keyRing;
     }
 
     private void receiveKey(File keyFile, long keyId) throws IOException {

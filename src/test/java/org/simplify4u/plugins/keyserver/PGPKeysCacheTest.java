@@ -15,6 +15,7 @@
  */
 package org.simplify4u.plugins.keyserver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
@@ -42,7 +44,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class PGPKeysCacheTest {
-
 
     private Path cachePath;
     private PGPKeysServerClient keysServerClient;
@@ -70,6 +71,35 @@ public class PGPKeysCacheTest {
     }
 
     @Test
+    public void emptyCacheDirShouldBeCreated() throws IOException {
+
+        File emptyCachePath = new File(cachePath.toFile(), "empty");
+
+        assertThat(emptyCachePath).doesNotExist();
+
+        new PGPKeysCache(emptyCachePath, keysServerClient);
+
+        assertThat(emptyCachePath)
+                .exists()
+                .isDirectory();
+    }
+
+    @Test
+    public void fileAsCacheDirThrowException() throws IOException {
+
+        File fileAsCachePath = new File(cachePath.toFile(), "file.tmp");
+        MoreFiles.touch(fileAsCachePath.toPath());
+
+        assertThat(fileAsCachePath)
+                .exists()
+                .isFile();
+
+        assertThatCode(() -> new PGPKeysCache(fileAsCachePath, keysServerClient))
+                .isExactlyInstanceOf(IOException.class)
+                .hasMessageStartingWith("PGP keys cache path exist but is not a directory:");
+    }
+
+    @Test
     public void getKeyFromCache() throws IOException, PGPException {
 
         PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClient);
@@ -94,5 +124,16 @@ public class PGPKeysCacheTest {
                 .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
 
         verifyNoInteractions(keysServerClient);
+    }
+
+    @Test
+    public void nonExistingKeyInRingThrowException() throws IOException, PGPException {
+
+        PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClient);
+
+        // first call retrieve key from server
+        assertThatCode(() -> pgpKeysCache.getKeyRing(0x1234567890L))
+                .isExactlyInstanceOf(PGPException.class)
+                .hasMessageStartingWith("Can't find public key 0x0000001234567890 in download file:");
     }
 }

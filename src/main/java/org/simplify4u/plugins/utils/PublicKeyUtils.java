@@ -158,12 +158,14 @@ public final class PublicKeyUtils {
      * @throws PGPException
      *         if problem with PGP data
      */
-    public static PGPPublicKeyRing loadPublicKeyRing(InputStream keyStream, long keyId) throws IOException, PGPException {
+    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, long keyId)
+            throws IOException, PGPException {
+
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);
         PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
 
-        PGPPublicKeyRing publicKeyRing = pgpRing.getPublicKeyRing(keyId);
-        verifyPublicKeyRing(publicKeyRing);
+        Optional<PGPPublicKeyRing> publicKeyRing = Optional.ofNullable(pgpRing.getPublicKeyRing(keyId));
+        publicKeyRing.ifPresent(PublicKeyUtils::verifyPublicKeyRing);
 
         return publicKeyRing;
     }

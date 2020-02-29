@@ -17,11 +17,10 @@ package org.simplify4u.plugins;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
@@ -53,33 +52,37 @@ public class KeyInfoTest {
     public void testIsKeyMatch(String strKeys, long key, boolean match) throws Exception {
 
         KeyInfo keyInfo = new KeyInfo(strKeys);
-        assertEquals(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null), match);
+        assertThat(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null)).isEqualTo(match);
     }
 
     @Test
     public void testIsNoKey() {
 
         KeyInfo keyInfo = new KeyInfo("");
-        assertTrue(keyInfo.isNoKey());
+        assertThat(keyInfo.isNoKey()).isTrue();
     }
 
     @Test
     public void testIsNoKeyIncorrect() {
 
         KeyInfo keyInfo = new KeyInfo("0x123456789abcdef0");
-        assertFalse(keyInfo.isNoKey());
+        assertThat(keyInfo.isNoKey()).isFalse();
     }
 
     @Test
     public void testSubKeyMach() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            PGPPublicKeyRing publicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
 
-            // keyInfo with master key fingerprint
-            KeyInfo keyInfo = new KeyInfo(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()));
+            assertThat(aPublicKeyRing)
+                    .hasValueSatisfying(publicKeyRing -> {
+                        // keyInfo with master key fingerprint
+                        KeyInfo keyInfo = new KeyInfo(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()));
 
-            assertTrue(keyInfo.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing));
+                        assertThat(keyInfo.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing))
+                                .isTrue();
+                    });
         }
     }
 }
