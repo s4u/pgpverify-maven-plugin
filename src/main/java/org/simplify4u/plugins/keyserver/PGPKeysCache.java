@@ -28,25 +28,27 @@ import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Slawomir Jaranowski.
  */
 public class PGPKeysCache {
 
-    private final Log log;
+    private static final Logger LOGGER = LoggerFactory.getLogger(PGPKeysCache.class);
+    private static final String NL = System.lineSeparator();
+
     private final File cachePath;
     private final PGPKeysServerClient keysServerClient;
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(Log log, File cachePath, PGPKeysServerClient keysServerClient) throws IOException {
+    public PGPKeysCache(File cachePath, PGPKeysServerClient keysServerClient) throws IOException {
 
-        this.log = log;
         this.cachePath = cachePath;
         this.keysServerClient = keysServerClient;
 
@@ -57,7 +59,7 @@ public class PGPKeysCache {
                 }
             } else {
                 if (this.cachePath.mkdirs()) {
-                    this.log.info("Create cache directory for PGP keys: " + this.cachePath);
+                    LOGGER.info("Create cache directory for PGP keys: {}", this.cachePath);
                 } else {
                     throw new IOException("Cache directory create error");
                 }
@@ -129,12 +131,12 @@ public class PGPKeysCache {
             throw e;
         }
 
-        log.info(String.format("Receive key: %s%n\tto %s", keysServerClient.getUriForGetKey(keyId), keyFile));
+        LOGGER.info("Receive key: {}{}\tto {}", keysServerClient.getUriForGetKey(keyId), NL, keyFile);
     }
 
     private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable) {
-        log.warn(String.format("[Retry #%d waiting: %s] Last address %s with problem: %s",
-                numberOfRetryAttempts, waitInterval, address, lastThrowable));
+        LOGGER.warn("[Retry #{} waiting: {}] Last address {} with problem: {}",
+                numberOfRetryAttempts, waitInterval, address, lastThrowable);
     }
 
     private void deleteFile(File file) {
@@ -145,7 +147,7 @@ public class PGPKeysCache {
                             try {
                                 Files.deleteIfExists(filePath);
                             } catch (IOException e) {
-                                log.warn("Can't delete: " + filePath);
+                                LOGGER.warn("Can't delete: {}", filePath);
                             }
                         }
                 );

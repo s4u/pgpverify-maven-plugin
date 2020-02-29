@@ -152,6 +152,11 @@ public final class PublicKeyUtils {
      *         key ID for find proper key ring
      *
      * @return key ring with given key id
+     *
+     * @throws IOException
+     *         if problem with comunication
+     * @throws PGPException
+     *         if problem with PGP data
      */
     public static PGPPublicKeyRing loadPublicKeyRing(InputStream keyStream, long keyId) throws IOException, PGPException {
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);

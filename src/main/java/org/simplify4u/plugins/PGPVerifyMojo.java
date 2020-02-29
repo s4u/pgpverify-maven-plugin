@@ -356,7 +356,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private void initCache() throws MojoFailureException {
         try {
-            pgpKeysCache = new PGPKeysCache(getLog(), pgpKeysCachePath, PGPKeysCache.prepareClient(pgpKeyServer));
+            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath, PGPKeysCache.prepareClient(pgpKeyServer));
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
