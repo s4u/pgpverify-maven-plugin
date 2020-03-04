@@ -217,6 +217,24 @@ public class PGPKeysCache {
             return lastClient.getUriForShowKey(keyID);
         }
 
+        boolean isSuccessExecute(KeyServerExecutor executor, PGPKeysServerClient client) {
+            try {
+                executor.run(client);
+                lastClient = client;
+                return true;
+            } catch (IOException e) {
+                LOGGER.warn("{} throw exception: {} - {} try next client", client, ExceptionUtils.getMessage(e), getName());
+            }
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s list: %s", getName(), keysServerClients);
+        }
+
+        abstract String getName();
+
         abstract void execute(KeyServerExecutor executor) throws IOException;
     }
 
@@ -224,6 +242,11 @@ public class PGPKeysCache {
      * Only one key server on list.
      */
     static class KeyServerListOne extends KeyServerList {
+
+        @Override
+        String getName() {
+            return "one item";
+        }
 
         @Override
         void execute(KeyServerExecutor executor) throws IOException {
@@ -242,25 +265,20 @@ public class PGPKeysCache {
     static class KeyServerListFallback extends KeyServerList {
 
         @Override
+        String getName() {
+            return "fallback";
+        }
+
+        @Override
         void execute(KeyServerExecutor executor) throws IOException {
 
             for (PGPKeysServerClient client : keysServerClients) {
-                try {
-                    executor.run(client);
-                    lastClient = client;
+                if (isSuccessExecute(executor, client)) {
                     return;
-                } catch (IOException e) {
-                    LOGGER.warn("{} throw exception: {} - fallback try next client",
-                            client, ExceptionUtils.getMessage(e));
                 }
             }
 
             throw new IOException("All servers from list was failed");
-        }
-
-        @Override
-        public String toString() {
-            return "fallback list: " + keysServerClients;
         }
     }
 
@@ -272,6 +290,11 @@ public class PGPKeysCache {
         private int lastIndex = 0;
 
         @Override
+        String getName() {
+            return "load balance";
+        }
+
+        @Override
         void execute(KeyServerExecutor executor) throws IOException {
 
             for (int i = 0; i < keysServerClients.size(); i++) {
@@ -279,22 +302,13 @@ public class PGPKeysCache {
                 PGPKeysServerClient client = keysServerClients.get(lastIndex);
                 lastIndex = (lastIndex + 1) % keysServerClients.size();
 
-                try {
-                    executor.run(client);
-                    lastClient = client;
+                if (isSuccessExecute(executor, client)) {
                     return;
-                } catch (IOException e) {
-                    LOGGER.warn("{} throw exception {} - load balance try next client",
-                            client, ExceptionUtils.getMessage(e));
                 }
             }
 
             throw new IOException("All servers from list was failed");
         }
 
-        @Override
-        public String toString() {
-            return "load balance list: " + keysServerClients;
-        }
     }
 }
