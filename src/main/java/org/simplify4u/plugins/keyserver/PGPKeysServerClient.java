@@ -22,7 +22,10 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -43,6 +46,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.simplify4u.plugins.utils.ExceptionUtils;
 
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
@@ -58,6 +62,8 @@ abstract class PGPKeysServerClient {
     private static final int DEFAULT_READ_TIMEOUT = 20000;
     public static final int DEFAULT_MAX_RETRIES = 10;
 
+    private static final List<Class<? extends Throwable>> IGNORE_EXCEPTION_FOR_RETRY =
+            Arrays.asList(FileNotFoundException.class, UnknownHostException.class);
 
     private final URI keyserver;
     private final int connectTimeout;
@@ -67,18 +73,18 @@ abstract class PGPKeysServerClient {
     /**
      * Protected constructor for {@code PGPKeysServerClient}.
      *
+     * @param keyserver
+     *         The URI of the target key server.
+     * @param connectTimeout
+     *         The timeout (in milliseconds) that the client should wait to establish a connection to
+     *         the PGP server.
+     * @param readTimeout
+     *         The timeout (in milliseconds) that the client should wait for data from the PGP server.
+     * @param maxAttempts
+     *         The maximum number of automatically retry request by client
+     *
      * @see #getClient(String)
      * @see #getClient(String, int, int, int)
-     *
-     * @param keyserver
-     *   The URI of the target key server.
-     * @param connectTimeout
-     *   The timeout (in milliseconds) that the client should wait to establish a connection to
-     *   the PGP server.
-     * @param readTimeout
-     *   The timeout (in milliseconds) that the client should wait for data from the PGP server.
-     * @param maxAttempts
-     *  The maximum number of automatically retry request by client
      */
     protected PGPKeysServerClient(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts) {
         this.keyserver = keyserver;
@@ -91,11 +97,9 @@ abstract class PGPKeysServerClient {
      * Create a PGP key server client for a given URL.
      *
      * @param keyServer
-     *   The key server address / URL.
+     *         The key server address / URL.
      *
-     * @return
-     *   The right PGP client for the given address.
-     *
+     * @return The right PGP client for the given address.
      */
     static PGPKeysServerClient getClient(String keyServer) throws IOException {
         return getClient(keyServer, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, DEFAULT_MAX_RETRIES);
@@ -105,23 +109,22 @@ abstract class PGPKeysServerClient {
      * Create a PGP key server for a given URL.
      *
      * @param keyServer
-     *   The key server address / URL.
+     *         The key server address / URL.
      * @param connectTimeout
-     *   The timeout (in milliseconds) that the client should wait to establish a connection to
-     *   the PGP server.
+     *         The timeout (in milliseconds) that the client should wait to establish a connection to
+     *         the PGP server.
      * @param readTimeout
-     *   The timeout (in milliseconds) that the client should wait for data from the PGP server.
+     *         The timeout (in milliseconds) that the client should wait for data from the PGP server.
      * @param maxAttempts
-     *   The maximum number of automatically retry request by client
+     *         The maximum number of automatically retry request by client
      *
-     * @return
-     *   The right PGP client for the given address.
+     * @return The right PGP client for the given address.
      *
      * @throws IOException
-     *   If some problem during client create.
+     *         If some problem during client create.
      */
     static PGPKeysServerClient getClient(String keyServer, int connectTimeout, int readTimeout, int maxAttempts)
-        throws IOException {
+            throws IOException {
         final URI uri = Try.of(() -> new URI(keyServer)).getOrElseThrow((Function<Throwable, IOException>) IOException::new);
 
         final String protocol = uri.getScheme().toLowerCase(Locale.ROOT);
@@ -147,7 +150,9 @@ abstract class PGPKeysServerClient {
     /**
      * Create URI for key download.
      *
-     * @param keyID key ID
+     * @param keyID
+     *         key ID
+     *
      * @return URI with given key
      */
     URI getUriForGetKey(long keyID) {
@@ -167,7 +172,9 @@ abstract class PGPKeysServerClient {
     /**
      * Create URI for key lookup.
      *
-     * @param keyID key ID
+     * @param keyID
+     *         key ID
+     *
      * @return URI with given key
      */
     URI getUriForShowKey(long keyID) {
@@ -177,7 +184,7 @@ abstract class PGPKeysServerClient {
                     "/pks/lookup", getQueryStringForShowKey(keyID), null);
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(
-                String.format("URI exception for keyId 0x%016X", keyID), e);
+                    String.format("URI exception for keyId 0x%016X", keyID), e);
         }
     }
 
@@ -190,14 +197,14 @@ abstract class PGPKeysServerClient {
      * request still fails after exhausting retries, the final exception will be re-thrown.
      *
      * @param keyId
-     *   The ID of the key to request from the server.
+     *         The ID of the key to request from the server.
      * @param outputStream
-     *   The output stream to which the key will be written.
+     *         The output stream to which the key will be written.
      * @param onRetryConsumer
-     *   The consumer which will be call on retry occurs
+     *         The consumer which will be call on retry occurs
      *
      * @throws IOException
-     *   If the request fails, or the key cannot be written to the output stream.
+     *         If the request fails, or the key cannot be written to the output stream.
      */
     void copyKeyToOutputStream(long keyId, OutputStream outputStream, OnRetryConsumer onRetryConsumer)
             throws IOException {
@@ -212,7 +219,7 @@ abstract class PGPKeysServerClient {
                 .maxAttempts(maxAttempts)
                 .waitDuration(Duration.ofMillis(500))
                 .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                .ignoreExceptions(FileNotFoundException.class)
+                .retryOnException(this::shouldRetryOnException)
                 .build();
 
         Retry retry = Retry.of("id", config);
@@ -233,8 +240,20 @@ abstract class PGPKeysServerClient {
         } catch (FileNotFoundException e) {
             throw new IOException("PGP server returned an error: HTTP/1.1 404 Not Found for: " + keyUri);
         } catch (Throwable e) {
-            throw new IOException(e.getMessage() + " for: " + keyUri, e);
+            throw new IOException(ExceptionUtils.getMessage(e) + " for: " + keyUri, e);
         }
+    }
+
+    private boolean shouldRetryOnException(Throwable throwable) {
+
+        Throwable aThrowable = throwable;
+        while (aThrowable != null) {
+            if (IGNORE_EXCEPTION_FOR_RETRY.contains(aThrowable.getClass())) {
+                return false;
+            }
+            aThrowable = aThrowable.getCause();
+        }
+        return true;
     }
 
     private void processOnRetry(RetryEvent event, Duration waitInterval,
@@ -242,10 +261,10 @@ abstract class PGPKeysServerClient {
 
         // inform planer about error on last roue
         HttpRoute httpRoute = planer.lastRouteCauseError();
-        InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
 
         // inform caller about retry
         if (onRetryConsumer != null) {
+            InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
             onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
         }
     }
@@ -263,13 +282,13 @@ abstract class PGPKeysServerClient {
      * payload was empty, an {@link IOException} will be thrown.
      *
      * @param response
-     *   A representation of the response from the server.
+     *         A representation of the response from the server.
      * @param outputStream
-     *   The stream to which the response data will be written.
+     *         The stream to which the response data will be written.
      *
      * @throws IOException
-     *   If the response was unsuccessful, did not contain any data, or could not be written
-     *   completely to the target output stream.
+     *         If the response was unsuccessful, did not contain any data, or could not be written
+     *         completely to the target output stream.
      */
     private void processKeyResponse(CloseableHttpResponse response, OutputStream outputStream) throws IOException {
         final StatusLine statusLine = response.getStatusLine();
@@ -297,10 +316,9 @@ abstract class PGPKeysServerClient {
      * Build an HTTP client with the given router planer.
      *
      * @param planer
-     *   The router planer for http client, used for load balancing
+     *         The router planer for http client, used for load balancing
      *
-     * @return
-     *   The new HTTP client instance.
+     * @return The new HTTP client instance.
      */
     private CloseableHttpClient buildClient(RoundRobinRouterPlaner planer) {
 
@@ -317,18 +335,23 @@ abstract class PGPKeysServerClient {
      * Set connect and read timeouts for an HTTP client that is being built.
      *
      * @param builder
-     *   The client builder to which timeouts will be applied.
+     *         The client builder to which timeouts will be applied.
      */
     private void applyTimeouts(final HttpClientBuilder builder) {
         final RequestConfig requestConfig =
-            RequestConfig
-                .custom()
-                .setConnectionRequestTimeout(this.connectTimeout)
-                .setConnectTimeout(this.connectTimeout)
-                .setSocketTimeout(this.readTimeout)
-                .build();
+                RequestConfig
+                        .custom()
+                        .setConnectionRequestTimeout(this.connectTimeout)
+                        .setConnectTimeout(this.connectTimeout)
+                        .setSocketTimeout(this.readTimeout)
+                        .build();
 
         builder.setDefaultRequestConfig(requestConfig);
+    }
+
+    @Override
+    public String toString() {
+        return "{" + keyserver + "}";
     }
 }
 

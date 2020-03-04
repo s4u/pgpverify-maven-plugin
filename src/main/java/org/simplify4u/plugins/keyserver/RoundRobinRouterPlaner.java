@@ -75,7 +75,7 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
         try {
             return Arrays.asList(InetAddress.getAllByName(hostName));
         } catch (UnknownHostException e) {
-            throw new HttpException(e.getMessage(), e);
+            throw new HttpException("UnknownHostException: " + hostName, e);
         }
     }
 

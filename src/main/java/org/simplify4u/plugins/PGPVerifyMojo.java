@@ -22,10 +22,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.maven.artifact.Artifact;
@@ -75,6 +78,8 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       %s UserIds: %s";
 
+    private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
+
     @Parameter(property = "project", readonly = true, required = true)
     private MavenProject project;
 
@@ -103,7 +108,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     /**
      * Scope used to build dependency list.
-     *
+     * <p>
      * This scope indicates up to which scope artifacts will be included. For example, the 'test' scope will include
      * <code>provided</code>-, <code>compile</code>-, <code>runtime</code>-, and <code>system</code>-scoped dependencies.
      *
@@ -113,12 +118,23 @@ public class PGPVerifyMojo extends AbstractMojo {
     private String scope;
 
     /**
-     * PGP public key server address.
+     * PGP public key servers address.
+     *
+     * <p>
+     * From version <b>1.7.0</b> you can provide many kay servers separated by comma, semicolon or whitespace.
      *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keyserver", defaultValue = "hkps://hkps.pool.sks-keyservers.net", required = true)
     private String pgpKeyServer;
+
+    /**
+     * If many key server is provided, use all of them.
+     * <p>
+     * If set to false only first key server will be used, another as fallback.
+     */
+    @Parameter(property = "pgpverify.keyserversLoadBalance", defaultValue = "true")
+    private boolean pgpKeyServerLoadBalance;
 
     /**
      * Fail the build if any dependency doesn't have a signature.
@@ -248,7 +264,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * <p>You can use maven version range syntax for version item.</p>
      *
      * <p>When line end with <code>\</code> next line is concatenated with current line - multiline format.</p>
-     *
+     * <p>
      * You can use ready keys map: https://github.com/s4u/pgp-keys-map
      *
      * @since 1.1.0
@@ -341,8 +357,10 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Prepare cache and keys map.
      *
-     * @throws MojoFailureException   In case of failures during initialization of the PGP keys cache.
-     * @throws MojoExecutionException In case of errors while loading the keys map.
+     * @throws MojoFailureException
+     *         In case of failures during initialization of the PGP keys cache.
+     * @throws MojoExecutionException
+     *         In case of errors while loading the keys map.
      */
     private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
         initCache();
@@ -355,15 +373,22 @@ public class PGPVerifyMojo extends AbstractMojo {
     }
 
     private void initCache() throws MojoFailureException {
+
+        List<String> keyServerList = Arrays.stream(KEY_SERVERS_SPLIT_PATTERN.split(pgpKeyServer))
+                .map(String::trim)
+                .filter(s -> s.length() > 0)
+                .collect(Collectors.toList());
+
         try {
-            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath, PGPKeysCache.prepareClient(pgpKeyServer));
+            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath,
+                    PGPKeysCache.prepareClients(keyServerList), pgpKeyServerLoadBalance);
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
     }
 
     private void verifyArtifactSignatures(Map<Artifact, Artifact> artifactToAsc)
-    throws MojoFailureException, MojoExecutionException {
+            throws MojoFailureException, MojoExecutionException {
         boolean isAllSigOk = true;
 
         for (Map.Entry<Artifact, Artifact> artifactEntry : artifactToAsc.entrySet()) {
@@ -438,7 +463,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             if (pgpSignature.verify()) {
                 final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "OK", PublicKeyUtils.keyIdDescription(publicKey,publicKeyRing),
+                        "OK", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
                         PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
                 if (quiet) {
                     getLog().debug(logMessageOK);
@@ -448,7 +473,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 return true;
             } else {
                 getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "ERROR", PublicKeyUtils.keyIdDescription(publicKey,publicKeyRing),
+                        "ERROR", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
                         PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
                 getLog().warn(artifactFile.toString());
                 getLog().warn(signatureFile.toString());
@@ -464,7 +489,9 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Verify if unsigned artifact is correctly listed in keys map.
      *
-     * @param artifact the artifact which is supposedly unsigned
+     * @param artifact
+     *         the artifact which is supposedly unsigned
+     *
      * @return Returns <code>true</code> if correctly missing according to keys map,
      * or <code>false</code> if verification fails.
      */

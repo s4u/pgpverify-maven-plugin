@@ -23,13 +23,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import io.vavr.control.Try;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.ExceptionUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +49,17 @@ public class PGPKeysCache {
     private static final String NL = System.lineSeparator();
 
     private final File cachePath;
-    private final PGPKeysServerClient keysServerClient;
+    private final KeyServerList keyServerList;
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(File cachePath, PGPKeysServerClient keysServerClient) throws IOException {
+    public PGPKeysCache(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance)
+            throws IOException {
 
         this.cachePath = cachePath;
-        this.keysServerClient = keysServerClient;
+        this.keyServerList = createKeyServerList(pgpKeysServerClients, loadBalance);
+
+        LOGGER.info("Key server(s) - {}", keyServerList);
 
         synchronized (LOCK) {
             if (this.cachePath.exists()) {
@@ -67,12 +76,43 @@ public class PGPKeysCache {
         }
     }
 
-    public static PGPKeysServerClient prepareClient(String keyserver) throws IOException {
-        return PGPKeysServerClient.getClient(keyserver);
+    public static List<PGPKeysServerClient> prepareClients(List<String> keyServers) {
+
+        return keyServers.stream()
+                .map(keyserver -> Try.of(() -> PGPKeysServerClient.getClient(keyserver)).get())
+                .collect(Collectors.toList());
     }
 
+    static KeyServerList createKeyServerList(List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance) {
+
+        if (pgpKeysServerClients == null || pgpKeysServerClients.isEmpty()) {
+            throw new IllegalArgumentException("Not allowed empty key server clients list ");
+        }
+
+        KeyServerList ret;
+        if (pgpKeysServerClients.size() == 1) {
+            ret = new KeyServerListOne();
+        } else {
+            if (loadBalance) {
+                ret = new KeyServerListLoadBalance();
+            } else {
+                ret = new KeyServerListFallback();
+            }
+        }
+
+        return ret.withClients(pgpKeysServerClients);
+    }
+
+    /**
+     * URL where PGP key can be watched.
+     *
+     * @param keyID
+     *         given keyId
+     *
+     * @return url from current key server
+     */
     public String getUrlForShowKey(long keyID) {
-        return keysServerClient.getUriForShowKey(keyID).toString();
+        return keyServerList.getUriForShowKey(keyID).toString();
     }
 
     public PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
@@ -85,7 +125,7 @@ public class PGPKeysCache {
         synchronized (LOCK) {
 
             if (!keyFile.exists()) {
-                receiveKey(keyFile, keyID);
+                keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
             }
 
             try (InputStream keyFileStream = new FileInputStream(keyFile)) {
@@ -100,7 +140,7 @@ public class PGPKeysCache {
         }
     }
 
-    private void receiveKey(File keyFile, long keyId) throws IOException {
+    private void receiveKey(File keyFile, long keyId, PGPKeysServerClient keysServerClient) throws IOException {
         File dir = keyFile.getParentFile();
 
         if (dir == null) {
@@ -133,8 +173,10 @@ public class PGPKeysCache {
     }
 
     private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable) {
-        LOGGER.warn("[Retry #{} waiting: {}] Last address {} with problem: {}",
-                numberOfRetryAttempts, waitInterval, address, lastThrowable);
+
+        LOGGER.warn("[Retry #{} waiting: {}] Last address {} with problem: [{}] {}",
+                numberOfRetryAttempts, waitInterval, address,
+                lastThrowable.getClass().getName(), ExceptionUtils.getMessage(lastThrowable));
     }
 
     private void deleteFile(File file) {
@@ -149,5 +191,110 @@ public class PGPKeysCache {
                             }
                         }
                 );
+    }
+
+
+    @FunctionalInterface
+    interface KeyServerExecutor {
+        void run(PGPKeysServerClient client) throws IOException;
+    }
+
+    /**
+     * Abstract class for manage list of key servers.
+     */
+    abstract static class KeyServerList {
+
+        protected List<PGPKeysServerClient> keysServerClients = new ArrayList<>();
+        protected PGPKeysServerClient lastClient;
+
+        KeyServerList withClients(List<PGPKeysServerClient> keysServerClients) {
+            this.keysServerClients = keysServerClients;
+            this.lastClient = keysServerClients.get(0);
+            return this;
+        }
+
+        URI getUriForShowKey(long keyID) {
+            return lastClient.getUriForShowKey(keyID);
+        }
+
+        abstract void execute(KeyServerExecutor executor) throws IOException;
+    }
+
+    /**
+     * Only one key server on list.
+     */
+    static class KeyServerListOne extends KeyServerList {
+
+        @Override
+        void execute(KeyServerExecutor executor) throws IOException {
+            executor.run(lastClient);
+        }
+
+        @Override
+        public String toString() {
+            return lastClient.toString();
+        }
+    }
+
+    /**
+     * Always use first server, second only for fallback.
+     */
+    static class KeyServerListFallback extends KeyServerList {
+
+        @Override
+        void execute(KeyServerExecutor executor) throws IOException {
+
+            for (PGPKeysServerClient client : keysServerClients) {
+                try {
+                    executor.run(client);
+                    lastClient = client;
+                    return;
+                } catch (IOException e) {
+                    LOGGER.warn("{} throw exception: {} - fallback try next client",
+                            client, ExceptionUtils.getMessage(e));
+                }
+            }
+
+            throw new IOException("All servers from list was failed");
+        }
+
+        @Override
+        public String toString() {
+            return "fallback list: " + keysServerClients;
+        }
+    }
+
+    /**
+     * Use all server from list, round robin.
+     */
+    static class KeyServerListLoadBalance extends KeyServerList {
+
+        private int lastIndex = 0;
+
+        @Override
+        void execute(KeyServerExecutor executor) throws IOException {
+
+            for (int i = 0; i < keysServerClients.size(); i++) {
+
+                PGPKeysServerClient client = keysServerClients.get(lastIndex);
+                lastIndex = (lastIndex + 1) % keysServerClients.size();
+
+                try {
+                    executor.run(client);
+                    lastClient = client;
+                    return;
+                } catch (IOException e) {
+                    LOGGER.warn("{} throw exception {} - load balance try next client",
+                            client, ExceptionUtils.getMessage(e));
+                }
+            }
+
+            throw new IOException("All servers from list was failed");
+        }
+
+        @Override
+        public String toString() {
+            return "load balance list: " + keysServerClients;
+        }
     }
 }
