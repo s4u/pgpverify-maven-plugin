@@ -9,46 +9,21 @@ Features
    not only during artifact download from remote repository to local
  - possibility to map pgp key fingerprint to artifacts, so we can detect if correct key is used for making signature
  - possibility to check signature of maven plugins used during build
+ - there is no external software need to install - plugin use Bouncy Castle library to manage pgp operations
+ - works on many operating system and jdk versions - confirmed by CI builds - Linux, Windows, Mac OS, JDK 8, 11, 13
 
 Usage
 -----
 
-You can try it by running in your project:
+You can try it by running in your project directory:
 
     mvn ${project.groupId}:pgpverify-maven-plugin:check
 
-If you want check your dependency on each build, please add to your project:
+More [examples of usage](examples.html)
 
-    <project>
-      ...
-      <build>
-        <!-- To define the plugin version in your parent POM -->
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>${project.groupId}</groupId>
-              <artifactId>pgpverify-maven-plugin</artifactId>
-              <version>${project.version}</version>
-            </plugin>
-            ...
-          </plugins>
-        </pluginManagement>
+Support
+-------
 
-        <!-- To use the plugin goals in your POM or parent POM -->
-        <plugins>
-          <plugin>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>pgpverify-maven-plugin</artifactId>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>check</goal>
-                    </goals>
-                </execution>
-             </executions>
-          </plugin>
-          ...
-        </plugins>
-      </build>
-      ...
-    </project>
+Issues, bugs, new feature requests, questions can be submitted to [issue management system](issue-management.html).
+
+If you need help don't hesitate to create new issue.

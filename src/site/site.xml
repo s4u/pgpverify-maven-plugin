@@ -46,6 +46,7 @@
 
         <menu name="Overview">
             <item name="Introduction" href="index.html" />
+            <item name="Examples of usage" href="examples.html" />
             <item name="Goals" href="plugin-info.html" />
         </menu>
 

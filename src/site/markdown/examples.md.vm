@@ -1,0 +1,54 @@
+Examples
+========
+
+Simple usage
+------------
+
+You can try it by running in your project directory:
+
+    mvn ${project.groupId}:pgpverify-maven-plugin:check
+
+If you want check your dependency on each build, please add to your project:
+
+    <project>
+      ...
+      <build>
+        <!-- To define the plugin version in your parent POM -->
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>pgpverify-maven-plugin</artifactId>
+              <version>${project.version}</version>
+            </plugin>
+            ...
+          </plugins>
+        </pluginManagement>
+
+        <!-- To use the plugin goals in your POM or parent POM -->
+        <plugins>
+          <plugin>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>pgpverify-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                </execution>
+             </executions>
+          </plugin>
+          ...
+        </plugins>
+      </build>
+      ...
+    </project>
+    
+IT tests
+--------
+
+Many example of usage can be found in project IT tests:
+
+https://github.com/s4u/pgpverify-maven-plugin/tree/master/src/it
+
+
