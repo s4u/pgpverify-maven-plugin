@@ -26,7 +26,7 @@
 
     <groupId>org.simplify4u.plugins</groupId>
     <artifactId>pgpverify-maven-plugin</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.7.0</version>
     <packaging>maven-plugin</packaging>
 
     <name>Verify PGP signatures plugin</name>
@@ -58,7 +58,7 @@
         <connection>scm:git:git@github.com:s4u/pgpverify-maven-plugin.git</connection>
         <developerConnection>${project.scm.connection}</developerConnection>
         <url>https://github.com/s4u/pgpverify-maven-plugin</url>
-        <tag>HEAD</tag>
+        <tag>v1.7.0</tag>
     </scm>
 
     <distributionManagement>
