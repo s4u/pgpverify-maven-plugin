@@ -101,11 +101,11 @@
                 <artifactId>plexus-resources</artifactId>
                 <version>1.1.0</version>
                 <exclusions>
-                    <!-- we use testng, so we don't need junit on classpath -->
-                    <!-- and transitive dependency has scope compile -->
+                    <!-- duplicate classes from different artifacts -->
+                    <!-- https://github.com/codehaus-plexus/plexus-resources/issues/2 -->
                     <exclusion>
-                        <artifactId>junit</artifactId>
-                        <groupId>junit</groupId>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-container-default</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
