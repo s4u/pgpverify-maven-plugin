@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+import io.vavr.control.Try;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.PlexusContainerException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -34,11 +34,12 @@ import org.testng.annotations.Test;
  */
 public class KeysMapTest {
 
+    private PlexusContainer container = Try.of(DefaultPlexusContainer::new).get();
+
     private KeysMap keysMap;
 
     @BeforeMethod
-    public void setUp() throws ComponentLookupException, PlexusContainerException {
-        PlexusContainer container = new DefaultPlexusContainer();
+    public void setUp() throws ComponentLookupException {
         keysMap = container.lookup(KeysMap.class);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 /**
  * @author Slawomir Jaranowski.
  */
-@Component(role = KeysMap.class)
+@Component(role = KeysMap.class, instantiationStrategy = "per-lookup")
 public class KeysMap {
 
     @Requirement
