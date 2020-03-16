@@ -15,7 +15,7 @@
  */
 package org.simplify4u.plugins;
 
-import static org.simplify4u.plugins.TestUtils.getArtifact;
+import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -57,14 +57,14 @@ public class KeysMapTest {
     public void nullLocationTest() throws Exception {
         keysMap.load(null);
 
-        assertTrue(keysMap.isValidKey(getArtifact("test.group", "test", "1.1.1"), null, null));
+        assertTrue(keysMap.isValidKey(testArtifact().build(), null, null));
     }
 
     @Test
     public void emptyLocationTest() throws Exception {
         keysMap.load("");
 
-        assertTrue(keysMap.isValidKey(getArtifact("test.group", "test", "1.1.1"), null, null));
+        assertTrue(keysMap.isValidKey(testArtifact().build(), null, null));
     }
 
 
@@ -74,16 +74,16 @@ public class KeysMapTest {
 
         assertTrue(
                 keysMap.isValidKey(
-                        getArtifact("junit", "junit", "4.12"),
+                        testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
                         getPGPgpPublicKey(0x123456789abcdef0L), null));
         assertTrue(
                 keysMap.isValidKey(
-                        getArtifact("junit", "junit", "4.12"),
+                        testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
                         getPGPgpPublicKey(0x123456789abcdeffL), null));
 
         assertTrue(
                 keysMap.isValidKey(
-                        getArtifact("testlong", "fingerprint", "x.x.x"),
+                        testArtifact().groupId("testlong").artifactId("fingerprint").version("x.x.x").build(),
                         getPGPgpPublicKey(0x123456789abcdef0L), null));
 
     }
@@ -94,7 +94,7 @@ public class KeysMapTest {
 
         assertTrue(
                 keysMap.isValidKey(
-                        getArtifact("test.test", "test", "1.2.3"),
+                        testArtifact().groupId("test.test").artifactId("test").version("1.2.3").build(),
                         getPGPgpPublicKey(0x123456789abcdef0L), null));
     }
 
@@ -104,7 +104,7 @@ public class KeysMapTest {
 
         assertFalse(
                 keysMap.isValidKey(
-                        getArtifact("junit", "junit", "4.11"),
+                        testArtifact().groupId("junit").artifactId("junit").version("4.11").build(),
                         getPGPgpPublicKey(0x123456789abcdef0L), null));
     }
 
@@ -114,7 +114,7 @@ public class KeysMapTest {
 
         assertTrue(
                 keysMap.isValidKey(
-                        getArtifact("test", "test-package", "1.0.0"),
+                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build(),
                         getPGPgpPublicKey(0xA6ADFC93EF34893EL), null));
     }
 
@@ -124,14 +124,14 @@ public class KeysMapTest {
 
         assertTrue(
                 keysMap.isNoKey(
-                        getArtifact("test", "test-package", "1.0.0")));
+                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build()));
         assertFalse(
                 keysMap.isValidKey(
-                        getArtifact("test", "test-package", "1.0.0"),
+                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build(),
                         getPGPgpPublicKey(0xA6ADFC93EF34893EL), null));
         assertFalse(
                 keysMap.isNoKey(
-                        getArtifact("test", "test-package-2", "1.0.0")));
+                        testArtifact().groupId("test").artifactId("test-package-2").version("1.0.0").build()));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,

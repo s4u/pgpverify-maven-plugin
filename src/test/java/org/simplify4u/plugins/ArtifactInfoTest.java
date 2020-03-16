@@ -15,7 +15,7 @@
  */
 package org.simplify4u.plugins;
 
-import static org.simplify4u.plugins.TestUtils.getArtifact;
+import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.testng.Assert.assertTrue;
 
 import org.apache.maven.artifact.Artifact;
@@ -32,15 +32,15 @@ public class ArtifactInfoTest {
     @DataProvider(name = "lists")
     public Object[][] artifactsList() {
         return new Object[][]{
-                {"test.group:test:*", getArtifact("test.group", "test", "1.1.1"), true },
-                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.1"), true },
-                {"test.group:test:[1.1,2.0)", getArtifact("test.group", "test", "1.1.1"), true },
-                {"test.group:test:[1.1,2.0)", getArtifact("test.group", "test", "2.0"), false },
-                {"test.group:test:1.1.1", getArtifact("test.group", "test", "1.1.2"), false },
-                {"test.group:test", getArtifact("test.group", "test", "1"), true },
-                {"test.group:test", getArtifact("test.group", "test", "1.2.3"), true },
-                {"test.*:test", getArtifact("test.group", "test", "1.2.3"), true },
-                {"test.*", getArtifact("test.group", "test-test", "1.2.3"), true },
+                {"test.group:test:*", testArtifact().build(), true},
+                {"test.group:test:1.1.1", testArtifact().build(), true},
+                {"test.group:test:[1.1,2.0)", testArtifact().build(), true},
+                {"test.group:test:[1.1,2.0)", testArtifact().version("2.0").build(), false},
+                {"test.group:test:1.1.1", testArtifact().version("1.1.2").build(), false},
+                {"test.group:test", testArtifact().build(), true},
+                {"test.group:test", testArtifact().build(), true},
+                {"test.*:test", testArtifact().build(), true},
+                {"test.*", testArtifact().build(), true},
         };
     }
 

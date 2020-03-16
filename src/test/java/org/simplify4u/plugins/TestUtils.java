@@ -21,18 +21,12 @@ import java.util.Arrays;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.DefaultArtifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
 
 /**
  * @author Slawomir Jaranowski.
  */
 public abstract class TestUtils {
-
-    static Artifact getArtifact(String groupId, String artifactId, String version) {
-        return new DefaultArtifact(groupId, artifactId, version, "", "", "", null);
-    }
 
     static PGPPublicKey getPGPgpPublicKey(long keyID) {
 
