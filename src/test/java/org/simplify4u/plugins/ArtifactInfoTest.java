@@ -15,8 +15,8 @@
  */
 package org.simplify4u.plugins;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
-import static org.testng.Assert.assertTrue;
 
 import org.apache.maven.artifact.Artifact;
 import org.testng.annotations.DataProvider;
@@ -34,11 +34,21 @@ public class ArtifactInfoTest {
         return new Object[][]{
                 {"test.group:test:*", testArtifact().build(), true},
                 {"test.group:test:1.1.1", testArtifact().build(), true},
+                {"test.group:test:jar:1.1.1", testArtifact().build(), true},
+                {"test.group:test:pom:1.1.1", testArtifact().build(), false},
                 {"test.group:test:[1.1,2.0)", testArtifact().build(), true},
+                {"test.group:test:pom:[1.1,2.0)", testArtifact().build(), false},
                 {"test.group:test:[1.1,2.0)", testArtifact().version("2.0").build(), false},
                 {"test.group:test:1.1.1", testArtifact().version("1.1.2").build(), false},
                 {"test.group:test", testArtifact().build(), true},
-                {"test.group:test", testArtifact().build(), true},
+                {"test.group:*:jar", testArtifact().artifactId("test2").build(), true},
+                {"test.group:*:pom", testArtifact().artifactId("test2").build(), false},
+                {"test.group.*:test", testArtifact().build(), true},
+                {"test.group.*:test", testArtifact().groupId("test.group.next").build(), true},
+                {"test.group.*:test", testArtifact().groupId("test.groupnext").build(), false},
+                {"test.group:test", testArtifact().packaging("pom").build(), true},
+                {"test.group:test:pom", testArtifact().packaging("pom").build(), true},
+                {"test.group:test:jar", testArtifact().packaging("pom").build(), false},
                 {"test.*:test", testArtifact().build(), true},
                 {"test.*", testArtifact().build(), true},
         };
@@ -48,8 +58,8 @@ public class ArtifactInfoTest {
     public void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
 
         ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
-        assertTrue(artifactInfo.isMatch(artifact) == match);
-        assertTrue(artifactInfo.isKeyMatch(null, null));
+        assertThat(artifactInfo.isMatch(artifact)).isEqualTo(match);
+        assertThat(artifactInfo.isKeyMatch(null, null)).isTrue();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,

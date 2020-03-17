@@ -36,21 +36,41 @@ public class ArtifactInfo {
 
     private final Pattern groupIdPattern;
     private final Pattern artifactIdPattern;
+    private final Pattern packagingPattern;
     private final VersionRange versionRange;
 
     private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
     private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
+    private static final Pattern PACKAGING = Pattern.compile("^[a-zA-Z]+$");
 
     public ArtifactInfo(String strArtifact, KeyInfo keyInfo) {
 
         String[] split = strArtifact.split(":");
         String groupId = split.length > 0 ? split[0].trim().toLowerCase(Locale.US) : "";
         String artifactId = split.length > 1 ? split[1].trim().toLowerCase(Locale.US) : "";
-        String version = split.length > 2 ? split[2].trim().toLowerCase(Locale.US) : "";
+
+        String packaging = "";
+        String version = "";
+
+        if (split.length == 3) {
+            String item = split[2].trim().toLowerCase(Locale.US);
+            if (PACKAGING.matcher(item).matches()) {
+                packaging = item;
+            } else {
+                version = item;
+            }
+        } else if (split.length == 4) {
+            packaging = split[2].trim().toLowerCase(Locale.US);
+            version = split[3].trim().toLowerCase(Locale.US);
+        } else {
+            packaging = "";
+        }
+
 
         try {
             groupIdPattern = Pattern.compile(patternPrepare(groupId));
             artifactIdPattern = Pattern.compile(patternPrepare(artifactId));
+            packagingPattern = Pattern.compile(patternPrepare(packaging));
             versionRange = VersionRange.createFromVersionSpec(versionSpecPrepare(version));
         } catch (InvalidVersionSpecificationException | PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid artifact definition: " + strArtifact, e);
@@ -64,8 +84,13 @@ public class ArtifactInfo {
             return ".*";
         }
 
-        String ret = DOT_REPLACE.matcher(str).replaceAll("\\\\.");
-        ret = STAR_REPLACE.matcher(ret).replaceAll(".*");
+        String ret;
+        if (str.endsWith(".*")) {
+            ret = str.substring(0, str.length() - 2) + "(\\..+)?$";
+        } else {
+            ret = DOT_REPLACE.matcher(str).replaceAll("\\\\.");
+            ret = STAR_REPLACE.matcher(ret).replaceAll(".*");
+        }
         return ret;
     }
 
@@ -87,6 +112,7 @@ public class ArtifactInfo {
 
         return isMatchPattern(groupIdPattern, artifact.getGroupId())
                 && isMatchPattern(artifactIdPattern, artifact.getArtifactId())
+                && isMatchPattern(packagingPattern, artifact.getType())
                 && isMatchVersion(artifact.getVersion());
     }
 
