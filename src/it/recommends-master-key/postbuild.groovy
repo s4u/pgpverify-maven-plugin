@@ -16,6 +16,6 @@
 def buildLog = new File( basedir, 'build.log' )
 
 assert buildLog.text.contains('[ERROR] Not allowed artifact junit:junit:jar:4.12 and keyID:')
-assert buildLog.text.contains('[ERROR] Not allowed artifact junit:junit:jar:4.12 and keyID:')
+assert buildLog.text.contains('[ERROR] Not allowed artifact junit:junit:pom:4.12 and keyID:')
 assert buildLog.text.contains('junit:junit:4.12 = 0x58E79B6ABC762159DC0B1591164BD2247B936711')
 assert buildLog.text.contains('[INFO] BUILD FAILURE')
