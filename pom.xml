@@ -199,7 +199,7 @@
             <dependency>
                 <groupId>org.mock-server</groupId>
                 <artifactId>mockserver-netty</artifactId>
-                <version>5.9.0</version>
+                <version>5.10</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
