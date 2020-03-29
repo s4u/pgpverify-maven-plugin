@@ -11,7 +11,7 @@ Features
  - possibility to map pgp key fingerprint to artifacts, so we can detect if correct key is used for making signature
  - possibility to check signature of maven plugins used during build
  - there is no external software need to install - plugin use Bouncy Castle library to manage pgp operations
- - works on many operating system and jdk versions - confirmed by CI builds - Linux, Windows, Mac OS, JDK 8, 11, 13
+ - works on many operating system and jdk versions - confirmed by CI builds - Linux, Windows, Mac OS, JDK 8, 11, 14
 
 Usage
 -----
