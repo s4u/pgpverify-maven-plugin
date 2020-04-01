@@ -17,17 +17,6 @@
 
 package org.simplify4u.plugins;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
-import org.simplify4u.plugins.skipfilters.SkipFilter;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -40,6 +29,17 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.simplify4u.plugins.MavenCompilerUtils.extractAnnotationProcessors;
+
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.project.MavenProject;
+import org.apache.maven.repository.RepositorySystem;
+import org.simplify4u.plugins.skipfilters.SkipFilter;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -117,6 +117,7 @@ final class ArtifactResolver {
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
+    @SuppressWarnings({"deprecation", "java:S1874"})
     Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
                 resolveArtifacts(project.getArtifacts(), config.dependencyFilter, config.verifyPomFiles));
