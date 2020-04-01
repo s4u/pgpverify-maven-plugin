@@ -41,6 +41,7 @@ public class ArtifactInfoTest {
                 {"test.group:test:[1.1,2.0)", testArtifact().version("2.0").build(), false},
                 {"test.group:test:1.1.1", testArtifact().version("1.1.2").build(), false},
                 {"test.group:test", testArtifact().build(), true},
+                {"test.group", testArtifact().build(), true},
                 {"test.group:*:jar", testArtifact().artifactId("test2").build(), true},
                 {"test.group:*:pom", testArtifact().artifactId("test2").build(), false},
                 {"test.group.*:test", testArtifact().build(), true},

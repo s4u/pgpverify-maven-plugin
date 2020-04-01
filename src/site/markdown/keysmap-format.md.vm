@@ -1,0 +1,83 @@
+KeysMap file format
+====================
+
+The format of the file is similar to, but more flexible than, a Java properties file.
+The syntax of each line of properties file is:
+
+    groupId:artifactId:packaging:version=pgpKey
+    
+Where
+
+- `groupId`    - groupId of maven artifact, this filed is required, but can be `*` for mach any   
+- `artifactId` - artifactId of maven artifact
+- `packaging`  - packaging of maven artifact, eg. `pom`, `jar` 
+- `version`    - version of maven artifact, this filed support maven version range syntax
+- `pgpKey`     - pgp key fingerprints in hex format which are allowed to sign artifact, 
+                 must begin with `0x`, can be also `*` for mach any key, 
+                 can be supplied many keys separated by comma  
+
+Comments 
+--------
+
+Everything from `#` (hash sign) and continue to the end of the line are comment and will be skipped.    
+
+Multiline
+---------
+
+If line is ending with ` \ ` (backslash) break of line will be removed and next line will be joined.
+
+There are allowed whitespace and comments after ` \ `.
+
+Examples
+--------
+
+match any artifact from group with any packaging and version 
+
+    test.groupId = 0x1234567890  
+---
+
+match any artifact from group and any subgroups with any packaging and version 
+
+    test.groupId.* = 0x1234567890  
+---
+
+match specific artifact with any packaging and version
+
+    test.groupId:artifactId = 0x1234567890  
+---
+
+match specific artifact with packaging and with any version
+
+    test.groupId:artifactId:jar = 0x1234567890
+---
+
+match specific artifact with packaging and version
+
+    test.groupId:artifactId:jar:1.0.0 = 0x1234567890
+---
+
+match specific artifact with version and any packaging
+
+    test.groupId:artifactId:1.0.0 = 0x1234567890  
+---
+
+match specific artifact with any version and packaging and many keys
+   
+    test.groupId:artifactId = 0x1234567890, 0x1234567890, \ 
+                              0xABCDEF0987
+---
+
+comments
+   
+    # my comments
+    test.groupId:artifactId = \               # 
+                              0x1234567890, \ # first key 
+                              0x1234567890, \ # second key
+                              0xABCDEF0987    # end 
+---
+
+External resources
+------------------
+ 
+- [Maven GAV - naming conventions](https://maven.apache.org/guides/mini/guide-naming-conventions.html)
+- [Version range syntax](https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html)

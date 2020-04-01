@@ -132,6 +132,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      * If many key server is provided, use all of them.
      * <p>
      * If set to false only first key server will be used, another as fallback.
+     *
+     * @since 1.7.0
      */
     @Parameter(property = "pgpverify.keyserversLoadBalance", defaultValue = "true")
     private boolean pgpKeyServerLoadBalance;
@@ -242,30 +244,17 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyReactorDependencies;
 
     /**
-     * <p>Specifies the location of a file that contains the map of dependencies to PGP
-     * key.</p>
-     *
-     * <p>The format of the file is similar to, but more flexible than, a Java properties file.
-     * The syntax of each line of properties file is:<br/><br/>
-     * <code>groupId:artifactId:version=pgpKey</code></p>
-     *
-     * <p>You can use <code>*</code> in <code>groupId, artifactId and version</code> as
-     * wildcard.</p>
-     *
-     * <p><code>pgpKey</code> must be written as hex number starting with 0x.
-     * You can use <code>*</code> or <code>any</code> for match any pgp key.
-     * If the pgpKey is an empty string, pgp-verify will expect the package to
-     * be unsigned. Please refer to <code>strictNoSignature</code> configuration
-     * parameter for its use.</p>
-     *
-     * <p>You can also omit <code>version</code> and <code>artifactId</code> which means any value
-     * for those fields.</p>
-     *
-     * <p>You can use maven version range syntax for version item.</p>
-     *
-     * <p>When line end with <code>\</code> next line is concatenated with current line - multiline format.</p>
      * <p>
-     * You can use ready keys map: https://github.com/s4u/pgp-keys-map
+     * Specifies the location of a file that contains the map of dependencies to PGP key.
+     * </p>
+     *
+     * <p>
+     * <a href="keysmap-format.html">Format description.</a>
+     * </p>
+     *
+     * <p>
+     * You can use ready keys map: <a href="https://github.com/s4u/pgp-keys-map">https://github.com/s4u/pgp-keys-map</a>
+     * </p>
      *
      * @since 1.1.0
      */
