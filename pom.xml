@@ -73,7 +73,6 @@
         <slf4j.version>1.7.30</slf4j.version>
     </properties>
 
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -134,7 +133,6 @@
                 <artifactId>slf4j-simple</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-
 
             <!-- dependency coverage -->
             <dependency>
@@ -304,7 +302,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <goals>
