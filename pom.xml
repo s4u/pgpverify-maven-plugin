@@ -340,12 +340,6 @@
                 <artifactId>maven-plugin-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>mojo-descriptor</id>
-                        <goals>
-                            <goal>descriptor</goal>
-                        </goals>
-                    </execution>
-                    <execution>
                         <id>generated-helpmojo</id>
                         <goals>
                             <goal>helpmojo</goal>
