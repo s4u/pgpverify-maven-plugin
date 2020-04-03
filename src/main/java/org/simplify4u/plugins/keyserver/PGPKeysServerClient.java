@@ -36,21 +36,31 @@ import io.github.resilience4j.retry.event.RetryEvent;
 import io.vavr.CheckedRunnable;
 import io.vavr.control.Try;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.ProxyAuthenticationStrategy;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+import org.apache.maven.settings.Proxy;
 import org.simplify4u.plugins.utils.ExceptionUtils;
 
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
  */
 abstract class PGPKeysServerClient {
+
+    private final Proxy proxy;
 
     @FunctionalInterface
     public interface OnRetryConsumer {
@@ -82,14 +92,15 @@ abstract class PGPKeysServerClient {
      * @param maxAttempts
      *         The maximum number of automatically retry request by client
      *
-     * @see #getClient(String)
-     * @see #getClient(String, int, int, int)
+     * @see #getClient(String, Proxy)
+     * @see #getClient(String, Proxy, int, int, int)
      */
-    protected PGPKeysServerClient(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts) {
+    protected PGPKeysServerClient(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts, Proxy proxy) {
         this.keyserver = keyserver;
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
         this.maxAttempts = maxAttempts;
+        this.proxy = proxy;
     }
 
     /**
@@ -98,10 +109,11 @@ abstract class PGPKeysServerClient {
      * @param keyServer
      *         The key server address / URL.
      *
+     * @param proxy the proxy server to use (if any)
      * @return The right PGP client for the given address.
      */
-    static PGPKeysServerClient getClient(String keyServer) throws IOException {
-        return getClient(keyServer, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, DEFAULT_MAX_RETRIES);
+    static PGPKeysServerClient getClient(String keyServer, Proxy proxy) throws IOException {
+        return getClient(keyServer, proxy, DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT, DEFAULT_MAX_RETRIES);
     }
 
     /**
@@ -109,6 +121,7 @@ abstract class PGPKeysServerClient {
      *
      * @param keyServer
      *         The key server address / URL.
+     * @param proxy proxy server config
      * @param connectTimeout
      *         The timeout (in milliseconds) that the client should wait to establish a connection to
      *         the PGP server.
@@ -122,7 +135,7 @@ abstract class PGPKeysServerClient {
      * @throws IOException
      *         If some problem during client create.
      */
-    static PGPKeysServerClient getClient(String keyServer, int connectTimeout, int readTimeout, int maxAttempts)
+    static PGPKeysServerClient getClient(String keyServer, Proxy proxy, int connectTimeout, int readTimeout, int maxAttempts)
             throws IOException {
         final URI uri = Try.of(() -> new URI(keyServer)).getOrElseThrow((Function<Throwable, IOException>) IOException::new);
 
@@ -131,11 +144,11 @@ abstract class PGPKeysServerClient {
         switch (protocol) {
             case "hkp":
             case "http":
-                return new PGPKeysServerClientHttp(uri, connectTimeout, readTimeout, maxAttempts);
+                return new PGPKeysServerClientHttp(uri, connectTimeout, readTimeout, maxAttempts, proxy);
 
             case "hkps":
             case "https":
-                return new PGPKeysServerClientHttps(uri, connectTimeout, readTimeout, maxAttempts);
+                return new PGPKeysServerClientHttps(uri, connectTimeout, readTimeout, maxAttempts, proxy);
 
             default:
                 throw new IOException("Unsupported protocol: " + protocol);
@@ -212,7 +225,7 @@ abstract class PGPKeysServerClient {
         final HttpUriRequest request = new HttpGet(keyUri);
 
         // use one instance of planer in order to remember failed hosts
-        final RoundRobinRouterPlaner planer = new RoundRobinRouterPlaner();
+        final HttpRoutePlanner planer = proxy == null ? new RoundRobinRouterPlaner() : getNewProxyRoutePlanner();
 
         RetryConfig config = RetryConfig.custom()
                 .maxAttempts(maxAttempts)
@@ -243,6 +256,11 @@ abstract class PGPKeysServerClient {
         }
     }
 
+    private HttpRoutePlanner getNewProxyRoutePlanner() {
+        HttpHost httpHost = new HttpHost(proxy.getHost(), proxy.getPort());
+        return new DefaultProxyRoutePlanner(httpHost);
+    }
+
     private boolean shouldRetryOnException(Throwable throwable) {
 
         Throwable aThrowable = throwable;
@@ -256,15 +274,17 @@ abstract class PGPKeysServerClient {
     }
 
     private void processOnRetry(RetryEvent event, Duration waitInterval,
-                                RoundRobinRouterPlaner planer, OnRetryConsumer onRetryConsumer) {
+                                HttpRoutePlanner planer, OnRetryConsumer onRetryConsumer) {
 
         // inform planer about error on last roue
-        HttpRoute httpRoute = planer.lastRouteCauseError();
+        if (planer instanceof RoundRobinRouterPlaner) {
+            HttpRoute httpRoute = ((RoundRobinRouterPlaner)planer).lastRouteCauseError();
 
-        // inform caller about retry
-        if (onRetryConsumer != null) {
-            InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
-            onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
+            // inform caller about retry
+            if (onRetryConsumer != null) {
+                InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
+                onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
+            }
         }
     }
 
@@ -319,7 +339,7 @@ abstract class PGPKeysServerClient {
      *
      * @return The new HTTP client instance.
      */
-    private CloseableHttpClient buildClient(RoundRobinRouterPlaner planer) {
+    private CloseableHttpClient buildClient(HttpRoutePlanner planer) {
 
 
         final HttpClientBuilder clientBuilder = this.createClientBuilder();
@@ -346,6 +366,24 @@ abstract class PGPKeysServerClient {
                         .build();
 
         builder.setDefaultRequestConfig(requestConfig);
+    }
+
+    protected HttpClientBuilder setupProxy(HttpClientBuilder clientBuilder) {
+        if (this.proxy == null) {
+            return clientBuilder;
+        }
+
+        if (proxy.getUsername() != null && !proxy.getUsername().isEmpty() &&
+            proxy.getPassword() != null && !proxy.getPassword().isEmpty()) {
+            clientBuilder.setProxyAuthenticationStrategy(ProxyAuthenticationStrategy.INSTANCE);
+            BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
+            AuthScope proxyAuthScope = new AuthScope(proxy.getHost(), proxy.getPort());
+            UsernamePasswordCredentials proxyAuthentication =
+                new UsernamePasswordCredentials(proxy.getUsername(), proxy.getPassword());
+            basicCredentialsProvider.setCredentials(proxyAuthScope, proxyAuthentication);
+            clientBuilder.setDefaultCredentialsProvider(basicCredentialsProvider);
+        }
+        return clientBuilder;
     }
 
     @Override

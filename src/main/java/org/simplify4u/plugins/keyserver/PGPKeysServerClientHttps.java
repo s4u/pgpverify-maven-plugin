@@ -32,6 +32,7 @@ import javax.net.ssl.TrustManagerFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.maven.settings.Proxy;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKPS/HTTPS.
@@ -39,10 +40,10 @@ import org.apache.http.impl.client.HttpClients;
 class PGPKeysServerClientHttps extends PGPKeysServerClient {
     private final SSLConnectionSocketFactory sslSocketFactory;
 
-    protected PGPKeysServerClientHttps(URI uri, int connectTimeout, int readTimeout, int maxAttempts)
+    protected PGPKeysServerClientHttps(URI uri, int connectTimeout, int readTimeout, int maxAttempts, Proxy proxy)
             throws IOException {
 
-        super(prepareKeyServerURI(uri), connectTimeout, readTimeout, maxAttempts);
+        super(prepareKeyServerURI(uri), connectTimeout, readTimeout, maxAttempts, proxy);
 
         try {
             if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
@@ -83,6 +84,6 @@ class PGPKeysServerClientHttps extends PGPKeysServerClient {
 
     @Override
     protected HttpClientBuilder createClientBuilder() {
-        return HttpClients.custom().setSSLSocketFactory(this.sslSocketFactory);
+        return setupProxy(HttpClients.custom().setSSLSocketFactory(this.sslSocketFactory));
     }
 }
