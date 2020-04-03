@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.keysmap;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -26,11 +26,11 @@ import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
- * Store info about key number.
+ * Store info about key numbers.
  *
  * @author Slawomir Jaranowski.
  */
-public class KeyInfo {
+class KeyInfo {
 
     private final boolean matchAny;
     private final List<byte[]> keysID = new ArrayList<>();

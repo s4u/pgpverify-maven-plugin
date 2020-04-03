@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.keysmap;
 
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;

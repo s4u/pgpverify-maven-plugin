@@ -28,7 +28,7 @@ import org.bouncycastle.openpgp.PGPPublicKey;
  */
 public abstract class TestUtils {
 
-    static PGPPublicKey getPGPgpPublicKey(long keyID) {
+    public static PGPPublicKey getPGPgpPublicKey(long keyID) {
 
         BigInteger bigInteger = BigInteger.valueOf(0xffffffffL & keyID);
         BigInteger bigInteger2 = BigInteger.valueOf(keyID);

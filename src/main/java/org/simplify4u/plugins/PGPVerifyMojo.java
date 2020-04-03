@@ -58,6 +58,7 @@ import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
+import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
