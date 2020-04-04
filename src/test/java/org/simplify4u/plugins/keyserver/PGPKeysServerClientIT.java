@@ -78,7 +78,7 @@ public class PGPKeysServerClientIT {
                 },
                 {
                         "http://localhost:%d/404",
-                        "java.io.IOException: PGP server returned an error: HTTP/1.1 404 Not Found for: http://localhost:%d/404",
+                        "org.simplify4u.plugins.keyserver.PGPKeyNotFound: PGP server returned an error: HTTP/1.1 404 Not Found for: http://localhost:%d/404",
                         false    // Should not retry
                 }
         };

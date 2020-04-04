@@ -151,9 +151,9 @@ public class PGPKeysCache {
             throw new IOException("Path exist but it isn't directory: " + dir);
         }
 
-        if (!dir.exists() && !dir.mkdirs()) {
-            throw new IOException("Can't create directory: " + dir);
-        }
+        // result is ignored, in this place we suspect that nothing wrong can happen
+        // in multi process mode it can happen that two process check for existing directory in the same time, one create it
+        dir.mkdirs();
 
         File partFile = File.createTempFile(String.valueOf(keyId), "pgp-public-key");
 
@@ -206,6 +206,7 @@ public class PGPKeysCache {
 
         protected List<PGPKeysServerClient> keysServerClients = new ArrayList<>();
         protected PGPKeysServerClient lastClient;
+        protected IOException lastException;
 
         KeyServerList withClients(List<PGPKeysServerClient> keysServerClients) {
             this.keysServerClients = keysServerClients;
@@ -223,6 +224,7 @@ public class PGPKeysCache {
                 lastClient = client;
                 return true;
             } catch (IOException e) {
+                lastException = e;
                 LOGGER.warn("{} throw exception: {} - {} try next client", client, ExceptionUtils.getMessage(e), getName());
             }
             return false;
@@ -278,7 +280,7 @@ public class PGPKeysCache {
                 }
             }
 
-            throw new IOException("All servers from list was failed");
+            throw new IOException("All servers from list was failed", lastException);
         }
     }
 
@@ -307,7 +309,7 @@ public class PGPKeysCache {
                 }
             }
 
-            throw new IOException("All servers from list was failed");
+            throw new IOException("All servers from list was failed", lastException);
         }
 
     }

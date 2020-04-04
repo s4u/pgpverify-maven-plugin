@@ -15,7 +15,6 @@
  */
 package org.simplify4u.plugins.keyserver;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -63,7 +62,7 @@ abstract class PGPKeysServerClient {
     public static final int DEFAULT_MAX_RETRIES = 10;
 
     private static final List<Class<? extends Throwable>> IGNORE_EXCEPTION_FOR_RETRY =
-            Arrays.asList(FileNotFoundException.class, UnknownHostException.class);
+            Arrays.asList(PGPKeyNotFound.class, UnknownHostException.class);
 
     private final URI keyserver;
     private final int connectTimeout;
@@ -237,8 +236,8 @@ abstract class PGPKeysServerClient {
 
         try {
             checkedRunnable.run();
-        } catch (FileNotFoundException e) {
-            throw new IOException("PGP server returned an error: HTTP/1.1 404 Not Found for: " + keyUri);
+        } catch (PGPKeyNotFound e) {
+            throw new PGPKeyNotFound("PGP server returned an error: HTTP/1.1 404 Not Found for: " + keyUri);
         } catch (Throwable e) {
             throw new IOException(ExceptionUtils.getMessage(e) + " for: " + keyUri, e);
         }
@@ -294,7 +293,7 @@ abstract class PGPKeysServerClient {
         final StatusLine statusLine = response.getStatusLine();
 
         if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
-            throw new FileNotFoundException();
+            throw new PGPKeyNotFound();
         }
 
         if (statusLine.getStatusCode() == HttpStatus.SC_OK) {

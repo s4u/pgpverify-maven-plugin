@@ -52,13 +52,49 @@ public class KeysMap {
         }
     }
 
-    public boolean isNoKey(Artifact artifact) {
-        for (ArtifactInfo artifactInfo : keysMapList) {
-            if (artifactInfo.isMatch(artifact)) {
-                return artifactInfo.isNoKey();
-            }
-        }
-        return false;
+    /**
+     * Artifact can has no signature.
+     *
+     * @param artifact
+     *         artifact to test
+     *
+     * @return signature status
+     */
+    public boolean isNoSignature(Artifact artifact) {
+
+        return keysMapList.stream()
+                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .anyMatch(ArtifactInfo::isNoSignature);
+    }
+
+    /**
+     * Artifact can has broken signature.
+     *
+     * @param artifact
+     *         artifact to test
+     *
+     * @return broken signature status
+     */
+    public boolean isBrokenSignature(Artifact artifact) {
+
+        return keysMapList.stream()
+                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .anyMatch(ArtifactInfo::isBrokenSignature);
+    }
+
+    /**
+     * Key for signature can be not found on public key servers.
+     *
+     * @param artifact
+     *         artifact to test
+     *
+     * @return key missing status
+     */
+    public boolean isKeyMissing(Artifact artifact) {
+
+        return keysMapList.stream()
+                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .anyMatch(ArtifactInfo::isKeyMissing);
     }
 
     public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {
@@ -66,13 +102,9 @@ public class KeysMap {
             return true;
         }
 
-        for (ArtifactInfo artifactInfo : keysMapList) {
-            if (artifactInfo.isMatch(artifact)) {
-                return artifactInfo.isKeyMatch(key, keyRing);
-            }
-        }
-
-        return false;
+        return keysMapList.stream()
+                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .anyMatch(artifactInfo -> artifactInfo.isKeyMatch(key, keyRing));
     }
 
     private void loadKeysMap(final InputStream inputStream) throws IOException {

@@ -37,13 +37,17 @@ public class KeyInfoTest {
     public Object[][] keys() {
         return new Object[][]{
                 {"*", 0x123456789abcdef0L, true},
+                {"", 0x123456789abcdef0L, false},
                 {"any", 0x123456789abcdef0L, true},
                 {"Any", 0x123456789abcdef0L, true},
-                {"ANY", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0", 0x123456789abcdef0L, true},
+                {"noSig, 0x123456789abcdef0", 0x123456789abcdef0L, true},
+                {"noKey, 0x123456789abcdef0", 0x123456789abcdef0L, true},
+                {"badSig, 0x123456789abcdef0", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0,0x0fedcba987654321", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0, 0x0fedcba987654321", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0", 0x231456789abcdef0L, false},
+                {"0x123456789abcdef0, *", 0x231456789abcdef0L, true},
                 {"0x123456789abcdef0, 0x0fedcba987654321", 0x321456789abcdef0L, false}
         };
     }
@@ -52,21 +56,35 @@ public class KeyInfoTest {
     public void testIsKeyMatch(String strKeys, long key, boolean match) throws Exception {
 
         KeyInfo keyInfo = new KeyInfo(strKeys);
-        assertThat(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null)).isEqualTo(match);
+        assertThat(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null)).as("isKeyMatch").isEqualTo(match);
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "null key not allowed")
+    public void nullKeyShouldThrowsException() {
+
+        new KeyInfo(null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "Invalid keyID xxxx must start with 0x or be any of .*")
+    public void invalidKeyShouldThrowsException() {
+
+        new KeyInfo("xxxx");
+    }
+
+
     @Test
-    public void testIsNoKey() {
+    public void testIsNoSignature() {
 
         KeyInfo keyInfo = new KeyInfo("");
-        assertThat(keyInfo.isNoKey()).isTrue();
+        assertThat(keyInfo.isNoSignature()).isTrue();
     }
 
     @Test
-    public void testIsNoKeyIncorrect() {
+    public void testIsNoSignatureIncorrect() {
 
         KeyInfo keyInfo = new KeyInfo("0x123456789abcdef0");
-        assertThat(keyInfo.isNoKey()).isFalse();
+        assertThat(keyInfo.isNoSignature()).isFalse();
     }
 
     @Test

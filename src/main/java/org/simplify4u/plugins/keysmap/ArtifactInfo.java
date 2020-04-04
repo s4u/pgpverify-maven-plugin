@@ -138,7 +138,15 @@ class ArtifactInfo {
         return keyInfo.isKeyMatch(key, keyRing);
     }
 
-    public boolean isNoKey() {
-        return keyInfo.isNoKey();
+    public boolean isNoSignature() {
+        return keyInfo.isNoSignature();
+    }
+
+    public boolean isBrokenSignature() {
+        return keyInfo.isBrokenSignature();
+    }
+
+    public boolean isKeyMissing() {
+        return keyInfo.isKeyMissing();
     }
 }

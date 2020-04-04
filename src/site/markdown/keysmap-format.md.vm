@@ -12,9 +12,27 @@ Where
 - `artifactId` - artifactId of maven artifact
 - `packaging`  - packaging of maven artifact, eg. `pom`, `jar` 
 - `version`    - version of maven artifact, this filed support maven version range syntax
-- `pgpKey`     - pgp key fingerprints in hex format which are allowed to sign artifact, 
-                 must begin with `0x`, can be also `*` for mach any key, 
+- `pgpKey`     - pgp key fingerprints in hex format which are allowed to sign artifact,
                  can be supplied many keys separated by comma  
+
+PGP keys special values
+----------------------
+
+`pgpKey` field can contains many pgp fingerprints, separated by comma,
+each fingerprint must start with `0x`. There are allowed whitespace in hex fingerprint.
+
+`pgpKey` can also contains special values:
+
+- `*`, `any` - match any key for artifact
+- `noSig`    - allow artifact without signature
+- `badSig`   - allow artifact with invalid signature
+- `noKey`    - allow that key for artifact will not exist on public key servers
+
+The order of items and matching
+-------------------------------
+
+The order of items is not important, all matching items are checked for keys or special values.
+Process is continued until first matching item is found or end of items is reached.
 
 Comments 
 --------
@@ -33,7 +51,7 @@ Examples
 
 match any artifact from group with any packaging and version 
 
-    test.groupId = 0x1234567890  
+    test.groupId = 0x1234 567890
 ---
 
 match any artifact from group and any subgroups with any packaging and version 
@@ -65,6 +83,17 @@ match specific artifact with any version and packaging and many keys
    
     test.groupId:artifactId = 0x1234567890, 0x1234567890, \ 
                               0xABCDEF0987
+---
+
+allow bad signature for specific artifact with version
+
+    test.groupId:artifactId           = 0x1234567890
+    test.groupId:artifactId:pom:1.0.0 = badSig
+---
+
+match specific artifact with any packaging and version and allow that signature will not exist
+
+    test.groupId:artifactId = 0x1234567890, noSig
 ---
 
 comments

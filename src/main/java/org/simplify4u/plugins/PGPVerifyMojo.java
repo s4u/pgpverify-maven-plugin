@@ -57,6 +57,7 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
+import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
@@ -451,26 +452,18 @@ public class PGPVerifyMojo extends AbstractMojo {
             getLog().debug("signature.KeyAlgorithm: " + pgpSignature.getKeyAlgorithm()
                     + " signature.hashAlgorithm: " + pgpSignature.getHashAlgorithm());
 
-            if (pgpSignature.verify()) {
-                final String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "OK", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
+            return verifySignatureStatus(pgpSignature.verify(), artifact, publicKey, publicKeyRing);
+        } catch (IOException | PGPException e) {
+            if (e.getCause() instanceof PGPKeyNotFound && keysMap.isKeyMissing(artifact)) {
+                final String logMessage = String.format("%s PGP Key not found on server, consistent with keys map.",
+                        artifact.getId());
                 if (quiet) {
-                    getLog().debug(logMessageOK);
+                    getLog().debug(logMessage);
                 } else {
-                    getLog().info(logMessageOK);
+                    getLog().info(logMessage);
                 }
                 return true;
-            } else {
-                getLog().warn(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "ERROR", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
-                getLog().warn(artifactFile.toString());
-                getLog().warn(signatureFile.toString());
-                return false;
             }
-
-        } catch (IOException | PGPException e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);
         }
@@ -486,7 +479,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * or <code>false</code> if verification fails.
      */
     private boolean verifySignatureUnavailable(Artifact artifact) {
-        if (keysMap.isNoKey(artifact)) {
+        if (keysMap.isNoSignature(artifact)) {
             final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.",
                     artifact.getId());
             if (quiet) {
@@ -498,5 +491,37 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
         getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
         return false;
+    }
+
+    private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,
+                                          PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+
+        if (signatureStatus) {
+            String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
+                    "OK", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
+                    PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
+            if (quiet) {
+                getLog().debug(logMessageOK);
+            } else {
+                getLog().info(logMessageOK);
+            }
+            return true;
+        } else {
+            if (keysMap.isBrokenSignature(artifact)) {
+                String logMessage = String.format("%s PGP Signature is broken, consistent with keys map.",
+                        artifact.getId());
+                if (quiet) {
+                    getLog().debug(logMessage);
+                } else {
+                    getLog().info(logMessage);
+                }
+                return true;
+            } else {
+                getLog().error(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
+                        "INVALID", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
+                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
+                return false;
+            }
+        }
     }
 }

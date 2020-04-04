@@ -15,11 +15,9 @@
  */
 package org.simplify4u.plugins.keysmap;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 import io.vavr.control.Try;
 import org.codehaus.plexus.DefaultPlexusContainer;
@@ -50,88 +48,125 @@ public class KeysMapTest {
 
     @Test
     public void isComponentSet() {
-        assertNotNull(keysMap);
+        assertThat(keysMap).isNotNull();
     }
 
     @Test
     public void nullLocationTest() throws Exception {
         keysMap.load(null);
 
-        assertTrue(keysMap.isValidKey(testArtifact().build(), null, null));
+        assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
     @Test
     public void emptyLocationTest() throws Exception {
         keysMap.load("");
 
-        assertTrue(keysMap.isValidKey(testArtifact().build(), null, null));
+        assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
 
     @Test
-    public void validKeyFromMap1() throws Exception {
-        keysMap.load("/keysMap1.list");
+    public void validKeyFromMap() throws Exception {
+        keysMap.load("/keysMap.list");
 
-        assertTrue(
+        assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null));
-        assertTrue(
+                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+        ).isTrue();
+
+        assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
-                        getPGPgpPublicKey(0x123456789abcdeffL), null));
+                        getPGPgpPublicKey(0x123456789abcdeffL), null)
+        ).isTrue();
 
-        assertTrue(
+        assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("testlong").artifactId("fingerprint").version("x.x.x").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null));
+                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+        ).isTrue();
 
-    }
-
-    @Test
-    public void validKeyFromMap2() throws Exception {
-        keysMap.load("/keysMap1.list");
-
-        assertTrue(
+        assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test.test").artifactId("test").version("1.2.3").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null));
+                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+        ).isTrue();
+
+        assertThat(
+                keysMap.isValidKey(
+                        testArtifact().groupId("test").artifactId("test").version("1.0.0").build(),
+                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+        ).isTrue();
+
+        assertThat(
+                keysMap.isValidKey(
+                        testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
+                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null)
+        ).isTrue();
+
+        assertThat(
+                keysMap.isValidKey(
+                        testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
+                        getPGPgpPublicKey(0xA6ADFC93EF34893FL), null)
+        ).isTrue();
     }
 
     @Test
     public void invalidKeyFromMap() throws Exception {
-        keysMap.load("/keysMap1.list");
+        keysMap.load("/keysMap.list");
 
-        assertFalse(
+        assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.11").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null));
+                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+        ).isFalse();
     }
 
     @Test
-    public void keysProcessedInEncounterOrder() throws Exception {
-        keysMap.load("/keysMap2.list");
+    public void specialValueNoSig() throws Exception {
 
-        assertTrue(
+        keysMap.load("/keysMap.list");
+
+        assertThat(
+                keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test").build())
+        ).isTrue();
+
+        assertThat(
+                keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test2").build())
+        ).isTrue();
+
+        assertThat(
+                keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test3").build())
+        ).isTrue();
+
+        assertThat(
                 keysMap.isValidKey(
-                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build(),
-                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null));
+                        testArtifact().groupId("noSig").artifactId("test3").build(),
+                        getPGPgpPublicKey(0x123456789ABCDEF0L), null)
+        ).isTrue();
+
     }
 
     @Test
-    public void artifactsWithoutKeysProcessed() throws Exception {
-        keysMap.load("/keysMap3.list");
+    public void specialValueBadSig() throws Exception {
 
-        assertTrue(
-                keysMap.isNoKey(
-                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build()));
-        assertFalse(
-                keysMap.isValidKey(
-                        testArtifact().groupId("test").artifactId("test-package").version("1.0.0").build(),
-                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null));
-        assertFalse(
-                keysMap.isNoKey(
-                        testArtifact().groupId("test").artifactId("test-package-2").version("1.0.0").build()));
+        keysMap.load("/keysMap.list");
+
+        assertThat(
+                keysMap.isBrokenSignature(testArtifact().groupId("badSig").build())
+        ).isTrue();
+    }
+
+    @Test
+    public void specialValueNoKey() throws Exception {
+
+        keysMap.load("/keysMap.list");
+
+        assertThat(
+                keysMap.isKeyMissing(testArtifact().groupId("noKey").build())
+        ).isTrue();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,

@@ -17,4 +17,25 @@ junit    : junit        : 4.12    = 0x123456789ABCDef0, \
     0x123456789ABCDeff  # next key in new line
 
 testlong : fingerprint            = 0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0
+
 test.*                            = any
+
+test2:test-package                 = 0xA6ADFC93EF34893F
+test2                              = 0xA6ADFC93EF34893E
+
+# noSig test
+
+## empty key
+noSig:test                          =
+
+## with special value
+noSig:test2                         = noSig
+
+## with key
+noSig:test3                         = noSig, 0x123456789abcdef0
+
+# badSig
+badSig:test                         = badSig
+
+# noKey
+noKey:test                          = noKey

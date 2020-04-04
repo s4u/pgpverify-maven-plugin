@@ -15,15 +15,18 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import java.math.BigInteger;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
  * Store info about key numbers.
@@ -32,90 +35,61 @@ import org.simplify4u.plugins.utils.PublicKeyUtils;
  */
 class KeyInfo {
 
-    private final boolean matchAny;
-    private final List<byte[]> keysID = new ArrayList<>();
+    private static final Map<String, KeyInfoItem> SPECIAL_KEYS = Stream.of(
+            new SimpleEntry<>("*", new KeyInfoItemAnyKey()),
+            new SimpleEntry<>("any", new KeyInfoItemAnyKey()),
+            new SimpleEntry<>("badSig", new KeyInfoItemBrokenSig()),
+            new SimpleEntry<>("noKey", new KeyInfoItemNoKey()),
+            new SimpleEntry<>("noSig", new KeyInfoItemNoSig())
+    ).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    private final List<KeyInfoItem> keys = new ArrayList<>();
+
 
     public KeyInfo(String strKeys) {
-
-        if ("*".equals(strKeys) || "any".equalsIgnoreCase(strKeys)) {
-            matchAny = true;
-            return;
-        } else {
-            matchAny = false;
-        }
 
         if (strKeys == null) {
             throw new IllegalArgumentException("null key not allowed");
         }
 
+        // compatibility behavior
         if (strKeys.trim().isEmpty()) {
+            keys.add(new KeyInfoItemNoSig());
             return;
         }
 
-        for (String key : strKeys.split(",")) {
-            key = key.trim();
-            if (key.startsWith("0x")) {
-                byte[] bytes = strKeyToBytes(key.substring(2));
-                keysID.add(bytes);
-            } else {
-                throw new IllegalArgumentException("Invalid keyID " + key + " must start with 0x");
-            }
-        }
-    }
+        Arrays.stream(strKeys.split(","))
+                .map(String::trim)
+                .forEach(key -> {
 
-    private byte[] strKeyToBytes(String key) {
+                    if (key.startsWith("0x")) {
+                        keys.add(new KeyInfoItemKey(key));
+                    } else {
 
-        BigInteger bigInteger = new BigInteger(key.replace(" ", ""), 16);
-
-        byte[] bytes = bigInteger.toByteArray();
-
-        if (bytes[0] == 0) {
-            // we can remove sign byte
-            bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
-        }
-
-        if (bytes.length < 8 || bytes.length > 20) {
-            throw new IllegalArgumentException(
-                    String.format("Key length for = 0x%s is %d bits, should be between 64 and 160 bits",
-                            key, bytes.length * 8));
-        }
-
-        return bytes;
+                        Optional<KeyInfoItem> keyInfoItem = SPECIAL_KEYS.entrySet().stream()
+                                .filter(entry -> entry.getKey().equalsIgnoreCase(key))
+                                .map(Entry::getValue)
+                                .findFirst();
+                        keys.add(keyInfoItem.orElseThrow(()
+                                -> new IllegalArgumentException("Invalid keyID " + key + " must start with 0x "
+                                + "or be any of " + SPECIAL_KEYS.keySet())));
+                    }
+                });
     }
 
     public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
-
-        if (matchAny) {
-            return true;
-        }
-
-        byte[] fingerprint = pgpPublicKey.getFingerprint();
-
-        for (byte[] keyBytes : keysID) {
-            if (compareArrays(keyBytes, fingerprint)) {
-                return true;
-            }
-        }
-
-        Optional<PGPPublicKey> masterKey = PublicKeyUtils.getMasterKey(pgpPublicKey, pgpPublicKeyRing);
-        if (masterKey.isPresent()) {
-            return isKeyMatch(masterKey.get(), pgpPublicKeyRing);
-        }
-
-        return false;
+        return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatch(pgpPublicKey, pgpPublicKeyRing));
     }
 
-    private boolean compareArrays(byte[] keyBytes, byte[] fingerprint) {
-
-        for (int i = 1; i <= keyBytes.length && i <= fingerprint.length; i++) {
-            if (keyBytes[keyBytes.length - i] != fingerprint[fingerprint.length - i]) {
-                return false;
-            }
-        }
-        return true;
+    public boolean isNoSignature() {
+        return keys.stream().anyMatch(KeyInfoItem::isNoSignature);
     }
 
-    public boolean isNoKey() {
-        return keysID.isEmpty();
+    public boolean isKeyMissing() {
+        return keys.stream().anyMatch(KeyInfoItem::isKeyMissing);
+    }
+
+    public boolean isBrokenSignature() {
+        return keys.stream().anyMatch(KeyInfoItem::isBrokenSignature);
     }
 }

@@ -328,7 +328,9 @@ public class PGPKeysCacheTest {
                 keyServerList.execute(client ->
                         client.copyKeyToOutputStream(1, null, null)))
                 .isExactlyInstanceOf(IOException.class)
-                .hasMessage("All servers from list was failed");
+                .hasMessage("All servers from list was failed")
+                .hasCauseExactlyInstanceOf(IOException.class)
+                .hasRootCauseMessage("Fallback test2");
 
 
         verify(client1).copyKeyToOutputStream(1, null, null);
