@@ -324,8 +324,11 @@
                             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                             <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
                             <setupIncludes>
-                                <setupInclude>parentForTest/pom.xml</setupInclude>
+                                <setupInclude>parentForTest/pom-test.xml</setupInclude>
                             </setupIncludes>
+                            <pomIncludes>
+                                <pomInclude>*/pom-test.xml</pomInclude>
+                            </pomIncludes>
                             <settingsFile>src/it/settings.xml</settingsFile>
                             <showErrors>true</showErrors>
                             <mavenOpts>${argLine}</mavenOpts>

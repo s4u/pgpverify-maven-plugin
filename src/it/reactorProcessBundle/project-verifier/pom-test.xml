@@ -22,27 +22,34 @@
         <groupId>test</groupId>
         <artifactId>test-parent</artifactId>
         <version>0.0.1</version>
+        <relativePath>../pom-test.xml</relativePath>
     </parent>
 
-    <artifactId>project-test-jar</artifactId>
+    <artifactId>project-verifier</artifactId>
     <version>0.0.1</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>test</groupId>
+            <artifactId>project-bundle</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>@project.version@</version>
                 <configuration>
-                    <includes>
-                        <include>**</include>
-                    </includes>
+                    <failNoSignature>true</failNoSignature>
+                    <verifyReactorDependencies>true</verifyReactorDependencies>
                 </configuration>
-
                 <executions>
                     <execution>
                         <goals>
-                            <goal>test-jar</goal>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

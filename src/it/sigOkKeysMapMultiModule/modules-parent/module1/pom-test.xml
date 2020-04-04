@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2018 Wren Security
+  ~ Copyright 2017 Slawomir Jaranowski
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -20,22 +20,21 @@
 
     <parent>
         <groupId>test</groupId>
-        <artifactId>it-test-parent</artifactId>
+        <artifactId>modules-parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
-        <relativePath/>
+        <relativePath>../pom-test.xml</relativePath>
     </parent>
 
-    <artifactId>test-parent</artifactId>
-    <version>0.0.1</version>
+    <artifactId>module1</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>project-jar</module>
-        <module>project-verifier</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+    </dependencies>
 
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
 </project>

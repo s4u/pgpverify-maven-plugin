@@ -22,6 +22,7 @@
         <groupId>test</groupId>
         <artifactId>test-parent</artifactId>
         <version>0.0.1</version>
+        <relativePath>../pom-test.xml</relativePath>
     </parent>
 
     <artifactId>project-jar</artifactId>

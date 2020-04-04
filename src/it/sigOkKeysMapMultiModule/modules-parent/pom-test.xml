@@ -22,6 +22,7 @@
         <groupId>test</groupId>
         <artifactId>test-root</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom-test.xml</relativePath>
     </parent>
 
     <artifactId>modules-parent</artifactId>
@@ -29,8 +30,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>module1</module>
-        <module>module2</module>
+        <module>module1/pom-test.xml</module>
+        <module>module2/pom-test.xml</module>
     </modules>
 
     <build>

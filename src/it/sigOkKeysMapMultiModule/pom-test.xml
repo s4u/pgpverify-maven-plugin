@@ -30,8 +30,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>keys-map</module>
-        <module>modules-parent</module>
+        <module>keys-map/pom-test.xml</module>
+        <module>modules-parent/pom-test.xml</module>
     </modules>
 
 </project>

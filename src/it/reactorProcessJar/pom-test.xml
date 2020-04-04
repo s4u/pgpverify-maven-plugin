@@ -30,7 +30,12 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>project-pom</module>
-        <module>project-verifier</module>
+        <module>project-jar/pom-test.xml</module>
+        <module>project-verifier/pom-test.xml</module>
     </modules>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
 </project>

@@ -22,6 +22,7 @@
         <groupId>test</groupId>
         <artifactId>test-parent</artifactId>
         <version>0.0.1</version>
+        <relativePath>../pom-test.xml</relativePath>
     </parent>
 
     <artifactId>project-verifier</artifactId>
@@ -30,9 +31,8 @@
     <dependencies>
         <dependency>
             <groupId>test</groupId>
-            <artifactId>project-pom</artifactId>
+            <artifactId>project-jar</artifactId>
             <version>0.0.1</version>
-            <type>pom</type>
         </dependency>
     </dependencies>
 
