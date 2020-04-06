@@ -20,16 +20,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.maven.settings.Proxy;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKP/HTTP.
  */
 class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
-    protected PGPKeysServerClientHttp(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts)
+    protected PGPKeysServerClientHttp(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts, Proxy proxy)
             throws IOException {
 
-        super(prepareKeyServerURI(keyserver), connectTimeout, readTimeout, maxAttempts);
+        super(prepareKeyServerURI(keyserver), connectTimeout, readTimeout, maxAttempts, proxy);
     }
 
     private static URI prepareKeyServerURI(URI keyServer) throws IOException {
@@ -51,6 +52,6 @@ class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
     @Override
     protected HttpClientBuilder createClientBuilder() {
-        return HttpClientBuilder.create();
+        return setupProxy(HttpClientBuilder.create());
     }
 }

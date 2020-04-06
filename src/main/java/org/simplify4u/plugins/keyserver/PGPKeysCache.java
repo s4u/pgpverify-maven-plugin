@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.vavr.control.Try;
+import org.apache.maven.settings.Proxy;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.simplify4u.plugins.utils.ExceptionUtils;
@@ -76,10 +77,10 @@ public class PGPKeysCache {
         }
     }
 
-    public static List<PGPKeysServerClient> prepareClients(List<String> keyServers) {
+    public static List<PGPKeysServerClient> prepareClients(List<String> keyServers, Proxy proxy) {
 
         return keyServers.stream()
-                .map(keyserver -> Try.of(() -> PGPKeysServerClient.getClient(keyserver)).get())
+                .map(keyserver -> Try.of(() -> PGPKeysServerClient.getClient(keyserver, proxy)).get())
                 .collect(Collectors.toList());
     }
 

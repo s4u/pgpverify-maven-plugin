@@ -32,8 +32,6 @@ import static org.testng.Assert.assertTrue;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
-import org.simplify4u.plugins.keyserver.PGPKeysServerClient;
-import org.simplify4u.plugins.keyserver.PGPKeysServerClientHttps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -120,7 +118,7 @@ public class PGPKeysServerClientIT {
 
         tempFile.deleteOnExit();
 
-        final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl);
+        final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl, null);
 
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             client.copyKeyToOutputStream(TEST_KEYID, outputStream, null);
@@ -174,7 +172,7 @@ public class PGPKeysServerClientIT {
         private final URI stubbedUri;
 
         StubbedClient(URI stubbedUri, int connectTimeout, int readTimeout, int maxAttempts) throws IOException {
-            super(stubbedUri, connectTimeout, readTimeout, maxAttempts);
+            super(stubbedUri, connectTimeout, readTimeout, maxAttempts, null);
             this.stubbedUri = stubbedUri;
         }
 

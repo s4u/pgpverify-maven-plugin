@@ -45,6 +45,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.apache.maven.settings.Proxy;
+import org.apache.maven.settings.Settings;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -87,6 +89,18 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${session}", readonly = true)
     private MavenSession session;
+
+    /**
+     * Choose which proxy to use (id from settings.xml in maven config). Uses no proxy if the proxy was not found.
+     * If it is not set, it will take the first active proxy if any or no proxy, if no active proxy was found)
+     *
+     * @since 1.8.0
+     */
+    @Parameter(property = "pgpverify.proxyName")
+    private String proxyName;
+
+    @Parameter(property = "mavenSettings", defaultValue = "${settings}")
+    private Settings settings;
 
     @Component
     private RepositorySystem repositorySystem;
@@ -372,7 +386,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         try {
             pgpKeysCache = new PGPKeysCache(pgpKeysCachePath,
-                    PGPKeysCache.prepareClients(keyServerList), pgpKeyServerLoadBalance);
+                    PGPKeysCache.prepareClients(keyServerList, getMavenProxy()), pgpKeyServerLoadBalance);
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }
@@ -491,6 +505,26 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
         getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
         return false;
+    }
+
+    /**
+     * Returns the maven proxy with a matching id or the first active one
+     *
+     * @return the maven proxy
+     */
+    protected Proxy getMavenProxy() {
+        if (settings != null) {
+            List<Proxy> proxies = settings.getProxies();
+            if (proxies != null && !proxies.isEmpty()) {
+                if (proxyName != null) {
+                    return proxies.stream().filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId())).findFirst()
+                               .orElse(null);
+                } else {
+                    return proxies.stream().filter(Proxy::isActive).findFirst().orElse(null);
+                }
+            }
+        }
+        return null;
     }
 
     private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,
