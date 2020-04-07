@@ -385,8 +385,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 .collect(Collectors.toList());
 
         try {
-            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath,
-                    PGPKeysCache.prepareClients(keyServerList, getMavenProxy()), pgpKeyServerLoadBalance);
+            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath, keyServerList, pgpKeyServerLoadBalance, getMavenProxy());
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }

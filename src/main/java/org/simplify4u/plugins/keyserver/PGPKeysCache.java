@@ -58,7 +58,13 @@ public class PGPKeysCache {
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance)
+    public PGPKeysCache(File cachePath, List<String> pgpKeysServerList, boolean loadBalance, Proxy proxy)
+            throws IOException {
+        this(cachePath, prepareClients(pgpKeysServerList, proxy), loadBalance);
+    }
+
+    // used be test
+    PGPKeysCache(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance)
             throws IOException {
 
         this.cachePath = cachePath;
@@ -81,7 +87,7 @@ public class PGPKeysCache {
         }
     }
 
-    public static List<PGPKeysServerClient> prepareClients(List<String> keyServers, Proxy proxy) {
+    static List<PGPKeysServerClient> prepareClients(List<String> keyServers, Proxy proxy) {
 
         return keyServers.stream()
                 .map(keyserver -> Try.of(() -> PGPKeysServerClient.getClient(keyserver, proxy)).get())

@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -168,13 +167,9 @@ abstract class PGPKeysServerClient {
      * @return URI with given key
      */
     URI getUriForGetKey(long keyID) {
-        try {
-            return new URI(keyserver.getScheme(), keyserver.getUserInfo(),
-                    keyserver.getHost(), keyserver.getPort(),
-                    "/pks/lookup", getQueryStringForGetKey(keyID), null);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(String.format("URI exception for keyId 0x%016X", keyID), e);
-        }
+        return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
+                keyserver.getHost(), keyserver.getPort(),
+                "/pks/lookup", getQueryStringForGetKey(keyID), null)).get();
     }
 
     private String getQueryStringForShowKey(long keyID) {
@@ -190,14 +185,9 @@ abstract class PGPKeysServerClient {
      * @return URI with given key
      */
     URI getUriForShowKey(long keyID) {
-        try {
-            return new URI(keyserver.getScheme(), keyserver.getUserInfo(),
-                    keyserver.getHost(), keyserver.getPort(),
-                    "/pks/lookup", getQueryStringForShowKey(keyID), null);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException(
-                    String.format("URI exception for keyId 0x%016X", keyID), e);
-        }
+        return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
+                keyserver.getHost(), keyserver.getPort(),
+                "/pks/lookup", getQueryStringForShowKey(keyID), null)).get();
     }
 
     /**
@@ -276,15 +266,18 @@ abstract class PGPKeysServerClient {
     private void processOnRetry(RetryEvent event, Duration waitInterval,
                                 HttpRoutePlanner planer, OnRetryConsumer onRetryConsumer) {
 
-        // inform planer about error on last roue
+        InetAddress targetAddress = null;
         if (planer instanceof RoundRobinRouterPlaner) {
+            // inform planer about error on last roue
             HttpRoute httpRoute = ((RoundRobinRouterPlaner)planer).lastRouteCauseError();
+            targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
+        } else if (proxy != null) {
+            targetAddress = Try.of(() -> InetAddress.getByName(proxy.getHost())).getOrElse((InetAddress) null);
+        }
 
-            // inform caller about retry
-            if (onRetryConsumer != null) {
-                InetAddress targetAddress = Try.of(() -> httpRoute.getTargetHost().getAddress()).getOrElse((InetAddress) null);
-                onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
-            }
+        // inform caller about retry
+        if (onRetryConsumer != null) {
+            onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
         }
     }
 
