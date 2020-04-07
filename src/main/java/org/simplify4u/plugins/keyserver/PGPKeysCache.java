@@ -24,14 +24,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.vavr.control.Try;
 import org.apache.maven.settings.Proxy;
 import org.bouncycastle.openpgp.PGPException;
@@ -162,7 +166,7 @@ public class PGPKeysCache {
             try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
                 keysServerClient.copyKeyToOutputStream(keyId, outputStream, this::onRetry);
             }
-            Files.move(partFile.toPath(), keyFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            moveFile(partFile, keyFile);
         } catch (IOException e) {
             // if error try remove file
             deleteFile(keyFile);
@@ -194,6 +198,16 @@ public class PGPKeysCache {
                 );
     }
 
+    private void moveFile(File source, File destination) throws IOException {
+        try {
+            Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (FileSystemException fse) {
+            // on windows system we can get: The process cannot access the file because it is being used by another process.
+            // so wait ... and try again
+            Uninterruptibles.sleepUninterruptibly(250L + new SecureRandom().nextInt(1000), TimeUnit.MILLISECONDS);
+            Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
 
     @FunctionalInterface
     interface KeyServerExecutor {
