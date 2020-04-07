@@ -134,9 +134,10 @@ abstract class PGPKeysServerClient {
      * @throws IOException
      *         If some problem during client create.
      */
-    static PGPKeysServerClient getClient(String keyServer, Proxy proxy, int connectTimeout, int readTimeout, int maxAttempts)
-            throws IOException {
-        final URI uri = Try.of(() -> new URI(keyServer)).getOrElseThrow((Function<Throwable, IOException>) IOException::new);
+    static PGPKeysServerClient getClient(String keyServer, Proxy proxy,
+            int connectTimeout, int readTimeout, int maxAttempts) throws IOException {
+        final URI uri = Try.of(() -> new URI(keyServer))
+                .getOrElseThrow((Function<Throwable, IOException>) IOException::new);
 
         final String protocol = uri.getScheme().toLowerCase(Locale.ROOT);
 
@@ -277,7 +278,8 @@ abstract class PGPKeysServerClient {
 
         // inform caller about retry
         if (onRetryConsumer != null) {
-            onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(), waitInterval, event.getLastThrowable());
+            onRetryConsumer.onRetry(targetAddress, event.getNumberOfRetryAttempts(),
+                    waitInterval, event.getLastThrowable());
         }
     }
 

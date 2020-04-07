@@ -35,12 +35,13 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.google.common.util.concurrent.Uninterruptibles;
+import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
+
 import io.vavr.control.Try;
 import org.apache.maven.settings.Proxy;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.utils.ExceptionUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +143,8 @@ public class PGPKeysCache {
             try (InputStream keyFileStream = new FileInputStream(keyFile)) {
                 keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
                 return keyRing.orElseThrow(() ->
-                        new PGPException(String.format("Can't find public key 0x%016X in download file: %s", keyID, keyFile)));
+                        new PGPException(String.format("Can't find public key 0x%016X in download file: %s",
+                                keyID, keyFile)));
             } finally {
                 if (!keyRing.isPresent()) {
                     deleteFile(keyFile);
@@ -163,7 +165,8 @@ public class PGPKeysCache {
         }
 
         // result is ignored, in this place we suspect that nothing wrong can happen
-        // in multi process mode it can happen that two process check for existing directory in the same time, one create it
+        // in multi process mode it can happen that two process check for existing directory
+        // in the same time, one create it
         dir.mkdirs();
 
         File partFile = File.createTempFile(String.valueOf(keyId), "pgp-public-key");
@@ -183,11 +186,12 @@ public class PGPKeysCache {
         LOGGER.info("Receive key: {}{}\tto {}", keysServerClient.getUriForGetKey(keyId), NL, keyFile);
     }
 
-    private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable) {
+    private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval,
+            Throwable lastThrowable) {
 
         LOGGER.warn("[Retry #{} waiting: {}] Last address {} with problem: [{}] {}",
                 numberOfRetryAttempts, waitInterval, address,
-                lastThrowable.getClass().getName(), ExceptionUtils.getMessage(lastThrowable));
+                lastThrowable.getClass().getName(), getMessage(lastThrowable));
     }
 
     private void deleteFile(File file) {
@@ -208,9 +212,10 @@ public class PGPKeysCache {
         try {
             Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (FileSystemException fse) {
-            // on windows system we can get: The process cannot access the file because it is being used by another process.
+            // on windows system we can get:
+            // The process cannot access the file because it is being used by another process.
             // so wait ... and try again
-            Uninterruptibles.sleepUninterruptibly(250L + new SecureRandom().nextInt(1000), TimeUnit.MILLISECONDS);
+            sleepUninterruptibly(250L + new SecureRandom().nextInt(1000), TimeUnit.MILLISECONDS);
             Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
@@ -246,7 +251,7 @@ public class PGPKeysCache {
                 return true;
             } catch (IOException e) {
                 lastException = e;
-                LOGGER.warn("{} throw exception: {} - {} try next client", client, ExceptionUtils.getMessage(e), getName());
+                LOGGER.warn("{} throw exception: {} - {} try next client", client, getMessage(e), getName());
             }
             return false;
         }

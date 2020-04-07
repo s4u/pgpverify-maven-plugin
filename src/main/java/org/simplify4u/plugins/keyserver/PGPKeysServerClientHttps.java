@@ -17,7 +17,6 @@ package org.simplify4u.plugins.keyserver;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -29,6 +28,7 @@ import java.util.Locale;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import io.vavr.control.Try;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
@@ -74,12 +74,11 @@ class PGPKeysServerClientHttps extends PGPKeysServerClient {
         }
     }
 
-    private static URI prepareKeyServerURI(URI keyserver) throws IOException {
-        try {
-            return new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(), null, null, null);
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+    private static URI prepareKeyServerURI(URI keyserver) {
+
+        return Try.of(() ->
+                new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(),
+                        null, null, null)).get();
     }
 
     @Override

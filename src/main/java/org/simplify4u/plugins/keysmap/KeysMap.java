@@ -108,13 +108,13 @@ public class KeysMap {
     }
 
     private void loadKeysMap(final InputStream inputStream) throws IOException {
-        final BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
+        BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
         String currentLine;
 
 
         while ((currentLine = getNextLine(mapReader)) != null) {
 
-            final String[] parts = currentLine.split("=");
+            String[] parts = currentLine.split("=");
 
             if (parts.length > 2) {
                 throw new IllegalArgumentException(

@@ -185,7 +185,8 @@ public final class PublicKeyUtils {
 
     private static void verifySigForSubKey(PGPPublicKey subKey, PGPPublicKeyRing publicKeyRing) throws PGPException {
 
-        int signatureTypeToCheck = subKey.hasRevocation() ? PGPSignature.SUBKEY_REVOCATION : PGPSignature.SUBKEY_BINDING;
+        int signatureTypeToCheck = subKey.hasRevocation()
+                ? PGPSignature.SUBKEY_REVOCATION : PGPSignature.SUBKEY_BINDING;
 
         AtomicBoolean hasValidSignature = new AtomicBoolean(false);
 
@@ -202,7 +203,8 @@ public final class PublicKeyUtils {
                                     sig.getCreationTime(), sig.getSignatureType(), fingerprint(subKey));
                         }
                     } else {
-                        throw new PGPException(String.format("Signature type: %d Not found key 0x%016X for subKeyId: %s",
+                        throw new PGPException(
+                                String.format("Signature type: %d Not found key 0x%016X for subKeyId: %s",
                                 sig.getSignatureType(), sig.getKeyID(), fingerprint(subKey)));
                     }
                 }).get()

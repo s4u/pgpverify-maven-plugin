@@ -56,7 +56,8 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
                 address = Optional.of(resolvedAddresses.get(0));
             }
 
-            HttpHost httpHost = new HttpHost(address.get(), target.getHostName(), target.getPort(), target.getSchemeName());
+            HttpHost httpHost = new HttpHost(address.get(), target.getHostName(), target.getPort(),
+                    target.getSchemeName());
             boolean secure = "https".equalsIgnoreCase(target.getSchemeName());
             lastRoute = new HttpRoute(httpHost, null, secure);
         }
