@@ -1,7 +1,7 @@
 /*
  * Copyright 2017 Slawomir Jaranowski
  * Portions Copyright 2017-2018 Wren Security.
- * Portions Copyright 2019 Danny van Heumen
+ * Portions Copyright 2019-2020 Danny van Heumen.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -372,7 +372,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         initCache();
 
         try {
-            keysMap.load(keysMapLocation);
+            keysMap.load(getLog(), keysMapLocation);
         } catch (ResourceNotFoundException | IOException e) {
             throw new MojoExecutionException("load keys map", e);
         }
