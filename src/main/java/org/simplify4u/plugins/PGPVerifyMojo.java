@@ -512,7 +512,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @return the maven proxy
      */
-    protected Proxy getMavenProxy() {
+    Proxy getMavenProxy() {
         if (settings != null) {
             List<Proxy> proxies = settings.getProxies();
             if (proxies != null && !proxies.isEmpty()) {
