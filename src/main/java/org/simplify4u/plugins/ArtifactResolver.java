@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.simplify4u.plugins.MavenCompilerUtils.extractAnnotationProcessors;
+import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -40,6 +40,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
+import org.simplify4u.plugins.utils.MavenCompilerUtils;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
