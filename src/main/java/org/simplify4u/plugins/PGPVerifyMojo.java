@@ -69,6 +69,7 @@ import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
+import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
@@ -461,7 +462,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-            PGPSignatures.readFileContentInto(pgpSignature, artifactFile);
+            PGPSignatureUtils.readFileContentInto(pgpSignature, artifactFile);
 
             getLog().debug("signature.KeyAlgorithm: " + pgpSignature.getKeyAlgorithm()
                     + " signature.hashAlgorithm: " + pgpSignature.getHashAlgorithm());

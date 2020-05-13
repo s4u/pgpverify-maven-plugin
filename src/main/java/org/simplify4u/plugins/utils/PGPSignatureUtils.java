@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.utils;
 
 import org.bouncycastle.openpgp.PGPSignature;
 
@@ -29,9 +29,9 @@ import java.io.InputStream;
 /**
  * Utilities for PGP Signature class.
  */
-final class PGPSignatures {
+public final class PGPSignatureUtils {
 
-    private PGPSignatures() {
+    private PGPSignatureUtils() {
         // No need to instantiate utility class.
     }
 
@@ -42,7 +42,7 @@ final class PGPSignatures {
      * @param file      the file to read
      * @throws IOException In case of failure to open the file or failure while reading its content.
      */
-    static void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
+    public static void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
         try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(file))) {
             int t;
             while ((t = inArtifact.read()) >= 0) {
