@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.utils;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
@@ -27,8 +27,8 @@ import static java.util.Collections.emptySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.simplify4u.plugins.MavenCompilerUtils.checkCompilerPlugin;
-import static org.simplify4u.plugins.MavenCompilerUtils.extractAnnotationProcessors;
+import static org.simplify4u.plugins.utils.MavenCompilerUtils.checkCompilerPlugin;
+import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertThrows;

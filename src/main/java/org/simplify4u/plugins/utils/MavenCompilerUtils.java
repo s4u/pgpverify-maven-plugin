@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins;
+package org.simplify4u.plugins.utils;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Utilities specific for org.apache.maven.plugins:maven-compiler-plugin.
  */
-final class MavenCompilerUtils {
+public final class MavenCompilerUtils {
 
     private static final String GROUPID = "org.apache.maven.plugins";
     private static final String ARTIFACTID = "maven-compiler-plugin";
@@ -47,7 +47,7 @@ final class MavenCompilerUtils {
      * @param plugin any plugin instance
      * @return Returns true iff plugin is maven-compiler-plugin.
      */
-    static boolean checkCompilerPlugin(Plugin plugin) {
+    public static boolean checkCompilerPlugin(Plugin plugin) {
         return GROUPID.equals(plugin.getGroupId()) && ARTIFACTID.equals(plugin.getArtifactId());
     }
 
@@ -58,7 +58,7 @@ final class MavenCompilerUtils {
      * @param plugin maven-compiler-plugin plugin
      * @return Returns set of maven artifacts configured as annotation processors.
      */
-    static Set<Artifact> extractAnnotationProcessors(RepositorySystem system, Plugin plugin) {
+    public static Set<Artifact> extractAnnotationProcessors(RepositorySystem system, Plugin plugin) {
         requireNonNull(system);
         if (!checkCompilerPlugin(plugin)) {
             throw new IllegalArgumentException("Plugin is not '" + GROUPID + ":" + ARTIFACTID + "'.");
