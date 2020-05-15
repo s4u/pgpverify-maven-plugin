@@ -100,7 +100,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.proxyName")
     private String proxyName;
 
-    @Parameter(property = "mavenSettings", defaultValue = "${settings}")
+    @Parameter(defaultValue = "${settings}", readonly = true)
     private Settings settings;
 
     @Component
