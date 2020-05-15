@@ -468,9 +468,9 @@ public class PGPVerifyMojo extends AbstractMojo {
                     + " signature.hashAlgorithm: " + pgpSignature.getHashAlgorithm());
 
             return verifySignatureStatus(pgpSignature.verify(), artifact, publicKey, publicKeyRing);
-        } catch (IOException | PGPException e) {
-            if (e.getCause() instanceof PGPKeyNotFound && keysMap.isKeyMissing(artifact)) {
-                final String logMessage = String.format("%s PGP Key not found on server, consistent with keys map.",
+        } catch (PGPKeyNotFound e) {
+            if (keysMap.isKeyMissing(artifact)) {
+                final String logMessage = String.format("%s PGP key not found on server, consistent with keys map.",
                         artifact.getId());
                 if (quiet) {
                     getLog().debug(logMessage);
@@ -479,6 +479,9 @@ public class PGPVerifyMojo extends AbstractMojo {
                 }
                 return true;
             }
+            throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
+                    + artifact.getId() + ": cannot find public key on keyserver.", e);
+        } catch (IOException | PGPException e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);
         }
