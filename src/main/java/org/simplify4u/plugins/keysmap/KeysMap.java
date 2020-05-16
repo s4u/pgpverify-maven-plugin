@@ -118,16 +118,8 @@ public class KeysMap {
         BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
         String currentLine;
 
-
         while ((currentLine = getNextLine(mapReader)) != null) {
-
-            String[] parts = currentLine.split("=");
-
-            if (parts.length > 2) {
-                throw new IllegalArgumentException(
-                        "Property line is malformed: " + currentLine);
-            }
-
+            String[] parts = currentLine.split("=", 2);
             ArtifactInfo artifactInfo = createArtifactInfo(parts[0], parts.length == 1 ? "" : parts[1]);
             keysMapList.add(artifactInfo);
         }
