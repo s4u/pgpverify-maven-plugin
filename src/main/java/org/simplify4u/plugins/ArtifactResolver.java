@@ -31,12 +31,16 @@ import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
+import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
+import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
+import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
@@ -51,6 +55,10 @@ import org.simplify4u.plugins.utils.MavenCompilerUtils;
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
  */
 final class ArtifactResolver {
+
+    private static final VersionRange SUREFIRE_PLUGIN_VERSION_RANGE = Try.of(
+            () -> VersionRange.createFromVersionSpec("(2.999999999,4)"))
+            .getOrElseThrow(e -> new IllegalStateException("BUG: Failed to create version range.", e));
 
     private final Log log;
 
@@ -160,6 +168,7 @@ final class ArtifactResolver {
             allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project),
                     config.dependencyFilter, config.dependencyFilter, config.verifyPomFiles,
                     config.verifyPluginDependencies));
+            informSurefire3RuntimeDependencyLoadingLimitation(project);
         }
         return allArtifacts;
     }
@@ -169,6 +178,58 @@ final class ArtifactResolver {
                 .filter(MavenCompilerUtils::checkCompilerPlugin)
                 .flatMap(p -> extractAnnotationProcessors(repositorySystem, p).stream())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Inform user of limitation with respect to validation of maven-surefire-plugin.
+     *
+     * <p>
+     * Maven's Surefire plug-in version 3 resolves and loads dependencies at run-time for unit testing frameworks that
+     * are present in the project. The resolution for these dependencies happens at a later stage and therefore
+     * pgpverify will not automagically detect their presence.
+     *
+     * <p>
+     * For now, we inform the user of this limitation such that the user is informed until a better solution is
+     * implemented.
+     *
+     * <p>
+     * More information on what dependencies are resolved and loaded at execution time by maven-surefire-plugin, one
+     * needs to run maven-surefire-plugin with debug output enabled. Surefire will list a "provider classpath" which is
+     * dynamically composed out of the frameworks it detected.
+     *
+     * <p>
+     * For example, in case the JUnit4 framework is present.
+     * <pre>
+     * [DEBUG] provider(compact) classpath:  surefire-junit47-3.0.0-M3.jar  surefire-api-3.0.0-M3.jar
+     * surefire-logger-api-3.0.0-M3.jar  common-java5-3.0.0-M3.jar  common-junit3-3.0.0-M3.jar
+     * common-junit4-3.0.0-M3.jar  common-junit48-3.0.0-M3.jar  surefire-grouper-3.0.0-M3.jar
+     * </pre>
+     *
+     * @param project maven project instance
+     */
+    // TODO: maven-surefire-plugin dependency loading during execution is detected but not handled. Some of surefire's
+    //  dependencies are not validated.
+    private void informSurefire3RuntimeDependencyLoadingLimitation(MavenProject project) {
+        final boolean surefireDynamicLoadingLikely = project.getBuildPlugins().stream()
+                .filter(p -> "org.apache.maven.plugins".equals(p.getGroupId()))
+                .filter(p -> "maven-surefire-plugin".equals(p.getArtifactId()))
+                .anyMatch(this::matchSurefireVersion);
+        if (surefireDynamicLoadingLikely) {
+            log.info("NOTE: maven-surefire-plugin version 3 is present. This version is known to resolve " +
+                    "and load dependencies for various unit testing frameworks (called \"providers\") during " +
+                    "execution. These dependencies are not validated.");
+        }
+    }
+
+    private boolean matchSurefireVersion(Plugin plugin) {
+        final ArtifactVersion version;
+        try {
+            version = repositorySystem.createPluginArtifact(plugin).getSelectedVersion();
+        } catch (OverConstrainedVersionException e) {
+            log.debug("Found build plug-in with overly constrained version specification.", e);
+            return false;
+        }
+        return SUREFIRE_PLUGIN_VERSION_RANGE.containsVersion(version);
     }
 
     /**
