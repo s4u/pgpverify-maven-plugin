@@ -80,7 +80,6 @@ public class KeysMapTest {
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
-
     @Test
     public void validKeyFromMap() throws Exception {
         keysMap.load(log, "/keysMap.list");
@@ -126,6 +125,15 @@ public class KeysMapTest {
                         testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
                         getPGPgpPublicKey(0xA6ADFC93EF34893FL), null)
         ).isTrue();
+        assertThat(
+                keysMap.isWithKey(testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build())
+        ).isTrue();
+        assertThat(
+                keysMap.isWithKey(testArtifact().groupId("noSig").artifactId("test").version("1").build())
+        ).isFalse();
+        assertThat(
+                keysMap.isWithKey(testArtifact().groupId("noSig").artifactId("non-existent").version("9999").build())
+        ).isFalse();
     }
 
     @Test

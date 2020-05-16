@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 Slawomir Jaranowski
+ * Portions Copyright 2020 Danny van Heumen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +103,15 @@ public class KeysMap {
         return keysMapList.stream()
                 .filter(artifactInfo -> artifactInfo.isMatch(artifact))
                 .anyMatch(ArtifactInfo::isKeyMissing);
+    }
+
+    public boolean isWithKey(Artifact artifact) {
+        for (ArtifactInfo artifactInfo : keysMapList) {
+            if (artifactInfo.isMatch(artifact)) {
+                return !artifactInfo.isNoSignature();
+            }
+        }
+        return false;
     }
 
     public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {

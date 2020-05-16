@@ -1,0 +1,374 @@
+#
+# Copyright 2017 Slawomir Jaranowski
+# Portions Copyright 2019 Danny van Heumen
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Dependencies:
+org.hamcrest:hamcrest-core:1.3=0xA6ADFC93EF34893E
+junit:junit:4.12=0xEFE8086F9E93774E
+commons-chain:commons-chain:1.2=0xB95BBD3FA43C4492,0x1861C322C56014B2
+#
+# Plugins:
+org.simplify4u.plugins:pgpverify-maven-plugin:*=
+#
+# Transitive dependencies of plugins:
+antlr:antlr:2.7.2 =
+aopalliance:aopalliance:1.0
+avalon-framework:avalon-framework:4.1.3
+cglib:cglib-nodep:3.1 = 0xE78AA45938D10249E08CC1C752E6585E0102B84D
+ch.ethz.ganymed:ganymed-ssh2:build210
+classworlds:classworlds:1.1
+classworlds:classworlds:1.1-alpha-2
+com.beust:jcommander:1.72 = 0x67497E9D680CE8E95BD6B8F85AD66315FC018797
+com.facebook.infer.annotation:infer-annotation:0.11.0 = 0xA40F78DC866DEDC8C25C747A6B36BCFBED910BD2
+com.fasterxml.jackson.core:jackson-annotations:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
+com.fasterxml.jackson.core:jackson-core:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
+com.fasterxml.jackson.core:jackson-databind:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
+com.github.fge = 0xE231245C9E2D09F6F8A4259A37246FA6B97F0377
+com.github.java-json-tools:jackson-coreutils:1.9 = 0x36BB1C8A910CC6B5A6A7344626ED90A14377DCC4
+com.github.java-json-tools:json-schema-core:1.2.10 = 0x36BB1C8A910CC6B5A6A7344626ED90A14377DCC4
+com.github.java-json-tools:json-schema-validator:2.2.11 = 0x3C9A036491949AF8FE42A640F4C0FE6A926F14D8
+com.github.kevinstern:software-and-algorithms:1.0 = 0xA4FD709CC4B0515F2E6AF04E218FA0F6A941A037
+com.github.stephenc.jcip:jcip-annotations:1.0-1 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+com.google.auto:auto-common:0.10 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
+com.google.auto:auto-common:0.9 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
+com.google.auto.factory:auto-factory:1.0-beta5 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
+com.google.auto.value:auto-value:1.5.3 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
+com.google.code.findbugs:jFormatString:3.0.0 = 0x3DBC5D7DC2FB8DD68AA429BD353A436E043E3145
+com.google.code.findbugs:jsr305:1.3.9 =
+com.google.code.findbugs:jsr305:3.0.0 = 0x3DBC5D7DC2FB8DD68AA429BD353A436E043E3145
+com.google.code.findbugs:jsr305:3.0.2 = 0x7616EB882DAF57A11477AAF559A252FB1199D873
+com.googlecode.java-diff-utils:diffutils:1.3.0 = 0xB47034C19C9B1F3DC3702F8D476634A4694E716A
+com.googlecode.libphonenumber:libphonenumber:8.0.0 = 0x9A217CE48A52F04BEDBBEB8D3975C16DDA994FC0
+com.google.collections:google-collections:1.0
+com.google.common.html.types:proto:1.0.0 = 0x50F3DD7BC62A17B1404EB70901B3A572684C6DE9
+com.google.common.html.types:types:1.0.5 = 0xBE1813EAB7F6DC12E97EB602C7CC712C619DFD9A
+com.google.dagger:dagger:2.14.1 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
+com.google.dagger:dagger-producers:2.14.1 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
+com.google.errorprone:error_prone_core:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:error_prone_annotation:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:error_prone_annotations:2.0.18 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:error_prone_annotations:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:error_prone_annotations:2.3.4 = 0x7615AD56144DF2376F49D98B1669C4BB543E0445
+com.google.errorprone:error_prone_check_api:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:error_prone_type_annotations:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone:javac:9+181-r4173-1 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.googlejavaformat:google-java-format:1.4 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.guava:failureaccess:1.0.1 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.guava:guava:22.0 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.guava:guava:23.0 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.guava:guava:27.0.1-jre = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.guava:guava:28.2-jre = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
+com.google.guava:guava:29.0-jre = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
+com.google.guava:guava-testlib:27.0.1-jre = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
+com.google.gwt:gwt-user:2.8.2 = 0x1B2EF680A6214A56D6058515F6B09AEF9CC998B1
+com.google.gwt.inject:gin:2.1.2 = 0xCFB7FEC085E5A7119D7BF536BB55FDE36E55FD8B
+com.google.inject.extensions:guice-assistedinject:4.0-beta5 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.inject.extensions:guice-servlet:4.0-beta5 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.inject.extensions:guice-testlib:4.0 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.inject:guice:4.0-beta5 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.inject:guice:4.2.2 = 0x1616273079FE63E31C938F10F0DF21D1D0A3C384
+com.google.inject:guice:4.2.3 = 0x1616273079FE63E31C938F10F0DF21D1D0A3C384
+com.google.j2objc:j2objc-annotations:1.1 = 0xB801E2F8EF035068EC1139CC29579F18FA8FD93B
+com.google.j2objc:j2objc-annotations:1.3 = 0xB801E2F8EF035068EC1139CC29579F18FA8FD93B
+com.google.jimfs:jimfs:1.1 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
+com.google.jsinterop:jsinterop-annotations:1.0.2 = 0x1B2EF680A6214A56D6058515F6B09AEF9CC998B1
+com.google.protobuf:protobuf-java:3.4.0 = 0xD75E25B78EBB19E47C0A99BCA7764F502A938C99
+com.google.testing.compile:compile-testing:0.15 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
+com.google.truth.extensions:truth-java8-extension:0.36 = 0x41CD49B4EF5876F9E9F691DABAC30622339994C4
+com.google.truth.extensions:truth-java8-extension:0.37 = 0x41CD49B4EF5876F9E9F691DABAC30622339994C4
+com.google.truth:truth:0.36 = 0x41CD49B4EF5876F9E9F691DABAC30622339994C4
+com.ibm.icu:icu4j:56.1 = 0xCB3190CA7842439E57F3712E44CE7BF2825EA2CD
+com.jayway.jsonpath:json-path:2.4.0 = 0x41D266DB4427983A1A4AFB0C3684155E9365C30E
+com.jcraft:jzlib:1.1.3 = 0x34D6FF19930ADF43AC127792A50569C7CA7FA1F0
+com.lmax:disruptor:3.4.2 = 0x58DF461CAAC5F4E5FB2BE32CBFFA420097F49C8A
+com.uber.nullaway:nullaway:0.7.8 = 0xD4FB0B7B5E8C18C993A8A386EB9D04A9A679FE18
+commons-beanutils:commons-beanutils:1.7.0
+commons-beanutils:commons-beanutils:1.9.2 = 0xE8B2020BD8E1C9CAFD9288827C4504A4D75CF3DC
+commons-chain:commons-chain:1.1
+commons-codec:commons-codec:1.6 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+commons-codec:commons-codec:1.11 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+commons-codec:commons-codec:1.14 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+commons-collections:commons-collections:3.1
+commons-collections:commons-collections:3.2.2 = 0x0CC641C3A62453AB390066C4A41F13C999945293
+commons-digester:commons-digester:1.6
+commons-digester:commons-digester:1.8
+commons-digester:commons-digester:1.8.1 = 0x04582013F4F60CEB10AC621550BDCE2258812457
+commons-io:commons-io:1.4 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+commons-io:commons-io:2.2 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+commons-io:commons-io:2.5 = 0x6BDACA2C0493CCA133B372D09C4F7E9D98B1CC53
+commons-io:commons-io:2.6 = 0xCD5464315F0B98C77E6E8ECD9DAADC1C9FCC82D0
+commons-lang:commons-lang:2.4 = 0x636DE9055C4C75C7BD9830771241BC872C5E4EC0
+commons-lang:commons-lang:2.6 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+commons-logging:commons-logging:1.0.4
+commons-logging:commons-logging:1.1
+commons-logging:commons-logging:1.2 = 0x0CC641C3A62453AB390066C4A41F13C999945293
+commons-validator:commons-validator:pom:1.3.1
+commons-validator:commons-validator:1.3.1 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+commons-validator:commons-validator:1.6 = 0xD6F1BC78607808EC8E9F69437A8860944FAD5F62
+com.squareup:javapoet:1.7.0 = 0x9E84765A7AA3E3D3D5598A408E3F0DE7AE354651
+com.sun.mail:mailapi:1.6.1 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
+com.thoughtworks.qdox:qdox:2.0-M9 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+com.vaadin.external.google:android-json:0.0.20131108.vaadin1 = 0xCC57399D74CD7E4768ED6FA4CA62973FBF0451C0
+com.vladsch.flexmark = 0x4008F9DFF7DBC968F35F9E712642156411CCE8B3
+dom4j:dom4j:1.1 =
+httpunit:httpunit:1.6.1
+io.github.resilience4j = 0x8756C4F765C9AC3CB6B85D62379CE192D401AB61
+io.netty = 0x7E22D50A7EBD9D2CD269B2D4056ACA74D46000BF
+io.reactivex.rxjava2:rxjava:2.1.2 = 0x1D9AA7F9E1E2824728B8CD1794B291AEF984A085
+io.vavr:vavr:0.10.2 = 0x1D339B6A68AE2E8DAEDA65D5276962CA56E73C81
+io.vavr:vavr-match:0.10.2 = 0x1D339B6A68AE2E8DAEDA65D5276962CA56E73C81
+javax.activation:activation:1.1
+javax.activation:javax.activation-api:1.2.0 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
+javax.annotation:jsr250-api:1.0
+javax.enterprise:cdi-api:1.0 = 0xB1FC0E1FA329669191F8306F5BCEE695141E6086
+javax.inject:javax.inject:1
+javax.servlet:javax.servlet-api:3.1.0 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
+javax.servlet:javax.servlet-api:4.0.1 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
+javax.servlet:servlet-api:2.3
+javax.validation:validation-api:1.0.0.GA
+javax.xml.bind:jaxb-api:2.4.0-b180830.0359 = 0x70CD19BFD9F6C330027D6F260315BFB7970A144F
+joda-time:joda-time:2.9.4 = 0xB41089A2DA79B0FA5810252872385FF0AF338D52
+joda-time:joda-time:2.9.7 = 0xB41089A2DA79B0FA5810252872385FF0AF338D52
+jtidy:jtidy:4aug2000r7-dev
+junit-addons:junit-addons:1.4
+junit:junit:3.8.1
+junit:junit:4.11 = 0xAED3727A7DC070975D8C5009C7CB325467893CC4
+junit:junit:4.13-beta-1 = 0xFF6E2C001948C5F2F38B0CC385911F425EC61B51
+junit:junit:4.8.1
+log4j:log4j:1.2.12
+logkit:logkit:1.0.1
+nekohtml:nekohtml:0.9.1
+net.bytebuddy:byte-buddy:1.10.5 = 0xB4AC8CDC141AF0AE468D16921DA784CCB5C46DD5
+net.bytebuddy:byte-buddy:1.8.10 = 0xF42B96B8648B5C4A1C43A62FBB2914C1FA0811C3
+net.bytebuddy:byte-buddy-agent:1.10.5 = 0xB4AC8CDC141AF0AE468D16921DA784CCB5C46DD5
+net.bytebuddy:byte-buddy-agent:1.8.10 = 0xF42B96B8648B5C4A1C43A62FBB2914C1FA0811C3
+net.minidev:accessors-smart:1.2 = 0x2F39E2A1EB9BC4E78F403B22F6BC09712C8DF6EC
+net.minidev:json-smart:2.3 = 0x2F39E2A1EB9BC4E78F403B22F6BC09712C8DF6EC
+net.sf.jopt-simple:jopt-simple:5.0.3 = 0x517B94F8D0A46317A28D8AB30DA8A5EC02D11EAD
+NullAway:test-java-lib:unspecified
+NullAway:test-library-models:unspecified
+org.apache.bcel:bcel:6.2 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+org.apache.commons:commons-compress = 0xCE8075A251547BEE249BC151A2115AE15F6B8B72
+org.apache.commons:commons-lang3 = 0xCD5464315F0B98C77E6E8ECD9DAADC1C9FCC82D0,  0xB6E73D84EA4FCC47166087253FAAD2CD5ECBB314, 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+org.apache.commons:commons-text = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+org.apache.httpcomponents = 0x0785B3EFF60B1B1BEA94E0BB7C25280EAE63EBE5
+org.apache.maven.doxia:doxia-core:1.2 = 0xB920D295BF0E61CB4CF0896C33CD6733AF5EC452
+org.apache.maven.doxia:doxia-core:1.8 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-core:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-decoration-model:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-decoration-model:1.7.4 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-decoration-model:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-decoration-model:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-decoration-model:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-integration-tools:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-integration-tools:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-integration-tools:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-logging-api:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-logging-api:1.8 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-logging-api:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-apt:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-confluence:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-docbook-simple:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-fml:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-module-fml:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-markdown:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-twiki:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:*:1.9 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-module-xdoc:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-xhtml:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-module-xhtml:1.8 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-xhtml:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-module-xhtml5:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-sink-api:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-sink-api:1.8 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-sink-api:1.9.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-site-renderer:1.4 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.doxia:doxia-site-renderer:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-site-renderer:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-site-renderer:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-skin-model:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.doxia:doxia-skin-model:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.doxia:doxia-skin-model:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven:*:3.0 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.apache.maven:maven-archiver:3.1.1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven:maven-archiver:3.5.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven:maven-artifact:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-builder-support:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-core:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-model:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-model-builder:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-plugin-api:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-repository-metadata:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-resolver-provider:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-settings:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven:maven-settings-builder:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+org.apache.maven.plugins:maven-clean-plugin:3.1.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.plugins:maven-compiler-plugin:* = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.plugins:maven-dependency-plugin:3.1.2 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.plugins:maven-install-plugin:3.0.0-M1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.plugins:maven-jar-plugin:3.2.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.plugins:maven-pmd-plugin:* = 0xC870735180244047DA600FDEC171A58398EEC284
+org.apache.maven.plugins:maven-project-info-reports-plugin:3.0.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.plugins:maven-site-plugin:3.8.2 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.plugins:maven-site-plugin:3.9.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.0-alpha-1 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
+org.apache.maven.plugin-testing:maven-plugin-testing-tools:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
+org.apache.maven.plugin-tools:maven-plugin-annotations:3.5.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.reporting:maven-reporting-api:3.0 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.reporting:maven-reporting-exec:1.4 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.reporting:maven-reporting-impl:2.3 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.reporting:maven-reporting-impl:3.0.0 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
+org.apache.maven.resolver:maven-resolver-api:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.resolver:maven-resolver-impl:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.resolver:maven-resolver-spi:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.resolver:maven-resolver-util:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.apache.maven.scm:*:1.10.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.shared:file-management:3.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-artifact-transfer:0.9.1 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
+org.apache.maven.shared:maven-artifact-transfer:0.10.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-artifact-transfer:0.11.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-artifact-transfer:0.12.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.apache.maven.shared:maven-common-artifact-filters:3.0.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.apache.maven.shared:maven-common-artifact-filters:3.1.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.apache.maven.shared:maven-dependency-analyzer:1.10 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-dependency-analyzer:1.11.1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-dependency-tree:2.2 = 0x0CDE80149711EB46DFF17AE421A24B3F8B0F594A
+org.apache.maven.shared:maven-dependency-tree:3.0.1 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
+org.apache.maven.shared:maven-invoker:2.0.11 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.apache.maven.shared:maven-shared-incremental:1.1 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.apache.maven.shared:maven-shared-io:3.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.apache.maven.shared:maven-shared-jar:1.2 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.shared:maven-shared-utils:3.1.0 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.apache.maven.shared:maven-shared-utils:3.2.0 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
+org.apache.maven.shared:maven-shared-utils:3.2.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.apache.maven.wagon:wagon-http-lightweight:3.1.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.wagon:wagon-http-shared:3.1.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.wagon:wagon-provider-api:1.0-beta-6 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
+org.apache.maven.wagon:wagon-provider-api:2.10 = 0x6C4982557FD21F69E64E08863B58205B9D7013A9
+org.apache.maven.wagon:wagon-provider-api:3.1.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.wagon:wagon-provider-api:3.3.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.maven.wagon:wagon-webdav-jackrabbit:3.3.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.apache.struts:struts-core:pom:1.3.8 = badSig
+org.apache.struts:struts-core:1.3.8 = 0xCE4460D20B66C7E1687475BAD388AD829F3E96F7
+org.apache.struts:struts-taglib:pom:1.3.8 = badSig
+org.apache.struts:struts-taglib:1.3.8 = 0xCE4460D20B66C7E1687475BAD388AD829F3E96F7
+org.apache.struts:struts-tiles:pom:1.3.8 = badSig
+org.apache.struts:struts-tiles:1.3.8 = 0xCE4460D20B66C7E1687475BAD388AD829F3E96F7
+org.apache.velocity:velocity:1.5
+org.apache.velocity:velocity:1.7 = 0x7B9751FC3F01F134F476464CD0EB627D4885CED1
+org.apache.velocity:velocity-engine-core:2.1 = 0xCE4439C1BEF3DA83B1832F9DBEFEEF227A98B809
+org.apache.velocity:velocity-engine-scripting:2.1 = 0xCE4439C1BEF3DA83B1832F9DBEFEEF227A98B809
+org.apache.velocity:velocity-tools:2.0 = 0x7B9751FC3F01F134F476464CD0EB627D4885CED1
+org.apache.xbean:xbean-reflect:3.7 = 0x223D3A74B068ECA354DC385CE126833F9CF64915
+org.apiguardian:apiguardian-api:1.0.0 = 0x58E79B6ABC762159DC0B1591164BD2247B936711
+org.assertj:assertj-core:3.15.0 = 0xA778FDE933A96DDA827840D8E2B3D84202B812D9
+org.assertj:assertj-core:3.9.0 = 0xA778FDE933A96DDA827840D8E2B3D84202B812D9
+org.beanshell:bsh:1.3.0
+org.bouncycastle = 0x08F0AAB4D0C1A4BDDE340765B341DDB020FCB6AB
+org.checkerframework = 0x19BEAB2D799C020F17C69126B16698A4ADF4D638
+org.codehaus.mojo:animal-sniffer-annotations:1.14 = 0x82F833963889D7ED06F1E4DC6525FD70CC303655
+org.codehaus.mojo:animal-sniffer-annotations:1.17 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.codehaus.plexus:plexus-archiver:2.2 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
+org.codehaus.plexus:plexus-archiver:3.4 = 0x906E5E684729C006267DDD4B105DE36038D8C6C5
+org.codehaus.plexus:plexus-archiver:3.6.0 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
+org.codehaus.plexus:plexus-archiver:4.2.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.codehaus.plexus:plexus-archiver:4.2.2 = 0xF404C15F367293CCCC0AF7B244146BCAA1F1E051
+org.codehaus.plexus:plexus-classworlds:2.2.3 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.codehaus.plexus:plexus-classworlds:2.5.2 = 0xFB11D4BB7B244678337AAD8BC7BF26D0BB617866
+org.codehaus.plexus:plexus-compiler-api:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.codehaus.plexus:plexus-compiler-javac:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.codehaus.plexus:plexus-compiler-manager:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.codehaus.plexus:plexus-component-annotations:1.7.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.codehaus.plexus:plexus-component-annotations:2.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
+org.codehaus.plexus:plexus-component-annotations:2.1.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.codehaus.plexus:plexus-container-default:1.0-alpha-30
+org.codehaus.plexus:plexus-container-default:1.0-alpha-8
+org.codehaus.plexus:plexus-container-default:1.0-alpha-9-stable-1 =
+org.codehaus.plexus:plexus-container-default:1.7.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.codehaus.plexus:plexus-digest:1.0
+org.codehaus.plexus:plexus-i18n:1.0-beta-10
+org.codehaus.plexus:plexus-i18n:1.0-beta-7
+org.codehaus.plexus:plexus-interpolation:1.14 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.codehaus.plexus:plexus-interpolation:1.24 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
+org.codehaus.plexus:plexus-interpolation:1.25 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
+org.codehaus.plexus:plexus-io:2.0.4 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
+org.codehaus.plexus:plexus-io:2.7.1
+org.codehaus.plexus:plexus-io:3.0.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
+org.codehaus.plexus:plexus-io:3.2.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.codehaus.plexus:plexus-java:0.9.10 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.codehaus.plexus:plexus-resources:1.1.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+org.codehaus.plexus:plexus-utils:2.0.4 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.codehaus.plexus:plexus-utils:3.0.24 = 0x906E5E684729C006267DDD4B105DE36038D8C6C5
+org.codehaus.plexus:plexus-utils:3.1.0 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
+org.codehaus.plexus:plexus-utils:3.3.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+org.codehaus.plexus:plexus-velocity:1.1.7 =
+org.codehaus.plexus:plexus-velocity:1.2 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+org.eclipse.aether:aether-util:0.9.0.M2 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.eclipse.jetty = 0x5989BAF76217B843D66BE55B2D0E1FB8FE4B68B4
+org.eclipse.sisu:org.eclipse.sisu.inject:0.3.3 = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
+org.eclipse.sisu:org.eclipse.sisu.plexus:0.3.3 = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
+org.hamcrest:hamcrest-core:1.1
+org.hamcrest:hamcrest-library:1.3 = 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E
+org.iq80.snappy:snappy:0.4 = 0x9E93DB1192CEE3D3B581AABB37E9D58EA4598641
+org.jetbrains:annotations:13.0 = 0x2E3A1AFFE42B5F53AF19F780BCF4173966770193
+org.jmock:jmock:2.8.0 = 0xDDAF27B65347066E3FD5DF6B9395423AF970E18B
+org.jmock:jmock-junit4:2.8.0 = 0xDDAF27B65347066E3FD5DF6B9395423AF970E18B
+org.jsoup:jsoup:1.10.2 = 0xF3184BCD55F4D016E30D4C9BF42E87F9665015C9
+org.jsoup:jsoup:1.11.2 = 0xF3184BCD55F4D016E30D4C9BF42E87F9665015C9
+org.junit.jupiter:junit-jupiter-api:5.0.2 = 0x58E79B6ABC762159DC0B1591164BD2247B936711
+org.junit.platform:junit-platform-commons:1.0.2 = 0x58E79B6ABC762159DC0B1591164BD2247B936711
+org.mockito = 0xCC4483CD6A3EB2939B948667A1B4460D8BA7B9AF
+org.mock-server = 0xD35FD5990697CDA91ED9264B43AB0CF95E33C292
+org.mortbay.jetty:jetty:6.1.26 = 0xF353A5745534DC6D10496DBBEFBFEE3C93ECE615
+org.mortbay.jetty:jetty-util:6.1.26 = 0xF353A5745534DC6D10496DBBEFBFEE3C93ECE615
+org.mortbay.jetty:servlet-api:2.5-20081211
+org.mozilla:rhino:1.7.7.1 = 0xB5718DD1295F1DEE20F1DB9AA45D697A6F2ADB3C
+org.netbeans.lib:cvsclient:20060125
+org.nibor.autolink:autolink:0.6.0 = 0x624B96CEB9896889C97B258F7DC3076FE22D4F88
+org.objenesis = 0xE85AED155021AF8A6C6B7A4A7C7D8456294423BA
+org.opentest4j:opentest4j:1.0.0 = 0x58E79B6ABC762159DC0B1591164BD2247B936711
+org.ow2.asm:asm:5.0.3 = 0xA5BD02B93E7A40482EB1D66A5F69AD087600B22C
+org.ow2.asm:asm:5.0.4 = 0xA5BD02B93E7A40482EB1D66A5F69AD087600B22C
+org.ow2.asm:asm:6.1.1
+org.ow2.asm:asm:6.2
+org.ow2.asm:asm:7.3.1 = 0xA5BD02B93E7A40482EB1D66A5F69AD087600B22C
+org.pcollections:pcollections:2.1.2 = 0x908366594E746BF3C449F5622BE5D98F751F4136
+org.reactivestreams:reactive-streams:1.0.0 = 0xA5B2DDE7843E7CA3E8CAABD02383163BC40844FD
+org.skyscreamer:jsonassert:1.5.0 = 0xC89074FC8BE681B7C7EAAB6E4C5EED3C53B75933
+org.slf4j:jcl-over-slf4j:1.6.1
+org.slf4j:slf4j-api:1.5.3
+org.slf4j:slf4j-api:1.7.30 = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
+org.slf4j:slf4j-api:1.7.5 = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
+org.slf4j:slf4j-nop:1.7.5 = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
+org.slf4j:slf4j-simple:1.5.3
+org.slf4j:slf4j-simple:1.7.30 = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
+org.sonatype.aether = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.sonatype.plexus:plexus-cipher:1.4 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
+org.sonatype.plexus:plexus-sec-dispatcher:1.3 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
+org.sonatype.plexus:plexus-sec-dispatcher:1.4 = 0x2BCBDD0F23EA1CAFCC11D4860374CF2E8DD1BDFD
+org.sonatype.sisu = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
+org.testng:testng:7.1.0 = 0xDCBA03381EF6C89096ACD985AC5EC74981F9CDA6
+org.tukaani:xz:* = 0x3690C240CE51B4670D30AD1C38EE757D69184620
+org.w3c.css:sac:1.3
+org.xmlunit:xmlunit-core:2.6.3 = 0xCE8075A251547BEE249BC151A2115AE15F6B8B72
+org.yaml:snakeyaml:1.21 = 0x120D6F34E627ED3A772EBBFE55C7E5E701832382
+oro:oro
+rhino:js:1.5R4.1
+sslext:sslext
+xerces:xercesImpl
+xml-apis:xml-apis:1.3.04
