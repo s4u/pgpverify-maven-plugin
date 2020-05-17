@@ -2,8 +2,8 @@ name: verify
 
 on:
   push:
-    branches:
-      - 'master'
+    branches-ignore:
+      - 'dependabot/**'
     tags:
 
   pull_request:
