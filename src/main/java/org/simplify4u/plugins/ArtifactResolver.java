@@ -1,6 +1,6 @@
 /*
  * Copyright 2019 Slawomir Jaranowski
- * Copyright 2019 Danny van Heumen
+ * Portions Copyright 2019-2020 Danny van Heumen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
@@ -35,10 +36,14 @@ import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.simplify4u.plugins.skipfilters.CompositeSkipper;
+import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.utils.MavenCompilerUtils;
 
@@ -64,12 +69,11 @@ final class ArtifactResolver {
     private final List<ArtifactRepository> remoteRepositoriesIgnoreCheckSum;
 
     ArtifactResolver(Log log, RepositorySystem repositorySystem, ArtifactRepository localRepository,
-                     List<ArtifactRepository> remoteRepositories) {
+            List<ArtifactRepository> remoteRepositories) {
         this.log = requireNonNull(log);
         this.repositorySystem = requireNonNull(repositorySystem);
         this.localRepository = requireNonNull(localRepository);
         this.remoteRepositories = requireNonNull(remoteRepositories);
-
         this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteRepositories);
     }
 
@@ -120,30 +124,43 @@ final class ArtifactResolver {
      */
     @SuppressWarnings({"deprecation", "java:S1874"})
     Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
-        final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(
-                resolveArtifacts(project.getArtifacts(), config.dependencyFilter, config.verifyPomFiles));
+        final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(resolveArtifacts(project.getArtifacts(),
+                config.dependencyFilter, null, config.verifyPomFiles, false));
         if (config.verifyPlugins) {
-            allArtifacts.addAll(resolveArtifacts(project.getPluginArtifacts(), config.pluginFilter,
-                    config.verifyPomFiles));
-            allArtifacts.addAll(resolveArtifacts(project.getReportArtifacts(), config.pluginFilter,
-                    config.verifyPomFiles));
-            // Maven does not allow specifying version ranges for build plug-in dependencies, therefore we can use the
-            // literal specified dependency.
-            allArtifacts.addAll(resolveArtifacts(
-                    project.getBuildPlugins().stream()
-                            .flatMap(p -> p.getDependencies().stream())
-                            .map(repositorySystem::createDependencyArtifact)
-                            .collect(Collectors.toList()),
-                    config.dependencyFilter, config.verifyPomFiles));
+            // Resolve transitive dependencies for build plug-ins and reporting plug-ins and their dependencies.
+            // The transitive closure is computed for each plug-in with its dependencies, as individual executions may
+            // depend on a different version of a particular dependency. Therefore, a dependency may be included in the
+            // over-all artifacts list multiple times with different versions.
+            for (final Plugin plugin : project.getBuildPlugins()) {
+                final LinkedHashSet<Artifact> artifacts = new LinkedHashSet<>();
+                artifacts.add(repositorySystem.createPluginArtifact(plugin));
+                artifacts.addAll(plugin.getDependencies().stream()
+                        .map(repositorySystem::createDependencyArtifact)
+                        .collect(Collectors.toSet()));
+                final Set<Artifact> resolved = resolveArtifacts(artifacts, config.pluginFilter, config.dependencyFilter,
+                        config.verifyPomFiles, config.verifyPluginDependencies);
+                if (log.isDebugEnabled()) {
+                    log.debug("Build plugin dependencies for " + plugin.getGroupId() + ":" + plugin.getArtifactId()
+                            + ":" + plugin.getVersion() + " " + resolved);
+                }
+                allArtifacts.addAll(resolved);
+            }
+            for (final Artifact plugin : project.getReportArtifacts()) {
+                final Set<Artifact> resolved = resolveArtifacts(singleton(plugin), config.pluginFilter,
+                        config.dependencyFilter, config.verifyPomFiles, config.verifyPluginDependencies);
+                if (log.isDebugEnabled()) {
+                    log.debug("Report plugin dependencies for " + plugin.getGroupId() + ":" + plugin.getArtifactId()
+                            + ":" + plugin.getVersion() + " " + resolved);
+                }
+                allArtifacts.addAll(resolved);
+            }
         }
         if (config.verifyAtypical) {
-            // verify artifacts in atypical locations, such as references in configuration.
-            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project), config.dependencyFilter,
-                    config.verifyPomFiles));
+            // Verify artifacts in atypical locations, such as references in configuration.
+            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project),
+                    config.dependencyFilter, config.dependencyFilter, config.verifyPomFiles,
+                    config.verifyPluginDependencies));
         }
-        // TODO: only immediate dependencies are validated for build plug-in dependencies and maven-compiler-plugin
-        //  annotation processors). Indirect dependencies (transitive closure) are not resolved yet.
-        log.debug("Discovered project artifacts: " + allArtifacts);
         return allArtifacts;
     }
 
@@ -220,20 +237,24 @@ final class ArtifactResolver {
      *
      * @param artifacts
      *         Dependencies to be resolved.
-     * @param filter
+     * @param artifactFilter
      *         Skip filter to test against to determine whether dependency must be skipped.
+     * @param dependenciesFilter
+     *         Skip filter to test against to determine whether transitive dependencies must be skipped.
      * @param verifyPom
      *         Boolean indicating whether or not POMs corresponding to dependencies should be resolved.
+     * @param transitive
+     *         Boolean indicating whether or not to resolve all dependencies in the transitive closure of provided
+     *         artifact.
      *
-     * @return Returns set of resolved artifacts, which may contain artifacts of which the definite version cannot be
-     * determined yet.
+     * @return Returns set of resolved artifacts.
      */
-    private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter filter, boolean verifyPom)
-            throws MojoExecutionException {
+    private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter artifactFilter,
+            SkipFilter dependenciesFilter, boolean verifyPom, boolean transitive) throws MojoExecutionException {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Artifact artifact : artifacts) {
-            final Artifact resolved = resolveArtifact(artifact);
-            if (filter.shouldSkipArtifact(artifact)) {
+            Artifact resolved = resolveArtifact(artifact);
+            if (artifactFilter.shouldSkipArtifact(artifact)) {
                 log.debug("Skipping artifact: " + artifact);
                 continue;
             }
@@ -250,7 +271,50 @@ final class ArtifactResolver {
                 }
             }
         }
+        if (transitive) {
+            // Transitive dependencies are not compiled/tested, so set requirement to scopes relevant at run-time.
+            // This is only relevant for plug-in artifacts and their dependencies, as project dependencies are already
+            // resolved by Maven.
+            // Note: this avoids issues with test-scoped artifacts that are not available to the public, such as
+            //       NullAway's test libraries.
+            final CompositeSkipper transitivesFilter = new CompositeSkipper(dependenciesFilter,
+                    new ScopeSkipper(Artifact.SCOPE_RUNTIME));
+            final LinkedHashSet<Artifact> transitives = new LinkedHashSet<>();
+            for (Artifact artifact : collection) {
+                transitives.addAll(resolveTransitively(artifact, transitivesFilter, verifyPom));
+            }
+            collection.addAll(transitives);
+        }
         return collection;
+    }
+
+    private Set<Artifact> resolveTransitively(Artifact artifact, SkipFilter dependencyFilter, boolean verifyPom)
+            throws MojoExecutionException {
+        final ArtifactFilter requestFilter = a -> !dependencyFilter.shouldSkipArtifact(a);
+        final ArtifactResolutionRequest request = new ArtifactResolutionRequest()
+                .setArtifact(artifact).setLocalRepository(localRepository).setRemoteRepositories(remoteRepositories)
+                .setResolutionFilter(requestFilter).setCollectionFilter(requestFilter).setResolveTransitively(true);
+        final ArtifactResolutionResult resolution = repositorySystem.resolve(request);
+        if (!resolution.isSuccess()) {
+            if (resolution.hasMissingArtifacts()) {
+                log.warn("Missing artifacts for " + artifact.getId() + ": " + resolution.getMissingArtifacts());
+            }
+            resolution.getExceptions().forEach(e -> {
+                log.warn("Failed to resolve transitive dependencies for " + artifact.getId() + ": " + e.getMessage());
+                log.debug(e);
+            });
+            throw new MojoExecutionException("Failed to resolve transitive dependencies.");
+        }
+        if (verifyPom) {
+            // Verifying project artifacts (POM) is significant as these are used to determine artifact dependencies.
+            final LinkedHashSet<Artifact> resolved = new LinkedHashSet<>(resolution.getArtifacts());
+            for (Artifact a : resolution.getArtifacts()) {
+                resolved.add(resolvePom(a));
+            }
+            return resolved;
+        } else {
+            return resolution.getArtifacts();
+        }
     }
 
     private Artifact resolvePom(Artifact artifact) {
@@ -314,24 +378,26 @@ final class ArtifactResolver {
         final SkipFilter pluginFilter;
         final boolean verifyPomFiles;
         final boolean verifyPlugins;
+        final boolean verifyPluginDependencies;
         final boolean verifyAtypical;
 
         /**
          * Constructor.
          *
-         * @param dependencyFilter filter for evaluating dependencies
-         * @param pluginFilter     filter for evaluating plugins
-         * @param verifyPomFiles   verify POM files as well
-         * @param verifyPlugins    verify build plugins as well
-         * @param verifyAtypical   verify dependencies in a-typical locations, such as maven-compiler-plugin's
-         *                         annotation processors.
+         * @param dependencyFilter         filter for evaluating dependencies
+         * @param pluginFilter             filter for evaluating plugins
+         * @param verifyPomFiles           verify POM files as well
+         * @param verifyPlugins            verify build plugins as well
+         * @param verifyPluginDependencies verify all dependencies of build plug-ins.
+         * @param verifyAtypical           verify dependencies in a-typical locations, such as maven-compiler-plugin's
          */
         public Configuration(SkipFilter dependencyFilter, SkipFilter pluginFilter, boolean verifyPomFiles,
-                boolean verifyPlugins, boolean verifyAtypical) {
+                boolean verifyPlugins, boolean verifyPluginDependencies, boolean verifyAtypical) {
             this.dependencyFilter = requireNonNull(dependencyFilter);
             this.pluginFilter = requireNonNull(pluginFilter);
             this.verifyPomFiles = verifyPomFiles;
             this.verifyPlugins = verifyPlugins;
+            this.verifyPluginDependencies = verifyPluginDependencies;
             this.verifyAtypical = verifyAtypical;
         }
     }

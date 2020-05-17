@@ -215,6 +215,14 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPlugins;
 
     /**
+     * Verify transitive dependencies of build plug-ins.
+     *
+     * @since 1.8.0
+     */
+    @Parameter(property = "pgpverify.verifyPluginDependencies", defaultValue = "false")
+    private boolean verifyPluginDependencies;
+
+    /**
      * Verify dependency artifact in atypical locations:
      * <ul>
      *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
@@ -306,11 +314,15 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
 
-            final ArtifactResolver resolver = new ArtifactResolver(getLog(),
-                    repositorySystem, localRepository, remoteRepositories);
+            final ArtifactResolver resolver = new ArtifactResolver(getLog(), repositorySystem, localRepository,
+                    remoteRepositories);
             final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
-                    this.verifyPlugins, this.verifyAtypical);
+                    this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
+            getLog().info("Validating " + artifacts.size() + " artifacts ...");
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Discovered project artifacts: " + artifacts);
+            }
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             verifyArtifactSignatures(artifactMap);
@@ -507,7 +519,11 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
             return true;
         }
-        getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
+        if (keysMap.isWithKey(artifact)) {
+            getLog().error("Unsigned artifact is listed with key in keys map: " + artifact.getId());
+        } else {
+            getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
+        }
         return false;
     }
 

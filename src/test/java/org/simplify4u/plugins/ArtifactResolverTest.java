@@ -22,9 +22,11 @@ import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
 import org.mockito.stubbing.Answer;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
@@ -59,15 +61,14 @@ public class ArtifactResolverTest {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
         final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
         assertThrows(NullPointerException.class,
                 () -> new ArtifactResolver(null, null, null, null));
         assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(null, repositorySystem, localRepository, remoteRepositories));
+                () -> new ArtifactResolver(null, repositorySystem, localRepository, emptyList()));
         assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(log, null, localRepository, remoteRepositories));
+                () -> new ArtifactResolver(log, null, localRepository, emptyList()));
         assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(log, repositorySystem, null, remoteRepositories));
+                () -> new ArtifactResolver(log, repositorySystem, null, emptyList()));
         assertThrows(NullPointerException.class,
                 () -> new ArtifactResolver(log, repositorySystem, localRepository, null));
     }
@@ -76,11 +77,19 @@ public class ArtifactResolverTest {
     public void testResolveProjectArtifactsEmpty() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
 
         final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
-                new CompositeSkipper(emptyList()), false, false, false);
+                new CompositeSkipper(emptyList()), false, false, false, false);
         final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
         assertEquals(emptySet(), resolved);
     }
@@ -89,19 +98,26 @@ public class ArtifactResolverTest {
     public void testResolveProjectArtifactsWithoutPoms() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolvedVersion(artifact.getVersion());
             artifact.setResolved(true);
             return new ArtifactResolutionResult();
         });
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
-                new CompositeSkipper(emptyList()), false, false, false);
+                new CompositeSkipper(emptyList()), false, false, false, false);
         final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
         assertEquals(1, resolved.size());
         assertTrue(resolved.iterator().next().isResolved());
@@ -111,6 +127,13 @@ public class ArtifactResolverTest {
     public void testResolveProjectArtifactsWithPoms() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(true);
@@ -118,13 +141,13 @@ public class ArtifactResolverTest {
         });
         when(repositorySystem.createProjectArtifact(eq("g"), eq("a"), eq("1.0")))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "pom", "classifier", null));
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
-                new CompositeSkipper(emptyList()), true, false, false);
+                new CompositeSkipper(emptyList()), true, false, false, false);
         final Set<Artifact> resolvedSet = resolver.resolveProjectArtifacts(project, config);
         verify(repositorySystem, times(1))
                 .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
@@ -140,7 +163,14 @@ public class ArtifactResolverTest {
     public void testResolveSignaturesEmpty() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final Map<Artifact, Artifact> resolvedSignatures = resolver.resolveSignatures(
                 emptyList(), SignatureRequirement.NONE);
         assertEquals(resolvedSignatures.size(), 0);
@@ -150,6 +180,13 @@ public class ArtifactResolverTest {
     public void testResolveSignaturesResolved() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(true);
@@ -157,7 +194,7 @@ public class ArtifactResolverTest {
         });
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
         when(project.getArtifacts()).thenReturn(singleton(artifact));
@@ -180,6 +217,13 @@ public class ArtifactResolverTest {
     public void testResolveSignaturesUnresolvedNone() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(false);
@@ -189,7 +233,7 @@ public class ArtifactResolverTest {
         });
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
         when(project.getArtifacts()).thenReturn(singleton(artifact));
@@ -206,6 +250,13 @@ public class ArtifactResolverTest {
     public void testResolveSignaturesUnresolvedStrict() throws MojoExecutionException {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(false);
@@ -215,7 +266,7 @@ public class ArtifactResolverTest {
         });
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
         when(project.getArtifacts()).thenReturn(singleton(artifact));
@@ -234,6 +285,13 @@ public class ArtifactResolverTest {
     public void testResolveSignaturesUnresolvedRequired() {
         final Log log = mock(Log.class);
         final RepositorySystem repositorySystem = mock(RepositorySystem.class);
+        final MavenSession session = mock(MavenSession.class);
+        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
+        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
+        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
+        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
+        final List<ArtifactRepository> remoteRepositories = emptyList();
+        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(false);
@@ -243,7 +301,7 @@ public class ArtifactResolverTest {
         });
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, mock(ArtifactRepository.class), emptyList());
+        final ArtifactResolver resolver = new ArtifactResolver(log, repositorySystem, localRepository, remoteRepositories);
         final MavenProject project = mock(MavenProject.class);
         final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
         when(project.getArtifacts()).thenReturn(singleton(artifact));
