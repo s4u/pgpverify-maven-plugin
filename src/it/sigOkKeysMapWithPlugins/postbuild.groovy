@@ -15,6 +15,7 @@
  */
 def buildLog = new File( basedir, 'build.log' )
 
+assert buildLog.text.contains('[INFO] NOTE: maven-surefire-plugin version 3 is present. This version is known to resolve and load dependencies for various unit testing frameworks (called \"providers\") during execution. These dependencies are not validated.')
 assert buildLog.text.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] commons-chain:commons-chain:pom:1.2 PGP Signature OK')
