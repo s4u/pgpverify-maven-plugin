@@ -18,13 +18,18 @@
 
 package org.simplify4u.plugins.utils;
 
+import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPSignature;
+import org.bouncycastle.openpgp.PGPSignatureList;
+import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ProtocolException;
 
 /**
  * Utilities for PGP Signature class.
@@ -33,6 +38,20 @@ public final class PGPSignatureUtils {
 
     private PGPSignatureUtils() {
         // No need to instantiate utility class.
+    }
+
+    public static PGPSignature loadSignature(InputStream input) throws IOException {
+        InputStream sigInputStream = PGPUtil.getDecoderStream(input);
+        PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
+        Object object = pgpObjectFactory.nextObject();
+        if (!(object instanceof PGPSignatureList)) {
+            throw new ProtocolException("File content is not a PGP signature.");
+        }
+        PGPSignatureList siglist = (PGPSignatureList) object;
+        if (siglist.isEmpty()) {
+            throw new ProtocolException("PGP signature list is empty.");
+        }
+        return siglist.get(0);
     }
 
     /**
