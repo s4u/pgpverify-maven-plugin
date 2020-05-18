@@ -21,7 +21,6 @@ package org.simplify4u.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,13 +47,9 @@ import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
-import org.bouncycastle.openpgp.PGPSignatureList;
-import org.bouncycastle.openpgp.PGPUtil;
-import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
@@ -441,13 +436,10 @@ public class PGPVerifyMojo extends AbstractMojo {
         getLog().debug("Artifact sign: " + signatureFile);
 
         try {
-            InputStream sigInputStream = PGPUtil.getDecoderStream(new FileInputStream(signatureFile));
-            PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
-            PGPSignatureList sigList = (PGPSignatureList) pgpObjectFactory.nextObject();
-            if (sigList == null) {
-                throw new MojoFailureException("Invalid signature file: " + signatureFile);
+            final PGPSignature pgpSignature;
+            try (FileInputStream input = new FileInputStream(signatureFile)) {
+                pgpSignature = PGPSignatureUtils.loadSignature(input);
             }
-            PGPSignature pgpSignature = sigList.get(0);
 
             if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
                 final String logMessageWeakSignature = "Weak signature algorithm used: "
