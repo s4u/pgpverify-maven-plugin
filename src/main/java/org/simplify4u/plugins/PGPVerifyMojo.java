@@ -309,18 +309,45 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
 
+            final long artifactResolutionStart = System.nanoTime();
             final ArtifactResolver resolver = new ArtifactResolver(getLog(), repositorySystem, localRepository,
                     remoteRepositories);
             final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
                     this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
+            if (quiet) {
+                getLog().debug("Finished artifact resolution in " + (System.nanoTime() - artifactResolutionStart)
+                        + " nanoseconds.");
+            } else {
+                getLog().info("Finished artifact resolution in " + (System.nanoTime() - artifactResolutionStart)
+                        + " nanoseconds.");
+            }
+
             getLog().info("Validating " + artifacts.size() + " artifacts ...");
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Discovered project artifacts: " + artifacts);
             }
+
+            final long signatureResolutionStart = System.nanoTime();
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
+            if (quiet) {
+                getLog().debug("Finished signature resolution in " + (System.nanoTime()
+                        - signatureResolutionStart) + " nanoseconds.");
+            } else {
+                getLog().info("Finished signature resolution in " + (System.nanoTime()
+                        - signatureResolutionStart) + " nanoseconds.");
+            }
+
+            final long artifactValidationStart = System.nanoTime();
             verifyArtifactSignatures(artifactMap);
+            if (quiet) {
+                getLog().debug("Finished artifact validation in " + (System.nanoTime() - artifactValidationStart)
+                        + " nanoseconds.");
+            } else {
+                getLog().info("Finished artifact validation in " + (System.nanoTime() - artifactValidationStart)
+                        + " nanoseconds.");
+            }
         }
     }
 
