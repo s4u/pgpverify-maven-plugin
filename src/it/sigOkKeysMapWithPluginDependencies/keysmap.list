@@ -282,41 +282,30 @@ org.bouncycastle = 0x08F0AAB4D0C1A4BDDE340765B341DDB020FCB6AB
 org.checkerframework = 0x19BEAB2D799C020F17C69126B16698A4ADF4D638
 org.codehaus.mojo:animal-sniffer-annotations:1.14 = 0x82F833963889D7ED06F1E4DC6525FD70CC303655
 org.codehaus.mojo:animal-sniffer-annotations:1.17 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.codehaus.plexus:plexus-archiver:2.2 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
-org.codehaus.plexus:plexus-archiver:3.4 = 0x906E5E684729C006267DDD4B105DE36038D8C6C5
-org.codehaus.plexus:plexus-archiver:3.6.0 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
-org.codehaus.plexus:plexus-archiver:4.2.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.codehaus.plexus:plexus-archiver:4.2.2 = 0xF404C15F367293CCCC0AF7B244146BCAA1F1E051
-org.codehaus.plexus:plexus-classworlds:2.2.3 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.codehaus.plexus:plexus-classworlds:2.5.2 = 0xFB11D4BB7B244678337AAD8BC7BF26D0BB617866
-org.codehaus.plexus:plexus-compiler-api:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.codehaus.plexus:plexus-compiler-javac:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.codehaus.plexus:plexus-compiler-manager:2.8.4 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.codehaus.plexus:plexus-component-annotations:1.7.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.codehaus.plexus:plexus-component-annotations:2.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.codehaus.plexus:plexus-component-annotations:2.1.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.codehaus.plexus:plexus-container-default:1.0-alpha-30
-org.codehaus.plexus:plexus-container-default:1.0-alpha-8
-org.codehaus.plexus:plexus-container-default:1.0-alpha-9-stable-1 =
-org.codehaus.plexus:plexus-container-default:1.7.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.codehaus.plexus:plexus-digest:1.0
-org.codehaus.plexus:plexus-i18n:1.0-beta-10
-org.codehaus.plexus:plexus-i18n:1.0-beta-7
-org.codehaus.plexus:plexus-interpolation:1.14 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.codehaus.plexus:plexus-interpolation:1.24 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.codehaus.plexus:plexus-interpolation:1.25 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
-org.codehaus.plexus:plexus-io:2.0.4 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
-org.codehaus.plexus:plexus-io:2.7.1
-org.codehaus.plexus:plexus-io:3.0.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
-org.codehaus.plexus:plexus-io:3.2.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.codehaus.plexus:plexus-java:0.9.10 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.codehaus.plexus:plexus-resources:1.1.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.codehaus.plexus:plexus-utils:2.0.4 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.codehaus.plexus:plexus-utils:3.0.24 = 0x906E5E684729C006267DDD4B105DE36038D8C6C5
-org.codehaus.plexus:plexus-utils:3.1.0 = 0x250EC75D1D52E967CE132C548B0378A57CD8E243
-org.codehaus.plexus:plexus-utils:3.3.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.codehaus.plexus:plexus-velocity:1.1.7 =
-org.codehaus.plexus:plexus-velocity:1.2 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
+
+org.codehaus.plexus = \
+    0x190D5A957FF22273E601F7A7C92C5FEC70161C62, \
+    0x250EC75D1D52E967CE132C548B0378A57CD8E243, \
+    0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50, \
+    0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \
+    0x906E5E684729C006267DDD4B105DE36038D8C6C5, \
+    0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
+    0xB02137D875D833D9B23392ECAE5A7FB608A0221C, \
+    0xBA926F64CA647B6D853A38672E2010F8A7FF4A41, \
+    0xF254B35617DC255D9344BCFA873A8E86B4372146, \
+    0xF404C15F367293CCCC0AF7B244146BCAA1F1E051, \
+    0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A, \
+    0xFB11D4BB7B244678337AAD8BC7BF26D0BB617866
+
+org.codehaus.plexus:plexus-container-default:1.0-alpha-30 = noSig
+org.codehaus.plexus:plexus-container-default:1.0-alpha-8 = noSig
+org.codehaus.plexus:plexus-container-default:1.0-alpha-9-stable-1 = noSig
+org.codehaus.plexus:plexus-digest:1.0 = noSig
+org.codehaus.plexus:plexus-i18n:1.0-beta-10 = noSig
+org.codehaus.plexus:plexus-i18n:1.0-beta-7 = noSig
+org.codehaus.plexus:plexus-io:2.7.1 = noSig
+org.codehaus.plexus:plexus-velocity:1.1.7 = noSig
+
 org.eclipse.aether:aether-util:0.9.0.M2 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
 org.eclipse.jetty = 0x5989BAF76217B843D66BE55B2D0E1FB8FE4B68B4
 org.eclipse.sisu:org.eclipse.sisu.inject:0.3.3 = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
