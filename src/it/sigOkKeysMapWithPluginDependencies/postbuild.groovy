@@ -20,7 +20,7 @@ assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Sig
 assert buildLog.text.contains('[INFO] commons-chain:commons-chain:jar:1.1 PGP Signature unavailable, consistent with keys map.')
 assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.slf4j:slf4j-api:jar:1.7.5 PGP Signature OK')
-assert buildLog.text.contains('[INFO] io.vavr:vavr-match:jar:0.10.2 PGP Signature OK')
+assert buildLog.text.matches('(?ms).*^\\[INFO\\] io.vavr:vavr-match:jar:.* PGP Signature OK$.*')
 assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-site-plugin:pom:3.9.0 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.apache.maven.plugins:maven-compiler-plugin:pom:3.8.1 PGP Signature OK')
 assert buildLog.text.contains('[INFO] org.codehaus.plexus:plexus-component-annotations:jar:1.7.1 PGP Signature OK')
