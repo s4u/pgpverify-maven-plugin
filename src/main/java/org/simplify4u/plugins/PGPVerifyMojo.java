@@ -21,6 +21,7 @@ package org.simplify4u.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -316,14 +317,13 @@ public class PGPVerifyMojo extends AbstractMojo {
                     this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
             if (quiet) {
-                getLog().debug("Finished artifact resolution in " + (System.nanoTime() - artifactResolutionStart)
-                        + " nanoseconds.");
+                getLog().debug("Resolved " + artifacts.size() + " artifact(s) in "
+                        + Duration.ofNanos(System.nanoTime() - artifactResolutionStart));
             } else {
-                getLog().info("Finished artifact resolution in " + (System.nanoTime() - artifactResolutionStart)
-                        + " nanoseconds.");
+                getLog().info("Resolved " + artifacts.size() + " artifact(s) in "
+                        + Duration.ofNanos(System.nanoTime() - artifactResolutionStart));
             }
 
-            getLog().info("Validating " + artifacts.size() + " artifacts ...");
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Discovered project artifacts: " + artifacts);
             }
@@ -332,21 +332,24 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
             if (quiet) {
-                getLog().debug("Finished signature resolution in " + (System.nanoTime()
-                        - signatureResolutionStart) + " nanoseconds.");
+                getLog().debug("Resolved signatures in "
+                        + Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
             } else {
-                getLog().info("Finished signature resolution in " + (System.nanoTime()
-                        - signatureResolutionStart) + " nanoseconds.");
+                getLog().info("Resolved signatures in "
+                        + Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
             }
 
             final long artifactValidationStart = System.nanoTime();
-            verifyArtifactSignatures(artifactMap);
-            if (quiet) {
-                getLog().debug("Finished artifact validation in " + (System.nanoTime() - artifactValidationStart)
-                        + " nanoseconds.");
-            } else {
-                getLog().info("Finished artifact validation in " + (System.nanoTime() - artifactValidationStart)
-                        + " nanoseconds.");
+            try {
+                verifyArtifactSignatures(artifactMap);
+            } finally {
+                if (quiet) {
+                    getLog().debug("Finished artifacts validation in "
+                            + Duration.ofNanos(System.nanoTime() - artifactValidationStart));
+                } else {
+                    getLog().info("Finished artifacts validation in "
+                            + Duration.ofNanos(System.nanoTime() - artifactValidationStart));
+                }
             }
         }
     }
