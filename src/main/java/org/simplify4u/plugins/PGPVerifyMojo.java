@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -301,11 +303,13 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private PGPKeysCache pgpKeysCache;
 
+    private Consumer<Supplier<String>> logWithQuiet;
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
         } else {
+            prepareLogWithQuiet();
             final SkipFilter dependencyFilter = prepareDependencyFilters();
             final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
@@ -316,13 +320,9 @@ public class PGPVerifyMojo extends AbstractMojo {
             final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
                     this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
-            if (quiet) {
-                getLog().debug("Resolved " + artifacts.size() + " artifact(s) in "
-                        + Duration.ofNanos(System.nanoTime() - artifactResolutionStart));
-            } else {
-                getLog().info("Resolved " + artifacts.size() + " artifact(s) in "
-                        + Duration.ofNanos(System.nanoTime() - artifactResolutionStart));
-            }
+
+            logWithQuiet.accept(() -> String.format("Resolved %d artifact(s) in %s", artifacts.size(),
+                            Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
 
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Discovered project artifacts: " + artifacts);
@@ -331,26 +331,29 @@ public class PGPVerifyMojo extends AbstractMojo {
             final long signatureResolutionStart = System.nanoTime();
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
-            if (quiet) {
-                getLog().debug("Resolved signatures in "
-                        + Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
-            } else {
-                getLog().info("Resolved signatures in "
-                        + Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
-            }
+
+            logWithQuiet.accept(() -> String.format("Resolved signatures in %s",
+                            Duration.ofNanos(System.nanoTime() - signatureResolutionStart)));
 
             final long artifactValidationStart = System.nanoTime();
             try {
                 verifyArtifactSignatures(artifactMap);
             } finally {
-                if (quiet) {
-                    getLog().debug("Finished artifacts validation in "
-                            + Duration.ofNanos(System.nanoTime() - artifactValidationStart));
-                } else {
-                    getLog().info("Finished artifacts validation in "
-                            + Duration.ofNanos(System.nanoTime() - artifactValidationStart));
-                }
+                logWithQuiet.accept(() -> String.format("Finished artifacts validation in  %s",
+                        Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
             }
+        }
+    }
+
+    private void prepareLogWithQuiet() {
+        if (quiet) {
+            logWithQuiet = message -> {
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug(message.get());
+                }
+            };
+        } else {
+            logWithQuiet = message -> getLog().info(message.get());
         }
     }
 
@@ -504,13 +507,8 @@ public class PGPVerifyMojo extends AbstractMojo {
             return verifySignatureStatus(pgpSignature.verify(), artifact, publicKey, publicKeyRing);
         } catch (PGPKeyNotFound e) {
             if (keysMap.isKeyMissing(artifact)) {
-                final String logMessage = String.format("%s PGP key not found on server, consistent with keys map.",
-                        artifact.getId());
-                if (quiet) {
-                    getLog().debug(logMessage);
-                } else {
-                    getLog().info(logMessage);
-                }
+                logWithQuiet.accept(() ->
+                        String.format("%s PGP key not found on server, consistent with keys map.", artifact.getId()));
                 return true;
             }
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
@@ -532,13 +530,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     private boolean verifySignatureUnavailable(Artifact artifact) {
         if (keysMap.isNoSignature(artifact)) {
-            final String logMessage = String.format("%s PGP Signature unavailable, consistent with keys map.",
-                    artifact.getId());
-            if (quiet) {
-                getLog().debug(logMessage);
-            } else {
-                getLog().info(logMessage);
-            }
+            logWithQuiet.accept(() ->
+                    String.format("%s PGP Signature unavailable, consistent with keys map.", artifact.getId()));
             return true;
         }
         if (keysMap.isWithKey(artifact)) {
@@ -573,24 +566,14 @@ public class PGPVerifyMojo extends AbstractMojo {
                                           PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 
         if (signatureStatus) {
-            String logMessageOK = String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
+            logWithQuiet.accept(() -> String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                     "OK", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                    PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
-            if (quiet) {
-                getLog().debug(logMessageOK);
-            } else {
-                getLog().info(logMessageOK);
-            }
+                    PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
             return true;
         } else {
             if (keysMap.isBrokenSignature(artifact)) {
-                String logMessage = String.format("%s PGP Signature is broken, consistent with keys map.",
-                        artifact.getId());
-                if (quiet) {
-                    getLog().debug(logMessage);
-                } else {
-                    getLog().info(logMessage);
-                }
+                logWithQuiet.accept(() ->
+                        String.format("%s PGP Signature is broken, consistent with keys map.", artifact.getId()));
                 return true;
             } else {
                 getLog().error(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
