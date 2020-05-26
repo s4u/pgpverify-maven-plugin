@@ -339,7 +339,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             try {
                 verifyArtifactSignatures(artifactMap);
             } finally {
-                logWithQuiet.accept(() -> String.format("Finished artifacts validation in  %s",
+                logWithQuiet.accept(() -> String.format("Finished artifacts validation in %s",
                         Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
             }
         }

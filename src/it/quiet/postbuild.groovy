@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-def buildLog = new File( basedir, 'build.log' )
+def buildLog = new File( basedir, 'build.log' ).text
 
-assert !buildLog.text.contains('PGP Signature OK')
-assert buildLog.text.contains('[INFO] BUILD SUCCESS')
+assert buildLog.contains('[DEBUG] junit:junit:jar:4.12 PGP Signature OK')
+assert buildLog.contains('[DEBUG] Finished artifacts validation in PT')
+assert buildLog.contains('[INFO] BUILD SUCCESS')
