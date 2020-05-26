@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
+import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -54,7 +55,6 @@ import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
-import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
@@ -406,17 +406,12 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @throws MojoFailureException
      *         In case of failures during initialization of the PGP keys cache.
-     * @throws MojoExecutionException
-     *         In case of errors while loading the keys map.
      */
-    private void prepareForKeys() throws MojoFailureException, MojoExecutionException {
+    private void prepareForKeys() throws MojoFailureException {
         initCache();
 
-        try {
-            keysMap.load(getLog(), keysMapLocation);
-        } catch (ResourceNotFoundException | IOException e) {
-            throw new MojoExecutionException("load keys map", e);
-        }
+        Try.run(() -> keysMap.load(getLog(), keysMapLocation))
+                .getOrElseThrow(e -> new MojoFailureException("load keys map", e));
     }
 
     private void initCache() throws MojoFailureException {
@@ -426,11 +421,9 @@ public class PGPVerifyMojo extends AbstractMojo {
                 .filter(s -> s.length() > 0)
                 .collect(Collectors.toList());
 
-        try {
-            pgpKeysCache = new PGPKeysCache(pgpKeysCachePath, keyServerList, pgpKeyServerLoadBalance, getMavenProxy());
-        } catch (IOException e) {
-            throw new MojoFailureException(e.getMessage(), e);
-        }
+        pgpKeysCache = Try.of(() ->
+                new PGPKeysCache(pgpKeysCachePath, keyServerList, pgpKeyServerLoadBalance, getMavenProxy()))
+                .getOrElseThrow(e -> new MojoFailureException(e.getMessage(), e));
     }
 
     private void verifyArtifactSignatures(Map<Artifact, Artifact> artifactToAsc)
