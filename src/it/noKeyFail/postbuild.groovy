@@ -16,5 +16,7 @@
  */
 def buildLog = new File( basedir, 'build.log' ).text
 
-assert buildLog.contains('for artifact nl.dannyvanheumen:helloworld:jar:1.0: cannot find public key on keyserver.')
+
+assert buildLog.contains('[ERROR] PGP key https://hkps.pool.sks-keyservers.net/pks/lookup?op=vindex&fingerprint=on&search=0x9F1A263E15FD0AC9 not found on keyserver for artifact nl.dannyvanheumen:helloworld:jar:1.0')
+assert buildLog.contains('[ERROR] PGP key https://hkps.pool.sks-keyservers.net/pks/lookup?op=vindex&fingerprint=on&search=0x9F1A263E15FD0AC9 not found on keyserver for artifact nl.dannyvanheumen:helloworld:pom:1.0')
 assert buildLog.contains('[INFO] BUILD FAILURE')

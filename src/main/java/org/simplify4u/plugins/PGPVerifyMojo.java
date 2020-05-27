@@ -304,6 +304,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private PGPKeysCache pgpKeysCache;
 
     private Consumer<Supplier<String>> logWithQuiet;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
@@ -461,6 +462,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         getLog().debug("Artifact file: " + artifactFile);
         getLog().debug("Artifact sign: " + signatureFile);
 
+        long sigKeyID = -1;
         try {
             final PGPSignature pgpSignature;
             try (FileInputStream input = new FileInputStream(signatureFile)) {
@@ -477,7 +479,8 @@ public class PGPVerifyMojo extends AbstractMojo {
                     getLog().warn(logMessageWeakSignature);
                 }
             }
-            long sigKeyID = pgpSignature.getKeyID();
+
+            sigKeyID = pgpSignature.getKeyID();
 
             PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
             PGPPublicKey publicKey = publicKeyRing.getPublicKey(sigKeyID);
@@ -501,11 +504,13 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (PGPKeyNotFound e) {
             if (keysMap.isKeyMissing(artifact)) {
                 logWithQuiet.accept(() ->
-                        String.format("%s PGP key not found on server, consistent with keys map.", artifact.getId()));
+                        String.format("%s PGP key not found on keyserver, consistent with keys map.",
+                                artifact.getId()));
                 return true;
             }
-            throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
-                    + artifact.getId() + ": cannot find public key on keyserver.", e);
+            getLog().error(String.format("PGP key %s not found on keyserver for artifact %s",
+                    pgpKeysCache.getUrlForShowKey(sigKeyID), artifact.getId()));
+            return false;
         } catch (IOException | PGPException e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);

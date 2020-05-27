@@ -16,6 +16,6 @@
  */
 def buildLog = new File( basedir, 'build.log' ).text
 
-assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:jar:1.0 PGP key not found on server, consistent with keys map.')
-assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:pom:1.0 PGP key not found on server, consistent with keys map.')
+assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:jar:1.0 PGP key not found on keyserver, consistent with keys map.')
+assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:pom:1.0 PGP key not found on keyserver, consistent with keys map.')
 assert buildLog.contains('[INFO] BUILD SUCCESS')
