@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         with:
           path: ~/.m2/repository
           key:          verify-${{ matrix.os }}-jdk${{ matrix.java }}-maven-${{ hashFiles('**/pom.xml') }}
