@@ -21,6 +21,7 @@ import java.io.IOException;
  * Inform about PGP key not found on server.
  */
 public class PGPKeyNotFound extends IOException {
+    private static final long serialVersionUID = 1L;
 
     public PGPKeyNotFound() {
         super();

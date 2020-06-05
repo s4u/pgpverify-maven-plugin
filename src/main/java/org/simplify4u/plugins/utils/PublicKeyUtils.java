@@ -118,7 +118,7 @@ public final class PublicKeyUtils {
             return Optional.empty();
         }
 
-        Iterator signatures = publicKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING);
+        Iterator<?> signatures = publicKey.getSignaturesOfType(PGPSignature.SUBKEY_BINDING);
         if (signatures.hasNext()) {
             PGPSignature sig = (PGPSignature) signatures.next();
             return Optional.ofNullable(publicKeyRing.getPublicKey(sig.getKeyID()));
@@ -190,7 +190,8 @@ public final class PublicKeyUtils {
 
         AtomicBoolean hasValidSignature = new AtomicBoolean(false);
 
-        subKey.getSignaturesOfType(signatureTypeToCheck).forEachRemaining(s -> Try.run(() -> {
+        Iterator<?> it = subKey.getSignaturesOfType(signatureTypeToCheck);
+        it.forEachRemaining(s -> Try.run(() -> {
                     PGPSignature sig = (PGPSignature) s;
 
                     PGPPublicKey masterKey = publicKeyRing.getPublicKey(sig.getKeyID());
