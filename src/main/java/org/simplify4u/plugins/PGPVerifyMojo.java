@@ -67,6 +67,7 @@ import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
+import org.simplify4u.plugins.utils.PGPSignatureException;
 import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
@@ -311,6 +312,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             getLog().info("Skipping pgpverify:check");
         } else {
             prepareLogWithQuiet();
+
             final SkipFilter dependencyFilter = prepareDependencyFilters();
             final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
@@ -511,7 +513,18 @@ public class PGPVerifyMojo extends AbstractMojo {
             getLog().error(String.format("PGP key %s not found on keyserver for artifact %s",
                     pgpKeysCache.getUrlForShowKey(sigKeyID), artifact.getId()));
             return false;
-        } catch (IOException | PGPException e) {
+        } catch (PGPSignatureException e) {
+            if (keysMap.isBrokenSignature(artifact)) {
+                logWithQuiet.accept(() ->
+                        String.format("%s PGP Signature is broken, consistent with keys map.", artifact.getId()));
+                return true;
+            }
+
+            getLog().error(String.format("Failed to process signature '%s' for artifact %s - %s",
+                    signatureFile ,artifact.getId(), e.getMessage()));
+            return false;
+
+        } catch (IOException | PGPException  e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);
         }
