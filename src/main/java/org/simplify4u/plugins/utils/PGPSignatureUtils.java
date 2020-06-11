@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
@@ -39,6 +40,49 @@ public final class PGPSignatureUtils {
         // No need to instantiate utility class.
     }
 
+    /**
+     * Check PGP signature for bad algorithms.
+     *
+     * @param signature PGP signature instance
+     * @return Returns null if no bad algorithms used, or algorithm name if used.
+     */
+    public static String checkWeakHashAlgorithm(PGPSignature signature) {
+        switch (signature.getHashAlgorithm()) {
+            case HashAlgorithmTags.MD5:
+                return "MD5";
+            case HashAlgorithmTags.DOUBLE_SHA:
+                return "double-width SHA";
+            case HashAlgorithmTags.MD2:
+                return "MD2";
+            case HashAlgorithmTags.TIGER_192:
+                return "TIGER/192";
+            case HashAlgorithmTags.HAVAL_5_160:
+                return "HAVAL (5 pass, 160-bit)";
+            case HashAlgorithmTags.SHA224:
+                return "SHA-224";
+            case HashAlgorithmTags.SHA1:
+                // fallthrough
+            case HashAlgorithmTags.RIPEMD160:
+                // fallthrough
+            case HashAlgorithmTags.SHA256:
+                // fallthrough
+            case HashAlgorithmTags.SHA384:
+                // fallthrough
+            case HashAlgorithmTags.SHA512:
+                return null;
+            default:
+                throw new UnsupportedOperationException("Unknown hash algorithm value encountered: "
+                        + signature.getHashAlgorithm());
+        }
+    }
+
+    /**
+     * Load PGPSignature from input stream.
+     *
+     * @param input the input stream having PGPSignature content
+     * @return Returns the (first) read PGP signature.
+     * @throws IOException In case of bad content.
+     */
     public static PGPSignature loadSignature(InputStream input) throws IOException, PGPSignatureException {
         InputStream sigInputStream = PGPUtil.getDecoderStream(input);
         PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
