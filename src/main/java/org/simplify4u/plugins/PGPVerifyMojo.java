@@ -226,6 +226,9 @@ public class PGPVerifyMojo extends AbstractMojo {
      *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
      * </ul>
      *
+     * In addition, it will detect when maven-surefire-plugin version 3 is used, as this will dynamically
+     * resolve and load additional artifacts. However, these artifacts are not validated.
+     *
      * @since 1.6.0
      */
     @Parameter(property = "pgpverify.verifyAtypical", defaultValue = "false")
@@ -266,6 +269,19 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     @Parameter(property = "pgpverify.verifyReactorDependencies", defaultValue = "false")
     private boolean verifyReactorDependencies;
+
+    /**
+     * Disable the use of a checksum to check whether the collection of artifacts was validated
+     * in a previous run. If enabled and the checksum matches, skip subsequent steps that perform
+     * actual downloading of signatures and validation of artifacts against their respective
+     * signatures.
+     *
+     * <p>Checksums save significant time when repeatedly checking large artifact collections.</p>
+     *
+     * @since 1.9.0
+     */
+    @Parameter(property = "pgpverify.disableChecksum", defaultValue = "false")
+    private boolean disableChecksum;
 
     /**
      * <p>
@@ -312,6 +328,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         } else {
             prepareLogWithQuiet();
 
+            final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
             final SkipFilter dependencyFilter = prepareDependencyFilters();
             final SkipFilter pluginFilter = preparePluginFilters();
             prepareForKeys();
@@ -325,6 +342,15 @@ public class PGPVerifyMojo extends AbstractMojo {
 
             logWithQuiet.accept(() -> String.format("Resolved %d artifact(s) in %s", artifacts.size(),
                             Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
+
+            final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
+                    .artifacts(artifacts).disabled(this.disableChecksum).build();
+            if (validationChecksum.checkValidation()) {
+                logWithQuiet.accept(() -> "Artifacts were already validated in a previous run. "
+                        + "Execution finished early as the checksum for the collection of artifacts "
+                        + "has not changed.");
+                return;
+            }
 
             if (getLog().isDebugEnabled()) {
                 getLog().debug("Discovered project artifacts: " + artifacts);
@@ -344,6 +370,8 @@ public class PGPVerifyMojo extends AbstractMojo {
                 logWithQuiet.accept(() -> String.format("Finished artifacts validation in %s",
                         Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
             }
+
+            validationChecksum.saveChecksum();
         }
     }
 
