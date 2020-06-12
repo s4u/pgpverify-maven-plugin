@@ -24,6 +24,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.bouncycastle.openpgp.PGPCompressedData;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPSignature;
@@ -84,17 +87,36 @@ public final class PGPSignatureUtils {
      * @throws IOException In case of bad content.
      */
     public static PGPSignature loadSignature(InputStream input) throws IOException, PGPSignatureException {
-        InputStream sigInputStream = PGPUtil.getDecoderStream(input);
-        PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
-        Object object = pgpObjectFactory.nextObject();
-        if (!(object instanceof PGPSignatureList)) {
-            throw new PGPSignatureException("File content is not a PGP signature.");
+
+        try {
+            InputStream sigInputStream = PGPUtil.getDecoderStream(input);
+            PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(sigInputStream, new BcKeyFingerprintCalculator());
+
+            Object nextObject;
+            while ((nextObject = pgpObjectFactory.nextObject()) != null) {
+
+                if (nextObject instanceof PGPSignatureList) {
+                    return ((PGPSignatureList) nextObject).get(0);
+                }
+
+                if (nextObject instanceof PGPCompressedData) {
+                    // next read content of compressed message
+                    pgpObjectFactory = new PGPObjectFactory(((PGPCompressedData) nextObject).getDataStream(),
+                            new BcKeyFingerprintCalculator());
+                }
+
+                if (nextObject instanceof PGPLiteralData) {
+                    InputStream dataStream = ((PGPLiteralData) nextObject).getDataStream();
+                    while (dataStream.read() > 0) {
+                        // we must read whole packet in order to proper input stream shift
+                    }
+                }
+            }
+        } catch (PGPException e) {
+            throw new PGPSignatureException(e.getMessage(), e);
         }
-        PGPSignatureList siglist = (PGPSignatureList) object;
-        if (siglist.isEmpty()) {
-            throw new PGPSignatureException("PGP signature list is empty.");
-        }
-        return siglist.get(0);
+
+        throw new PGPSignatureException("PGP signature not found.");
     }
 
     /**

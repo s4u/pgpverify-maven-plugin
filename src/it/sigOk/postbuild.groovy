@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-def buildLog = new File( basedir, 'build.log' )
+def buildLog = new File( basedir, 'build.log' ).text
 
-assert buildLog.text.contains('[INFO] com.google.auto.value:auto-value-annotations:pom:1.6.3 PGP Signature OK')
-assert buildLog.text.contains('[INFO] com.google.auto.value:auto-value-annotations:jar:1.6.3 PGP Signature OK')
-// split key info to skip search for special char - this assertion cause problem on windows system
-assert buildLog.text.contains('KeyId: 0xC7BE5BCC9FEC15518CFDA882B0F3710FA64900E7 UserIds:')
-assert buildLog.text.contains('amonn McManus <eamonn@mcmanus.net>]')
+assert buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:pom:1.6.3 PGP Signature OK')
+assert buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:jar:1.6.3 PGP Signature OK')
+// split key infskip search for special char - this assertion cause problem on windows system
+assert buildLog.contains('KeyId: 0xC7BE5BCC9FEC15518CFDA882B0F3710FA64900E7 UserIds:')
+assert buildLog.contains('amonn McManus <eamonn@mcmanus.net>]')
 
-assert buildLog.text.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
-assert buildLog.text.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
-assert buildLog.text.contains('SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711 UserIds: [Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>]')
+assert buildLog.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
+assert buildLog.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
+assert buildLog.contains('SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711 UserIds: [Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>]')
 
-assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Signature OK')
-assert buildLog.text.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Signature OK')
-assert buildLog.text.contains('KeyId: 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E UserIds: [Tom Denley (scarytom) <t.denley@cantab.net>]')
+assert buildLog.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Signature OK')
+assert buildLog.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Signature OK')
+assert buildLog.contains('KeyId: 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E UserIds: [Tom Denley (scarytom) <t.denley@cantab.net>]')
 
-assert buildLog.text.contains('[INFO] BUILD SUCCESS')
+assert buildLog.contains('[INFO] org.apache.xmlgraphics:fop:pom:0.95 PGP Signature OK')
+assert buildLog.contains('[INFO] org.apache.xmlgraphics:fop:jar:0.95 PGP Signature OK')
+assert buildLog.contains('SubKeyId: 0x8E1E35C66754351B of 0xAB6638CE472A499B3959ADA2F989A2E5C93C5700 UserIds: [Maximilian Berger, Maximilian Berger <max@berger.name>, Maximilian Berger <maxberger@apache.org>]')
+
+assert buildLog.contains('[INFO] BUILD SUCCESS')

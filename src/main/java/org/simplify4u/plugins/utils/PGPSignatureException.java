@@ -22,4 +22,8 @@ public class PGPSignatureException extends Exception {
     public PGPSignatureException(String message) {
         super(message);
     }
+
+    public PGPSignatureException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

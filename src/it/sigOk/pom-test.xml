@@ -41,6 +41,21 @@
             <artifactId>auto-value-annotations</artifactId>
             <version>1.6.3</version>
         </dependency>
+
+        <!-- pom of fop has signature in message -->
+        <!-- https://github.com/s4u/pgpverify-maven-plugin/issues/120 -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>fop</artifactId>
+            <version>0.95</version>
+            <!-- for test we don't need all transitive dependency -->
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
