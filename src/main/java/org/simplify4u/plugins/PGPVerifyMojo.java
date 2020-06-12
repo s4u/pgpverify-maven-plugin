@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -452,14 +451,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
         final File artifactFile = artifact.getFile();
         final File signatureFile = ascArtifact.getFile();
-        final Map<Integer, String> weakSignatures = ImmutableMap.<Integer, String>builder()
-                .put(1, "MD5")
-                .put(4, "DOUBLE_SHA")
-                .put(5, "MD2")
-                .put(6, "TIGER_192")
-                .put(7, "HAVAL_5_160")
-                .put(11, "SHA224")
-                .build();
 
         getLog().debug("Artifact file: " + artifactFile);
         getLog().debug("Artifact sign: " + signatureFile);
@@ -471,17 +462,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                 pgpSignature = PGPSignatureUtils.loadSignature(input);
             }
 
-            if (weakSignatures.containsKey(pgpSignature.getHashAlgorithm())) {
-                final String logMessageWeakSignature = "Weak signature algorithm used: "
-                        + weakSignatures.get(pgpSignature.getHashAlgorithm());
-                if (failWeakSignature) {
-                    getLog().error(logMessageWeakSignature);
-                    throw new MojoFailureException(logMessageWeakSignature);
-                } else {
-                    getLog().warn(logMessageWeakSignature);
-                }
-            }
-
+            verifyWeakSignature(pgpSignature);
             sigKeyID = pgpSignature.getKeyID();
 
             PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
@@ -527,6 +508,20 @@ public class PGPVerifyMojo extends AbstractMojo {
         } catch (IOException | PGPException  e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);
+        }
+    }
+
+    private void verifyWeakSignature(PGPSignature pgpSignature) throws MojoFailureException {
+        final String weakHashAlgorithm = PGPSignatureUtils.checkWeakHashAlgorithm(pgpSignature);
+        if (weakHashAlgorithm == null) {
+            return;
+        }
+        final String logMessage = "Weak signature algorithm used: " + weakHashAlgorithm;
+        if (failWeakSignature) {
+            getLog().error(logMessage);
+            throw new MojoFailureException(logMessage);
+        } else {
+            getLog().warn(logMessage);
         }
     }
 
