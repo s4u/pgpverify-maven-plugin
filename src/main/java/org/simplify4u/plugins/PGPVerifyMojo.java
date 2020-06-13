@@ -340,7 +340,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                     this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
             final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
 
-            logWithQuiet.accept(() -> String.format("Resolved %d artifact(s) in %s", artifacts.size(),
+            getLog().info(String.format("Resolved %d artifact(s) in %s", artifacts.size(),
                             Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
 
             final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
@@ -360,14 +360,14 @@ public class PGPVerifyMojo extends AbstractMojo {
             final SignatureRequirement signaturePolicy = determineSignaturePolicy();
             final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
 
-            logWithQuiet.accept(() -> String.format("Resolved signatures in %s",
+            getLog().info(String.format("Resolved %d signature(s) in %s", artifactMap.size(),
                             Duration.ofNanos(System.nanoTime() - signatureResolutionStart)));
 
             final long artifactValidationStart = System.nanoTime();
             try {
                 verifyArtifactSignatures(artifactMap);
             } finally {
-                logWithQuiet.accept(() -> String.format("Finished artifacts validation in %s",
+                getLog().info(String.format("Finished %d artifact(s) validation in %s", artifactMap.size(),
                         Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
             }
 

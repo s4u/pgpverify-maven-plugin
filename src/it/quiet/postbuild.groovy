@@ -16,5 +16,4 @@
 def buildLog = new File( basedir, 'build.log' ).text
 
 assert buildLog.contains('[DEBUG] junit:junit:jar:4.12 PGP Signature OK')
-assert buildLog.contains('[DEBUG] Finished artifacts validation in PT')
 assert buildLog.contains('[INFO] BUILD SUCCESS')
