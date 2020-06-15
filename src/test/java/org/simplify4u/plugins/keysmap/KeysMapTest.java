@@ -16,12 +16,10 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import io.vavr.control.Try;
-import org.apache.maven.plugin.logging.Log;
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -34,16 +32,13 @@ import org.testng.annotations.Test;
  */
 public class KeysMapTest {
 
-    private PlexusContainer container = Try.of(DefaultPlexusContainer::new).get();
-
-    private Log log;
+    private final PlexusContainer container = Try.of(DefaultPlexusContainer::new).get();
 
     private KeysMap keysMap;
 
     @BeforeMethod
     public void setUp() throws ComponentLookupException {
         keysMap = container.lookup(KeysMap.class);
-        log = mock(Log.class);
     }
 
     @AfterMethod
@@ -56,33 +51,23 @@ public class KeysMapTest {
         assertThat(keysMap).isNotNull();
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void bothNullTest() throws Exception {
-        keysMap.load(null, null);
-    }
-
-    @Test(expectedExceptions = NullPointerException.class)
-    public void nullLogTest() throws Exception {
-        keysMap.load(null, "keys.map");
-    }
-
     @Test
     public void nullLocationTest() throws Exception {
-        keysMap.load(log, null);
+        keysMap.load(null);
 
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
     @Test
     public void emptyLocationTest() throws Exception {
-        keysMap.load(log, "");
+        keysMap.load("");
 
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
     @Test
     public void validKeyFromMap() throws Exception {
-        keysMap.load(log, "/keysMap.list");
+        keysMap.load("/keysMap.list");
 
         assertThat(
                 keysMap.isValidKey(
@@ -138,7 +123,7 @@ public class KeysMapTest {
 
     @Test
     public void invalidKeyFromMap() throws Exception {
-        keysMap.load(log, "/keysMap.list");
+        keysMap.load("/keysMap.list");
 
         assertThat(
                 keysMap.isValidKey(
@@ -150,7 +135,7 @@ public class KeysMapTest {
     @Test
     public void specialValueNoSig() throws Exception {
 
-        keysMap.load(log, "/keysMap.list");
+        keysMap.load("/keysMap.list");
 
         assertThat(
                 keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test").build())
@@ -175,7 +160,7 @@ public class KeysMapTest {
     @Test
     public void specialValueBadSig() throws Exception {
 
-        keysMap.load(log, "/keysMap.list");
+        keysMap.load("/keysMap.list");
 
         assertThat(
                 keysMap.isBrokenSignature(testArtifact().groupId("badSig").build())
@@ -185,7 +170,7 @@ public class KeysMapTest {
     @Test
     public void specialValueNoKey() throws Exception {
 
-        keysMap.load(log, "/keysMap.list");
+        keysMap.load("/keysMap.list");
 
         assertThat(
                 keysMap.isKeyMissing(testArtifact().groupId("noKey").build())
@@ -195,7 +180,7 @@ public class KeysMapTest {
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Key length for = 0x10 is 8 bits, should be between 64 and 160 bits")
     public void shortKeyShouldThrownException() throws Exception {
-        keysMap.load(log, "/keyMap-keyToShort.list");
+        keysMap.load("/keyMap-keyToShort.list");
 
     }
 }

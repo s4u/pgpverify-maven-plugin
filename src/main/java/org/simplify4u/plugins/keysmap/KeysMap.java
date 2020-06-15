@@ -22,18 +22,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.logging.Log;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
-
-import static java.util.Objects.requireNonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Slawomir Jaranowski.
@@ -41,20 +39,21 @@ import static java.util.Objects.requireNonNull;
 @Component(role = KeysMap.class, instantiationStrategy = "per-lookup")
 public class KeysMap {
 
+    private static final Logger LOG = LoggerFactory.getLogger(KeysMap.class);
+
     @Requirement
     private ResourceManager resourceManager;
 
-    private final List<ArtifactInfo> keysMapList = new ArrayList<>();
+    private final ArrayList<ArtifactInfo> keysMapList = new ArrayList<>();
 
-    public void load(Log log, String locale) throws ResourceNotFoundException, IOException {
-        requireNonNull(log);
+    public void load(String locale) throws ResourceNotFoundException, IOException {
         if (locale != null && !locale.trim().isEmpty()) {
             try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
                 loadKeysMap(inputStream);
             }
         }
         if (keysMapList.isEmpty()) {
-            log.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
+            LOG.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
                     "check artifacts against their signature. File corruption will be detected. However, without a " +
                     "keysmap as a reference for trust, valid signatures of any public key will be accepted.");
         }
