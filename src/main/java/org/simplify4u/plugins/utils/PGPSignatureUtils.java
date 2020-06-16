@@ -85,6 +85,7 @@ public final class PGPSignatureUtils {
      * @param input the input stream having PGPSignature content
      * @return Returns the (first) read PGP signature.
      * @throws IOException In case of bad content.
+     * @throws PGPSignatureException In case of failure loading signature.
      */
     public static PGPSignature loadSignature(InputStream input) throws IOException, PGPSignatureException {
 

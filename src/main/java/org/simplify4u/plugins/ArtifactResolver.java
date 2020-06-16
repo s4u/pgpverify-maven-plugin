@@ -43,24 +43,25 @@ import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.utils.MavenCompilerUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
  */
 final class ArtifactResolver {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ArtifactResolver.class);
+
     private static final VersionRange SUREFIRE_PLUGIN_VERSION_RANGE = Try.of(
             () -> VersionRange.createFromVersionSpec("(2.999999999,4)"))
             .getOrElseThrow(e -> new IllegalStateException("BUG: Failed to create version range.", e));
-
-    private final Log log;
 
     private final RepositorySystem repositorySystem;
 
@@ -76,9 +77,8 @@ final class ArtifactResolver {
      */
     private final List<ArtifactRepository> remoteRepositoriesIgnoreCheckSum;
 
-    ArtifactResolver(Log log, RepositorySystem repositorySystem, ArtifactRepository localRepository,
+    ArtifactResolver(RepositorySystem repositorySystem, ArtifactRepository localRepository,
             List<ArtifactRepository> remoteRepositories) {
-        this.log = requireNonNull(log);
         this.repositorySystem = requireNonNull(repositorySystem);
         this.localRepository = requireNonNull(localRepository);
         this.remoteRepositories = requireNonNull(remoteRepositories);
@@ -147,18 +147,18 @@ final class ArtifactResolver {
                         .collect(Collectors.toSet()));
                 final Set<Artifact> resolved = resolveArtifacts(artifacts, config.pluginFilter, config.dependencyFilter,
                         config.verifyPomFiles, config.verifyPluginDependencies);
-                if (log.isDebugEnabled()) {
-                    log.debug("Build plugin dependencies for " + plugin.getGroupId() + ":" + plugin.getArtifactId()
-                            + ":" + plugin.getVersion() + " " + resolved);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Build plugin dependencies for {}:{}:{} {}", plugin.getGroupId(), plugin.getArtifactId(),
+                            plugin.getVersion(), resolved);
                 }
                 allArtifacts.addAll(resolved);
             }
             for (final Artifact plugin : project.getReportArtifacts()) {
                 final Set<Artifact> resolved = resolveArtifacts(singleton(plugin), config.pluginFilter,
                         config.dependencyFilter, config.verifyPomFiles, config.verifyPluginDependencies);
-                if (log.isDebugEnabled()) {
-                    log.debug("Report plugin dependencies for " + plugin.getGroupId() + ":" + plugin.getArtifactId()
-                            + ":" + plugin.getVersion() + " " + resolved);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Report plugin dependencies for {}:{}:{} {}", plugin.getGroupId(), plugin.getArtifactId(),
+                            plugin.getVersion(), resolved);
                 }
                 allArtifacts.addAll(resolved);
             }
@@ -215,7 +215,7 @@ final class ArtifactResolver {
                 .filter(p -> "maven-surefire-plugin".equals(p.getArtifactId()))
                 .anyMatch(this::matchSurefireVersion);
         if (surefireDynamicLoadingLikely) {
-            log.info("NOTE: maven-surefire-plugin version 3 is present. This version is known to resolve " +
+            LOG.info("NOTE: maven-surefire-plugin version 3 is present. This version is known to resolve " +
                     "and load dependencies for various unit testing frameworks (called \"providers\") during " +
                     "execution. These dependencies are not validated.");
         }
@@ -226,7 +226,7 @@ final class ArtifactResolver {
         try {
             version = repositorySystem.createPluginArtifact(plugin).getSelectedVersion();
         } catch (OverConstrainedVersionException e) {
-            log.debug("Found build plug-in with overly constrained version specification.", e);
+            LOG.debug("Found build plug-in with overly constrained version specification.", e);
             return false;
         }
         return SUREFIRE_PLUGIN_VERSION_RANGE.containsVersion(version);
@@ -247,7 +247,7 @@ final class ArtifactResolver {
      */
     Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts, SignatureRequirement requirement)
             throws MojoExecutionException {
-        log.debug("Start resolving ASC files");
+        LOG.debug("Start resolving ASC files");
 
         final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
         for (Artifact artifact : artifacts) {
@@ -270,21 +270,21 @@ final class ArtifactResolver {
 
         final ArtifactResolutionResult ascResult = request(aAsc, remoteRepositoriesIgnoreCheckSum);
         if (ascResult.isSuccess()) {
-            log.debug(aAsc.toString() + " " + aAsc.getFile());
+            LOG.debug("{} {}", aAsc, aAsc.getFile());
             return aAsc;
         }
 
         switch (requirement) {
             case NONE:
-                log.warn("No signature for " + artifact.getId());
+                LOG.warn("No signature for {}", artifact.getId());
                 break;
             case STRICT:
-                log.debug("No signature for " + artifact.getId());
+                LOG.debug("No signature for {}", artifact.getId());
                 // no action needed here. If we need to show a warning message,
                 // we will determine this when verifying signatures (or lack thereof)
                 break;
             case REQUIRED:
-                log.error("No signature for " + artifact.getId());
+                LOG.error("No signature for {}", artifact.getId());
                 throw new MojoExecutionException("No signature for " + artifact.getId());
             default:
                 throw new UnsupportedOperationException("Unsupported signature requirement.");
@@ -316,11 +316,11 @@ final class ArtifactResolver {
         for (final Artifact artifact : artifacts) {
             Artifact resolved = resolveArtifact(artifact);
             if (artifactFilter.shouldSkipArtifact(artifact)) {
-                log.debug("Skipping artifact: " + artifact);
+                LOG.debug("Skipping artifact: {}", artifact);
                 continue;
             }
             if (!resolved.isResolved()) {
-                throw new MojoExecutionException("Failed to resolve artifact: " + artifact);
+                throw new MojoExecutionException("Failed to resolve artifact: {}" + artifact);
             }
             collection.add(resolved);
             if (verifyPom) {
@@ -328,7 +328,7 @@ final class ArtifactResolver {
                 if (resolvedPom.isResolved()) {
                     collection.add(resolvedPom);
                 } else {
-                    log.warn("Failed to resolve pom artifact: " + resolvedPom);
+                    LOG.warn("Failed to resolve pom artifact: {}", resolvedPom);
                 }
             }
         }
@@ -358,12 +358,10 @@ final class ArtifactResolver {
         final ArtifactResolutionResult resolution = repositorySystem.resolve(request);
         if (!resolution.isSuccess()) {
             if (resolution.hasMissingArtifacts()) {
-                log.warn("Missing artifacts for " + artifact.getId() + ": " + resolution.getMissingArtifacts());
+                LOG.warn("Missing artifacts for {}: {}", artifact.getId(), resolution.getMissingArtifacts());
             }
-            resolution.getExceptions().forEach(e -> {
-                log.warn("Failed to resolve transitive dependencies for " + artifact.getId() + ": " + e.getMessage());
-                log.debug(e);
-            });
+            resolution.getExceptions().forEach(e -> LOG.warn("Failed to resolve transitive dependencies for {}: {}",
+                    artifact.getId(), e.getMessage()));
             throw new MojoExecutionException("Failed to resolve transitive dependencies.");
         }
         if (verifyPom) {
@@ -384,7 +382,7 @@ final class ArtifactResolver {
         final ArtifactResolutionResult result = request(pomArtifact, remoteRepositories);
         if (!result.isSuccess()) {
             result.getExceptions().forEach(
-                    e -> log.debug("Failed to resolve pom " + pomArtifact.getId() + ": " + e.getMessage()));
+                    e -> LOG.debug("Failed to resolve pom {}: {}", pomArtifact.getId(), e.getMessage()));
         }
         return pomArtifact;
     }
@@ -392,10 +390,7 @@ final class ArtifactResolver {
     private Artifact resolveArtifact(Artifact artifact) {
         final ArtifactResolutionResult result = request(artifact, remoteRepositories);
         if (!result.isSuccess()) {
-            result.getExceptions().forEach(e -> {
-                log.warn("Failed to resolve " + artifact.getId() + ": " + e.getMessage());
-                log.debug(e);
-            });
+            result.getExceptions().forEach(e -> LOG.warn("Failed to resolve {}: {}", artifact.getId(), e.getMessage()));
         }
         return artifact;
     }

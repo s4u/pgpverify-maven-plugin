@@ -325,54 +325,54 @@ public class PGPVerifyMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
             getLog().info("Skipping pgpverify:check");
-        } else {
-            prepareLogWithQuiet();
-
-            final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
-            final SkipFilter dependencyFilter = prepareDependencyFilters();
-            final SkipFilter pluginFilter = preparePluginFilters();
-            prepareForKeys();
-
-            final long artifactResolutionStart = System.nanoTime();
-            final ArtifactResolver resolver = new ArtifactResolver(getLog(), repositorySystem, localRepository,
-                    remoteRepositories);
-            final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
-                    this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
-            final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
-
-            getLog().info(String.format("Resolved %d artifact(s) in %s", artifacts.size(),
-                            Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
-
-            final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
-                    .artifacts(artifacts).disabled(this.disableChecksum).build();
-            if (validationChecksum.checkValidation()) {
-                logWithQuiet.accept(() -> "Artifacts were already validated in a previous run. "
-                        + "Execution finished early as the checksum for the collection of artifacts "
-                        + "has not changed.");
-                return;
-            }
-
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Discovered project artifacts: " + artifacts);
-            }
-
-            final long signatureResolutionStart = System.nanoTime();
-            final SignatureRequirement signaturePolicy = determineSignaturePolicy();
-            final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
-
-            getLog().info(String.format("Resolved %d signature(s) in %s", artifactMap.size(),
-                            Duration.ofNanos(System.nanoTime() - signatureResolutionStart)));
-
-            final long artifactValidationStart = System.nanoTime();
-            try {
-                verifyArtifactSignatures(artifactMap);
-            } finally {
-                getLog().info(String.format("Finished %d artifact(s) validation in %s", artifactMap.size(),
-                        Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
-            }
-
-            validationChecksum.saveChecksum();
+            return;
         }
+
+        prepareLogWithQuiet();
+
+        final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
+        final SkipFilter dependencyFilter = prepareDependencyFilters();
+        final SkipFilter pluginFilter = preparePluginFilters();
+        prepareForKeys();
+
+        final long artifactResolutionStart = System.nanoTime();
+        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
+        final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
+                this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
+        final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
+
+        getLog().info(String.format("Resolved %d artifact(s) in %s", artifacts.size(),
+                Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
+
+        final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
+                .artifacts(artifacts).disabled(this.disableChecksum).build();
+        if (validationChecksum.checkValidation()) {
+            logWithQuiet.accept(() -> "Artifacts were already validated in a previous run. "
+                    + "Execution finished early as the checksum for the collection of artifacts "
+                    + "has not changed.");
+            return;
+        }
+
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Discovered project artifacts: " + artifacts);
+        }
+
+        final long signatureResolutionStart = System.nanoTime();
+        final SignatureRequirement signaturePolicy = determineSignaturePolicy();
+        final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
+
+        getLog().info(String.format("Resolved %d signature(s) in %s", artifactMap.size(),
+                Duration.ofNanos(System.nanoTime() - signatureResolutionStart)));
+
+        final long artifactValidationStart = System.nanoTime();
+        try {
+            verifyArtifactSignatures(artifactMap);
+        } finally {
+            getLog().info(String.format("Finished %d artifact(s) validation in %s", artifactMap.size(),
+                Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
+        }
+
+        validationChecksum.saveChecksum();
     }
 
     private void prepareLogWithQuiet() {
@@ -440,8 +440,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private void prepareForKeys() throws MojoFailureException {
         initCache();
 
-        Try.run(() -> keysMap.load(getLog(), keysMapLocation))
-                .getOrElseThrow(e -> new MojoFailureException("load keys map", e));
+        Try.run(() -> keysMap.load(keysMapLocation)).getOrElseThrow(e -> new MojoFailureException("load keys map", e));
     }
 
     private void initCache() throws MojoFailureException {
@@ -519,6 +518,7 @@ public class PGPVerifyMojo extends AbstractMojo {
                                 artifact.getId()));
                 return true;
             }
+
             getLog().error(String.format("PGP key %s not found on keyserver for artifact %s",
                     pgpKeysCache.getUrlForShowKey(sigKeyID), artifact.getId()));
             return false;
@@ -582,18 +582,19 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return the maven proxy
      */
     Proxy getMavenProxy() {
-        if (settings != null) {
-            List<Proxy> proxies = settings.getProxies();
-            if (proxies != null && !proxies.isEmpty()) {
-                if (proxyName != null) {
-                    return proxies.stream().filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId())).findFirst()
-                               .orElse(null);
-                } else {
-                    return proxies.stream().filter(Proxy::isActive).findFirst().orElse(null);
-                }
-            }
+        if (settings == null) {
+            return null;
         }
-        return null;
+        List<Proxy> proxies = settings.getProxies();
+        if (proxies == null || proxies.isEmpty()) {
+            return null;
+        }
+        if (proxyName == null) {
+            return proxies.stream().filter(Proxy::isActive).findFirst().orElse(null);
+        } else {
+            return proxies.stream().filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId())).findFirst()
+                       .orElse(null);
+        }
     }
 
     private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,
@@ -604,17 +605,14 @@ public class PGPVerifyMojo extends AbstractMojo {
                     "OK", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
                     PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
             return true;
-        } else {
-            if (keysMap.isBrokenSignature(artifact)) {
-                logWithQuiet.accept(() ->
-                        String.format("%s PGP Signature is broken, consistent with keys map.", artifact.getId()));
-                return true;
-            } else {
-                getLog().error(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                        "INVALID", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                        PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
-                return false;
-            }
+        } else if (keysMap.isBrokenSignature(artifact)) {
+            logWithQuiet.accept(() ->
+                    String.format("%s PGP Signature is broken, consistent with keys map.", artifact.getId()));
+            return true;
         }
+        getLog().error(String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
+                "INVALID", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
+                PublicKeyUtils.getUserIDs(publicKey, publicKeyRing)));
+        return false;
     }
 }
