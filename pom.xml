@@ -286,19 +286,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <compilerArgs>
-                        <arg>-Xlint:all,-options,-processing</arg>
-                    </compilerArgs>
-                    <showWarnings>true</showWarnings>
-                    <failOnWarning>true</failOnWarning>
-                    <failOnError>true</failOnError>
-                    <showDeprecation>true</showDeprecation>
-                </configuration>
-            </plugin>
-            <plugin>
                 <!-- prepare items in local repo for tests-->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
