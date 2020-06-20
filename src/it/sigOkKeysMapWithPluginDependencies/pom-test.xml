@@ -44,7 +44,6 @@
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
                 <configuration>
-                    <pgpKeyServer>hkps://keyserver.ubuntu.com</pgpKeyServer>
                     <strictNoSignature>true</strictNoSignature>
                     <keysMapLocation>${project.basedir}/keysmap.list</keysMapLocation>
                     <verifyPlugins>true</verifyPlugins>

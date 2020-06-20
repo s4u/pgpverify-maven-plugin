@@ -143,11 +143,6 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-simple</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
 
             <!-- dependency coverage -->
             <dependency>
@@ -219,10 +214,19 @@
                 <artifactId>assertj-core</artifactId>
                 <version>3.16.1</version>
             </dependency>
+            <dependency>
+                <groupId>org.simplify4u</groupId>
+                <artifactId>slf4j-mock</artifactId>
+                <version>1.0.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
@@ -277,8 +281,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <groupId>org.simplify4u</groupId>
+            <artifactId>slf4j-mock</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

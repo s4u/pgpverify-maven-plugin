@@ -31,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -49,6 +52,8 @@ import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
+import org.simplify4u.sjf4jmock.LoggerMock;
+import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -61,6 +66,7 @@ public class PGPKeysCacheTest {
 
     @BeforeMethod
     public void setup() throws IOException {
+        LoggerMock.clearInvocations();
         cachePath = Files.createTempDirectory("cache-path-test");
         PGPKeysServerClient keysServerClient = mock(PGPKeysServerClient.class);
 
@@ -328,10 +334,42 @@ public class PGPKeysCacheTest {
                 keyServerList.execute(client ->
                         client.copyKeyToOutputStream(1, null, null)))
                 .isExactlyInstanceOf(IOException.class)
-                .hasMessage("All servers from list was failed")
-                .hasCauseExactlyInstanceOf(IOException.class)
-                .hasRootCauseMessage("Fallback test2");
+                .hasMessage("Fallback test2");
 
+        Logger keysCacheLogger = LoggerMock.getLoggerMock(PGPKeysCache.class);
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), eq("Fallback test1"), anyString());
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), eq("Fallback test2"), anyString());
+        verify(keysCacheLogger).error("All servers from list was failed");
+        verifyNoMoreInteractions(keysCacheLogger);
+
+        verify(client1).copyKeyToOutputStream(1, null, null);
+        verifyNoMoreInteractions(client1);
+
+        verify(client2).copyKeyToOutputStream(1, null, null);
+        verifyNoMoreInteractions(client2);
+    }
+
+    @Test(dataProvider = "keyServerListWithFallBack")
+    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnAnyServer(KeyServerList keyServerList) throws IOException {
+
+        PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
+        PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
+
+        doThrow(new PGPKeyNotFound()).when(client1).copyKeyToOutputStream(1, null, null);
+        doThrow(new PGPKeyNotFound()).when(client2).copyKeyToOutputStream(1, null, null);
+
+        keyServerList.withClients(Arrays.asList(client1, client2));
+
+        assertThatCode(() ->
+                keyServerList.execute(client ->
+                        client.copyKeyToOutputStream(1, null, null)))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        Logger keysCacheLogger = LoggerMock.getLoggerMock(PGPKeysCache.class);
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
+        verify(keysCacheLogger).error("All servers from list was failed");
+        verifyNoMoreInteractions(keysCacheLogger);
 
         verify(client1).copyKeyToOutputStream(1, null, null);
         verifyNoMoreInteractions(client1);

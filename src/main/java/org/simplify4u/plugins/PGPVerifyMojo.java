@@ -141,7 +141,8 @@ public class PGPVerifyMojo extends AbstractMojo {
      *
      * @since 1.0.0
      */
-    @Parameter(property = "pgpverify.keyserver", defaultValue = "hkps://hkps.pool.sks-keyservers.net", required = true)
+    @Parameter(property = "pgpverify.keyserver",
+            defaultValue = "hkps://hkps.pool.sks-keyservers.net,hkps://keyserver.ubuntu.com")
     private String pgpKeyServer;
 
     /**
@@ -225,7 +226,7 @@ public class PGPVerifyMojo extends AbstractMojo {
      * <ul>
      *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
      * </ul>
-     *
+     * <p>
      * In addition, it will detect when maven-surefire-plugin version 3 is used, as this will dynamically
      * resolve and load additional artifacts. However, these artifacts are not validated.
      *
@@ -369,7 +370,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             verifyArtifactSignatures(artifactMap);
         } finally {
             getLog().info(String.format("Finished %d artifact(s) validation in %s", artifactMap.size(),
-                Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
+                    Duration.ofNanos(System.nanoTime() - artifactValidationStart)));
         }
 
         validationChecksum.saveChecksum();
@@ -530,10 +531,10 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
             getLog().error(String.format("Failed to process signature '%s' for artifact %s - %s",
-                    signatureFile ,artifact.getId(), e.getMessage()));
+                    signatureFile, artifact.getId(), e.getMessage()));
             return false;
 
-        } catch (IOException | PGPException  e) {
+        } catch (IOException | PGPException e) {
             throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
                     + artifact.getId(), e);
         }
@@ -590,15 +591,20 @@ public class PGPVerifyMojo extends AbstractMojo {
             return null;
         }
         if (proxyName == null) {
-            return proxies.stream().filter(Proxy::isActive).findFirst().orElse(null);
+            return proxies.stream()
+                    .filter(Proxy::isActive)
+                    .findFirst()
+                    .orElse(null);
         } else {
-            return proxies.stream().filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId())).findFirst()
-                       .orElse(null);
+            return proxies.stream()
+                    .filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId()))
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
     private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,
-                                          PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+            PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 
         if (signatureStatus) {
             logWithQuiet.accept(() -> String.format(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
