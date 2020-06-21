@@ -17,8 +17,9 @@ package org.simplify4u.plugins.keyserver;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.function.Function;
 
+import io.vavr.control.Try;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.maven.settings.Proxy;
 
@@ -35,19 +36,19 @@ class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
     private static URI prepareKeyServerURI(URI keyServer) throws IOException {
 
-        int port = -1;
+        int port;
 
         if (keyServer.getPort() > 0) {
             port = keyServer.getPort();
         } else if ("hkp".equalsIgnoreCase(keyServer.getScheme())) {
             port = 11371;
+        } else {
+            port = -1;
         }
 
-        try {
-            return new URI("http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null);
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
+
+        return Try.of(() -> new URI("http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null))
+                .getOrElseThrow((Function<Throwable, IOException>) IOException::new);
     }
 
     @Override

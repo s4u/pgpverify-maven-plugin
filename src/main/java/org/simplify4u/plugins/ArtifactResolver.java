@@ -38,8 +38,6 @@ import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.versioning.ArtifactVersion;
-import org.apache.maven.artifact.versioning.OverConstrainedVersionException;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -70,9 +68,8 @@ final class ArtifactResolver {
     private final List<ArtifactRepository> remoteRepositories;
 
     /**
-     * Copy of remote repositories with check sum policy set to ignore,
-     * we need it for pgp signature resolving.
-     *
+     * Copy of remote repositories with check sum policy set to ignore, we need it for pgp signature resolving.
+     * <p>
      * pgp signature *.asc is signature so there is'n signature for signature
      */
     private final List<ArtifactRepository> remoteRepositoriesIgnoreCheckSum;
@@ -88,8 +85,7 @@ final class ArtifactResolver {
     /**
      * Wrap remote repository with ignore check sum policy.
      *
-     * @param repositories
-     *         list to wrap
+     * @param repositories list to wrap
      *
      * @return wrapped repository list
      */
@@ -123,10 +119,8 @@ final class ArtifactResolver {
     /**
      * Types of dependencies: compile, provided, test, runtime, system, maven-plugin.
      *
-     * @param project
-     *         the maven project instance
-     * @param config
-     *         configuration for the artifact resolver
+     * @param project the maven project instance
+     * @param config  configuration for the artifact resolver
      *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
@@ -222,28 +216,23 @@ final class ArtifactResolver {
     }
 
     private boolean matchSurefireVersion(Plugin plugin) {
-        final ArtifactVersion version;
-        try {
-            version = repositorySystem.createPluginArtifact(plugin).getSelectedVersion();
-        } catch (OverConstrainedVersionException e) {
-            LOG.debug("Found build plug-in with overly constrained version specification.", e);
-            return false;
-        }
-        return SUREFIRE_PLUGIN_VERSION_RANGE.containsVersion(version);
+
+        return Try.of(() -> repositorySystem.createPluginArtifact(plugin).getSelectedVersion())
+                .map(SUREFIRE_PLUGIN_VERSION_RANGE::containsVersion)
+                .onFailure(e -> LOG.debug("Found build plug-in with overly constrained version specification.", e))
+                .getOrElse(false);
     }
 
     /**
      * Retrieves the PGP signature file that corresponds to the given Maven artifact.
      *
-     * @param artifacts
-     *         The artifacts for which a signatures are desired.
+     * @param artifacts The artifacts for which a signatures are desired.
      *
-     * @return Either a Maven artifact for the signature file, or {@code null} if the signature
-     * file could not be retrieved.
+     * @return Either a Maven artifact for the signature file, or {@code null} if the signature file could not be
+     * retrieved.
      *
-     * @throws MojoExecutionException
-     *         If the signature could not be retrieved and the Mojo has been configured to fail
-     *         on a missing signature.
+     * @throws MojoExecutionException If the signature could not be retrieved and the Mojo has been configured to fail
+     *                                on a missing signature.
      */
     Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts, SignatureRequirement requirement)
             throws MojoExecutionException {
@@ -296,17 +285,14 @@ final class ArtifactResolver {
     /**
      * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
      *
-     * @param artifacts
-     *         Dependencies to be resolved.
-     * @param artifactFilter
-     *         Skip filter to test against to determine whether dependency must be skipped.
-     * @param dependenciesFilter
-     *         Skip filter to test against to determine whether transitive dependencies must be skipped.
-     * @param verifyPom
-     *         Boolean indicating whether or not POMs corresponding to dependencies should be resolved.
-     * @param transitive
-     *         Boolean indicating whether or not to resolve all dependencies in the transitive closure of provided
-     *         artifact.
+     * @param artifacts          Dependencies to be resolved.
+     * @param artifactFilter     Skip filter to test against to determine whether dependency must be skipped.
+     * @param dependenciesFilter Skip filter to test against to determine whether transitive dependencies must be
+     *                           skipped.
+     * @param verifyPom          Boolean indicating whether or not POMs corresponding to dependencies should be
+     *                           resolved.
+     * @param transitive         Boolean indicating whether or not to resolve all dependencies in the transitive closure
+     *                           of provided artifact.
      *
      * @return Returns set of resolved artifacts.
      */
@@ -410,18 +396,17 @@ final class ArtifactResolver {
      */
     enum SignatureRequirement {
         /**
-         * NONE indicates there are no requirements, meaning that missing
-         * signatures are perfectly acceptable.
+         * NONE indicates there are no requirements, meaning that missing signatures are perfectly acceptable.
          */
         NONE,
         /**
-         * STRICT indicates that requirements of signatures (availability) are
-         * defined per artifact according to the keys map.
+         * STRICT indicates that requirements of signatures (availability) are defined per artifact according to the
+         * keys map.
          */
         STRICT,
         /**
-         * REQUIRED indicates that signatures are strictly required, meaning
-         * that missing signature is an immediate failure case.
+         * REQUIRED indicates that signatures are strictly required, meaning that missing signature is an immediate
+         * failure case.
          */
         REQUIRED,
     }

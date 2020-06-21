@@ -118,8 +118,7 @@ public class PGPKeysCache {
     /**
      * URL where PGP key can be watched.
      *
-     * @param keyID
-     *         given keyId
+     * @param keyID given keyId
      *
      * @return url from current key server
      */
@@ -198,14 +197,10 @@ public class PGPKeysCache {
 
         Optional.ofNullable(file)
                 .map(File::toPath)
-                .ifPresent(filePath -> {
-                            try {
-                                Files.deleteIfExists(filePath);
-                            } catch (IOException e) {
-                                LOGGER.warn("Can't delete: {}", filePath);
-                            }
-                        }
-                );
+                .ifPresent(filePath ->
+                        Try.run(() -> Files.deleteIfExists(filePath))
+                                .onFailure(e ->
+                                        LOGGER.warn("Can't delete: {} with exception: {}", filePath, e.getMessage())));
     }
 
     private void moveFile(File source, File destination) throws IOException {

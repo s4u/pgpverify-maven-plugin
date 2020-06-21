@@ -15,6 +15,13 @@
  */
 package org.simplify4u.plugins;
 
+import java.io.File;
+import java.util.Arrays;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
+import io.vavr.control.Try;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -22,19 +29,11 @@ import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Arrays;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-
 /**
  * ValidationChecksum is a checksum of a deterministic collection of artifacts.
- *
- * The checksum can be used to check against a stored value of a prior validation and for
- * itself to be stored once full validation has completed.
+ * <p>
+ * The checksum can be used to check against a stored value of a prior validation and for itself to be stored once full
+ * validation has completed.
  */
 final class ValidationChecksum {
 
@@ -54,22 +53,17 @@ final class ValidationChecksum {
      * @return Returns true iff checksum for previous run exists and is equal.
      */
     boolean checkValidation() {
+
         if (disabled()) {
             return false;
         }
-        final byte[] checksumPriorValidation;
-        try {
-            LOG.debug("Looking for prior validation checksum at: {}", file.getAbsolutePath());
-            checksumPriorValidation = FileUtils.readFileToByteArray(file);
-        } catch (final FileNotFoundException e) {
-            LOG.debug("No prior validation executed. Continuing with full artifact validation.");
-            return false;
-        } catch (final IOException e) {
-            LOG.debug("Validation of artifacts against prior validation run failed.", e);
-            return false;
-        }
 
-        return Arrays.equals(this.checksum, checksumPriorValidation);
+        return Try.of(() -> FileUtils.readFileToByteArray(file))
+                .map(checksumPriorValidation -> Arrays.equals(this.checksum, checksumPriorValidation))
+                .onFailure(e ->
+                        LOG.debug("Validation of artifacts against prior validation run failed with: {}",
+                                e.getMessage()))
+                .getOrElse(false);
     }
 
     /**
@@ -79,11 +73,9 @@ final class ValidationChecksum {
         if (disabled()) {
             return;
         }
-        try {
-            FileUtils.writeByteArrayToFile(file, checksum);
-        } catch (final IOException e) {
-            LOG.debug("Failed to save checksum after successful artifact validation.", e);
-        }
+
+        Try.run(() -> FileUtils.writeByteArrayToFile(file, checksum))
+                .onFailure(e -> LOG.debug("Failed to save checksum after successful artifact validation.", e));
     }
 
     boolean disabled() {

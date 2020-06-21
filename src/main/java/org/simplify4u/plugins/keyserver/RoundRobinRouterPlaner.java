@@ -16,12 +16,12 @@
 package org.simplify4u.plugins.keyserver;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import io.vavr.control.Try;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -69,15 +69,13 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
      * Resolve hostname and return all IP address as list
      *
      * @param hostName host name to resolve
+     *
      * @return arrays of IP address
      */
     private List<InetAddress> resolve(String hostName) throws HttpException {
 
-        try {
-            return Arrays.asList(InetAddress.getAllByName(hostName));
-        } catch (UnknownHostException e) {
-            throw new HttpException("UnknownHostException: " + hostName, e);
-        }
+        return Try.of(() -> Arrays.asList(InetAddress.getAllByName(hostName)))
+                .getOrElseThrow(e -> new HttpException("UnknownHostException: " + hostName, e));
     }
 
     /**
