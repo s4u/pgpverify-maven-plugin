@@ -72,7 +72,7 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
      *
      * @return arrays of IP address
      */
-    private List<InetAddress> resolve(String hostName) throws HttpException {
+    private static List<InetAddress> resolve(String hostName) throws HttpException {
 
         return Try.of(() -> Arrays.asList(InetAddress.getAllByName(hostName)))
                 .getOrElseThrow(e -> new HttpException("UnknownHostException: " + hostName, e));

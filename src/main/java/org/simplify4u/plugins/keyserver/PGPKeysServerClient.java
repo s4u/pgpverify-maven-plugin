@@ -155,7 +155,7 @@ abstract class PGPKeysServerClient {
         }
     }
 
-    private String getQueryStringForGetKey(long keyID) {
+    private static String getQueryStringForGetKey(long keyID) {
         return String.format("op=get&options=mr&search=0x%016X", keyID);
     }
 
@@ -173,7 +173,7 @@ abstract class PGPKeysServerClient {
                 "/pks/lookup", getQueryStringForGetKey(keyID), null)).get();
     }
 
-    private String getQueryStringForShowKey(long keyID) {
+    private static String getQueryStringForShowKey(long keyID) {
         return String.format("op=vindex&fingerprint=on&search=0x%016X", keyID);
     }
 
@@ -222,7 +222,7 @@ abstract class PGPKeysServerClient {
                 .maxAttempts(maxAttempts)
                 .waitDuration(Duration.ofMillis(500))
                 .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                .retryOnException(this::shouldRetryOnException)
+                .retryOnException(PGPKeysServerClient::shouldRetryOnException)
                 .build();
 
         Retry retry = Retry.of("id", config);
@@ -234,7 +234,7 @@ abstract class PGPKeysServerClient {
         CheckedRunnable checkedRunnable = Retry.decorateCheckedRunnable(retry, () -> {
             try (final CloseableHttpClient client = this.buildClient(planer);
                  final CloseableHttpResponse response = client.execute(request)) {
-                this.processKeyResponse(response, outputStream);
+                processKeyResponse(response, outputStream);
             }
         });
 
@@ -252,7 +252,7 @@ abstract class PGPKeysServerClient {
         return new DefaultProxyRoutePlanner(httpHost);
     }
 
-    private boolean shouldRetryOnException(Throwable throwable) {
+    private static boolean shouldRetryOnException(Throwable throwable) {
 
         Throwable aThrowable = throwable;
         while (aThrowable != null) {
@@ -304,7 +304,8 @@ abstract class PGPKeysServerClient {
      *         If the response was unsuccessful, did not contain any data, or could not be written
      *         completely to the target output stream.
      */
-    private void processKeyResponse(CloseableHttpResponse response, OutputStream outputStream) throws IOException {
+    private static void processKeyResponse(CloseableHttpResponse response, OutputStream outputStream)
+            throws IOException {
         final StatusLine statusLine = response.getStatusLine();
 
         if (statusLine.getStatusCode() == HttpStatus.SC_NOT_FOUND) {

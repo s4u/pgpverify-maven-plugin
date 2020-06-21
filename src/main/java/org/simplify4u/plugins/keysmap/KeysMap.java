@@ -134,7 +134,7 @@ public class KeysMap {
         }
     }
 
-    private String getNextLine(BufferedReader mapReader) throws IOException {
+    private static String getNextLine(BufferedReader mapReader) throws IOException {
 
         StringBuilder nextLine = new StringBuilder();
         String line;
@@ -153,7 +153,7 @@ public class KeysMap {
         return ret.length() == 0 ? null : ret;
     }
 
-    private String getNextNotEmptyLine(BufferedReader readLine) throws IOException {
+    private static String getNextNotEmptyLine(BufferedReader readLine) throws IOException {
 
         String nextLine = null;
         String line;
@@ -168,7 +168,7 @@ public class KeysMap {
         return nextLine == null || nextLine.length() == 0 ? null : nextLine;
     }
 
-    private String stripComments(String line) {
+    private static String stripComments(String line) {
         if (line.length() < 1) {
             return line;
         }
@@ -176,7 +176,7 @@ public class KeysMap {
         return hashIndex >= 0 ? line.substring(0, hashIndex).trim() : line;
     }
 
-    private ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
+    private static ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
         return new ArtifactInfo(strArtifact.trim(), new KeyInfo(strKeys.trim()));
     }
 }

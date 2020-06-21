@@ -16,11 +16,11 @@
 
 package org.simplify4u.plugins.skipfilters;
 
+import java.util.List;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
-
-import java.util.List;
 
 /**
  * A filter that always skips verification of upstream dependencies that are being built as part of
@@ -61,7 +61,7 @@ public class ReactorDependencySkipper implements SkipFilter {
      */
     private boolean isUpstreamReactorDependency(final Artifact artifact) {
         for (final MavenProject upstreamProject : this.upstreamProjects) {
-            if (this.artifactMatchesProject(artifact, upstreamProject)) {
+            if (artifactMatchesProject(artifact, upstreamProject)) {
                 return true;
             }
         }
@@ -81,12 +81,12 @@ public class ReactorDependencySkipper implements SkipFilter {
      *   {@code true} if the artifact was produced by the specified project; or
      *   {@code false} if it is not.
      */
-    private boolean artifactMatchesProject(final Artifact artifact,
+    private static boolean artifactMatchesProject(final Artifact artifact,
                                            final MavenProject project) {
         final Artifact projectArtifact = project.getArtifact();
 
         return projectArtifact != null
-               && this.artifactsMatch(projectArtifact, artifact);
+               && artifactsMatch(projectArtifact, artifact);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ReactorDependencySkipper implements SkipFilter {
      *   If either the two artifacts are equal or correspond to the same Maven
      *   coordinates.
      */
-    private boolean artifactsMatch(final Artifact artifact1,
+    private static boolean artifactsMatch(final Artifact artifact1,
                                    final Artifact artifact2) {
         return artifact1.equals(artifact2)
             || (artifact1.getGroupId().equals(artifact2.getGroupId())

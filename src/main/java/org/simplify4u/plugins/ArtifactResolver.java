@@ -112,7 +112,7 @@ final class ArtifactResolver {
         return newRepository;
     }
 
-    private ArtifactRepositoryPolicy policyIgnoreCheckSum(ArtifactRepositoryPolicy policy) {
+    private static ArtifactRepositoryPolicy policyIgnoreCheckSum(ArtifactRepositoryPolicy policy) {
         return new ArtifactRepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), "ignore");
     }
 

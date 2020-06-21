@@ -42,7 +42,7 @@ public class KeyInfoItemKey implements KeyInfoItem {
         return masterKey.filter(publicKey -> isKeyMatch(publicKey, pgpPublicKeyRing)).isPresent();
     }
 
-    private byte[] strKeyToBytes(String key) {
+    private static byte[] strKeyToBytes(String key) {
 
         BigInteger bigInteger = new BigInteger(key.replace(" ", ""), 16);
 
@@ -62,7 +62,7 @@ public class KeyInfoItemKey implements KeyInfoItem {
         return bytes;
     }
 
-    private boolean compareArrays(byte[] keyBytes, byte[] fingerprint) {
+    private static boolean compareArrays(byte[] keyBytes, byte[] fingerprint) {
 
         for (int i = 1; i <= keyBytes.length && i <= fingerprint.length; i++) {
             if (keyBytes[keyBytes.length - i] != fingerprint[fingerprint.length - i]) {

@@ -152,7 +152,7 @@ public class PGPKeysCache {
         }
     }
 
-    private void receiveKey(File keyFile, long keyId, PGPKeysServerClient keysServerClient) throws IOException {
+    private static void receiveKey(File keyFile, long keyId, PGPKeysServerClient keysServerClient) throws IOException {
         File dir = keyFile.getParentFile();
 
         if (dir == null) {
@@ -172,7 +172,7 @@ public class PGPKeysCache {
 
         try {
             try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
-                keysServerClient.copyKeyToOutputStream(keyId, outputStream, this::onRetry);
+                keysServerClient.copyKeyToOutputStream(keyId, outputStream, PGPKeysCache::onRetry);
             }
             moveFile(partFile, keyFile);
         } catch (IOException e) {
@@ -185,7 +185,7 @@ public class PGPKeysCache {
         LOGGER.info("Receive key: {}{}\tto {}", keysServerClient.getUriForGetKey(keyId), NL, keyFile);
     }
 
-    private void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval,
+    private static void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval,
             Throwable lastThrowable) {
 
         LOGGER.warn("[Retry #{} waiting: {}] Last address {} with problem: [{}] {}",
@@ -193,7 +193,7 @@ public class PGPKeysCache {
                 lastThrowable.getClass().getName(), getMessage(lastThrowable));
     }
 
-    private void deleteFile(File file) {
+    private static void deleteFile(File file) {
 
         Optional.ofNullable(file)
                 .map(File::toPath)
@@ -203,7 +203,7 @@ public class PGPKeysCache {
                                         LOGGER.warn("Can't delete: {} with exception: {}", filePath, e.getMessage())));
     }
 
-    private void moveFile(File source, File destination) throws IOException {
+    private static void moveFile(File source, File destination) throws IOException {
         try {
             Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (FileSystemException fse) {

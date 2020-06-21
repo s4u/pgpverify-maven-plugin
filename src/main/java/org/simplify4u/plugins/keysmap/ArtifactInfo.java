@@ -80,7 +80,7 @@ class ArtifactInfo {
         this.keyInfo = keyInfo;
     }
 
-    private String patternPrepare(String str) {
+    private static String patternPrepare(String str) {
 
         if (str.length() == 0) {
             return ".*";
@@ -96,7 +96,7 @@ class ArtifactInfo {
         return ret;
     }
 
-    private String versionSpecPrepare(String versionSpec) throws InvalidVersionSpecificationException {
+    private static String versionSpecPrepare(String versionSpec) throws InvalidVersionSpecificationException {
 
         if (versionSpec.length() == 0 || "*".equals(versionSpec)) {
             // any version
@@ -129,7 +129,7 @@ class ArtifactInfo {
         return artifactVersion.equals(versionRange.getRecommendedVersion());
     }
 
-    private boolean isMatchPattern(Pattern pattern, String str) {
+    private static boolean isMatchPattern(Pattern pattern, String str) {
         Matcher m = pattern.matcher(str.toLowerCase(Locale.US));
         return m.matches();
     }
