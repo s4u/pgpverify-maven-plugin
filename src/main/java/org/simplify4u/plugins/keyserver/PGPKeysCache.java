@@ -42,6 +42,7 @@ import io.vavr.control.Try;
 import org.apache.maven.settings.Proxy;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,15 +123,15 @@ public class PGPKeysCache {
      *
      * @return url from current key server
      */
-    public String getUrlForShowKey(long keyID) {
+    public String getUrlForShowKey(PGPKeyId keyID) {
         return keyServerList.getUriForShowKey(keyID).toString();
     }
 
-    public PGPPublicKeyRing getKeyRing(long keyID) throws IOException, PGPException {
+    public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException, PGPException {
 
         Optional<PGPPublicKeyRing> keyRing = Optional.empty();
 
-        String path = String.format("%02X/%02X/%016X.asc", (byte) (keyID >> 56), (byte) (keyID >> 48 & 0xff), keyID);
+        String path = keyID.getHashPath();
         File keyFile = new File(cachePath, path);
 
         synchronized (LOCK) {
@@ -142,7 +143,7 @@ public class PGPKeysCache {
             try (InputStream keyFileStream = new FileInputStream(keyFile)) {
                 keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
                 return keyRing.orElseThrow(() ->
-                        new PGPException(String.format("Can't find public key 0x%016X in download file: %s",
+                        new PGPException(String.format("Can't find public key %s in download file: %s",
                                 keyID, keyFile)));
             } finally {
                 if (!keyRing.isPresent()) {
@@ -152,7 +153,8 @@ public class PGPKeysCache {
         }
     }
 
-    private static void receiveKey(File keyFile, long keyId, PGPKeysServerClient keysServerClient) throws IOException {
+    private static void receiveKey(File keyFile, PGPKeyId keyId, PGPKeysServerClient keysServerClient)
+            throws IOException {
         File dir = keyFile.getParentFile();
 
         if (dir == null) {
@@ -235,7 +237,7 @@ public class PGPKeysCache {
             return this;
         }
 
-        URI getUriForShowKey(long keyID) {
+        URI getUriForShowKey(PGPKeyId keyID) {
             return lastClient.getUriForShowKey(keyID);
         }
 

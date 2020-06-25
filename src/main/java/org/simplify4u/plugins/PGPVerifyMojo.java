@@ -66,6 +66,7 @@ import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
+import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PGPSignatureException;
 import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
@@ -483,7 +484,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         getLog().debug("Artifact file: " + artifactFile);
         getLog().debug("Artifact sign: " + signatureFile);
 
-        long sigKeyID = -1;
+        PGPKeyId sigKeyID = null;
         try {
             final PGPSignature pgpSignature;
             try (FileInputStream input = new FileInputStream(signatureFile)) {
@@ -491,15 +492,15 @@ public class PGPVerifyMojo extends AbstractMojo {
             }
 
             verifyWeakSignature(pgpSignature);
-            sigKeyID = pgpSignature.getKeyID();
+            sigKeyID = PGPSignatureUtils.retrieveKeyId(pgpSignature);
 
             PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
-            PGPPublicKey publicKey = publicKeyRing.getPublicKey(sigKeyID);
+            PGPPublicKey publicKey = sigKeyID.getKeyFromRing(publicKeyRing);
 
             if (!keysMap.isValidKey(artifact, publicKey, publicKeyRing)) {
                 String msg = String.format("%s = %s", ArtifactUtils.key(artifact),
                         PublicKeyUtils.fingerprintForMaster(publicKey, publicKeyRing));
-                String keyUrl = pgpKeysCache.getUrlForShowKey(publicKey.getKeyID());
+                String keyUrl = pgpKeysCache.getUrlForShowKey(sigKeyID);
                 getLog().error(String.format("Not allowed artifact %s and keyID:%n\t%s%n\t%s",
                         artifact.getId(), msg, keyUrl));
                 return false;

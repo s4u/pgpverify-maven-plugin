@@ -59,12 +59,7 @@ public final class PublicKeyUtils {
      * @return fingerprint as string
      */
     public static String fingerprint(PGPPublicKey publicKey) {
-
-        StringBuilder ret = new StringBuilder("0x");
-        for (Byte b : publicKey.getFingerprint()) {
-            ret.append(String.format("%02X", b));
-        }
-        return ret.toString();
+        return HexUtils.fingerprintToString(publicKey.getFingerprint());
     }
 
     /**
@@ -158,13 +153,13 @@ public final class PublicKeyUtils {
      * @throws PGPException
      *         if problem with PGP data
      */
-    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, long keyId)
+    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, PGPKeyId keyId)
             throws IOException, PGPException {
 
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);
         PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
 
-        Optional<PGPPublicKeyRing> publicKeyRing = Optional.ofNullable(pgpRing.getPublicKeyRing(keyId));
+        Optional<PGPPublicKeyRing> publicKeyRing = Optional.ofNullable(keyId.getKeyRingFromRingCollection(pgpRing));
         publicKeyRing.ifPresent(PublicKeyUtils::verifyPublicKeyRing);
 
         return publicKeyRing;

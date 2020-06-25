@@ -32,13 +32,14 @@ import static org.testng.Assert.assertTrue;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
+import org.simplify4u.plugins.utils.PGPKeyId;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class PGPKeysServerClientIT {
-    private static final long TEST_KEYID = 0xF8484389379ACEACL;
+    private static final PGPKeyId TEST_KEYID = PGPKeyId.from(0xF8484389379ACEACL);
 
     private static final int SHORT_TEST_TIMEOUT = 500;
 
@@ -177,12 +178,12 @@ public class PGPKeysServerClientIT {
         }
 
         @Override
-        URI getUriForShowKey(long keyID) {
+        URI getUriForShowKey(PGPKeyId keyID) {
             return this.stubbedUri;
         }
 
         @Override
-        URI getUriForGetKey(long keyID) {
+        URI getUriForGetKey(PGPKeyId keyID) {
             return this.stubbedUri;
         }
     }

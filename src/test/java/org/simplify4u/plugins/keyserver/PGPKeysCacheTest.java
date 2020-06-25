@@ -30,7 +30,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -52,6 +51,8 @@ import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
+import org.simplify4u.plugins.utils.PGPKeyId;
+import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
 import org.simplify4u.sjf4jmock.LoggerMock;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
@@ -60,6 +61,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class PGPKeysCacheTest {
+
+    public static final PGPKeyId KEY_ID_1 = PGPKeyId.from(1L);
 
     private Path cachePath;
     private List<PGPKeysServerClient> keysServerClients;
@@ -70,16 +73,16 @@ public class PGPKeysCacheTest {
         cachePath = Files.createTempDirectory("cache-path-test");
         PGPKeysServerClient keysServerClient = mock(PGPKeysServerClient.class);
 
-        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%016x", (long) i.getArgument(0))))
-                .when(keysServerClient).getUriForGetKey(anyLong());
-
+        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (PGPKeyId)i.getArgument(0))))
+                .when(keysServerClient).getUriForGetKey(any(PGPKeyId.class));
 
         doAnswer(i -> {
             try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
                 ByteStreams.copy(inputStream, i.getArgument(1));
             }
             return null;
-        }).when(keysServerClient).copyKeyToOutputStream(anyLong(), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
+        }).when(keysServerClient).copyKeyToOutputStream(any(PGPKeyId.class), any(OutputStream.class),
+                any(PGPKeysServerClient.OnRetryConsumer.class));
 
         keysServerClients = Collections.singletonList(keysServerClient);
     }
@@ -124,19 +127,19 @@ public class PGPKeysCacheTest {
         PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
-        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(0xEFE8086F9E93774EL);
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
 
         assertThat(keyRing)
                 .hasSize(2)
                 .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
 
-        verify(keysServerClients.get(0)).getUriForGetKey(anyLong());
-        verify(keysServerClients.get(0)).copyKeyToOutputStream(anyLong(), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
+        verify(keysServerClients.get(0)).getUriForGetKey(any(PGPKeyId.class));
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(PGPKeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
         verifyNoMoreInteractions(keysServerClients.get(0));
         clearInvocations(keysServerClients.get(0));
 
         // second from cache
-        keyRing = pgpKeysCache.getKeyRing(0xEFE8086F9E93774EL);
+        keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
 
         assertThat(keyRing)
                 .hasSize(2)
@@ -151,7 +154,7 @@ public class PGPKeysCacheTest {
         PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
-        assertThatCode(() -> pgpKeysCache.getKeyRing(0x1234567890L))
+        assertThatCode(() -> pgpKeysCache.getKeyRing(PGPKeyId.from(0x1234567890L)))
                 .isExactlyInstanceOf(PGPException.class)
                 .hasMessageStartingWith("Can't find public key 0x0000001234567890 in download file:");
     }
@@ -191,15 +194,15 @@ public class PGPKeysCacheTest {
 
         for (int i = 0; i < 2; i++) {
             serverList.execute(client -> {
-                client.copyKeyToOutputStream(1, null, null);
+                client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
             });
-            serverList.getUriForShowKey(1);
+            serverList.getUriForShowKey(KEY_ID_1);
         }
 
         assertThat(executedClient).containsOnly(client1, client1);
-        verify(client1, times(2)).copyKeyToOutputStream(1, null, null);
-        verify(client1, times(2)).getUriForShowKey(1);
+        verify(client1, times(2)).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verify(client1, times(2)).getUriForShowKey(KEY_ID_1);
         verifyNoMoreInteractions(client1);
         verifyNoInteractions(client2);
     }
@@ -210,17 +213,17 @@ public class PGPKeysCacheTest {
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
 
-        doThrow(new IOException("Fallback test")).when(client1).copyKeyToOutputStream(1, null, null);
+        doThrow(new IOException("Fallback test")).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
 
         KeyServerList serverListFallback = new KeyServerListOne().withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
                 serverListFallback.execute(client ->
-                        client.copyKeyToOutputStream(1, null, null)))
+                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Fallback test");
 
-        verify(client1).copyKeyToOutputStream(1, null, null);
+        verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client1);
         verifyNoInteractions(client2);
     }
@@ -237,15 +240,15 @@ public class PGPKeysCacheTest {
 
         for (int i = 0; i < 2; i++) {
             serverListFallback.execute(client -> {
-                client.copyKeyToOutputStream(1, null, null);
+                client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
             });
-            serverListFallback.getUriForShowKey(1);
+            serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
         assertThat(executedClient).containsOnly(client1, client1);
-        verify(client1, times(2)).copyKeyToOutputStream(1, null, null);
-        verify(client1, times(2)).getUriForShowKey(1);
+        verify(client1, times(2)).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verify(client1, times(2)).getUriForShowKey(KEY_ID_1);
         verifyNoMoreInteractions(client1);
         verifyNoInteractions(client2);
     }
@@ -262,20 +265,20 @@ public class PGPKeysCacheTest {
 
         for (int i = 0; i < 3; i++) {
             serverListFallback.execute(client -> {
-                client.copyKeyToOutputStream(1, null, null);
+                client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
             });
-            serverListFallback.getUriForShowKey(1);
+            serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
         assertThat(executedClient).containsExactly(client1, client2, client1);
 
-        verify(client1, times(2)).copyKeyToOutputStream(1, null, null);
-        verify(client1, times(2)).getUriForShowKey(1);
+        verify(client1, times(2)).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verify(client1, times(2)).getUriForShowKey(KEY_ID_1);
         verifyNoMoreInteractions(client1);
 
-        verify(client2).copyKeyToOutputStream(1, null, null);
-        verify(client2).getUriForShowKey(1);
+        verify(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verify(client2).getUriForShowKey(KEY_ID_1);
         verifyNoMoreInteractions(client1);
     }
 
@@ -294,7 +297,7 @@ public class PGPKeysCacheTest {
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
 
-        doThrow(new IOException("Fallback test")).when(client1).copyKeyToOutputStream(1, null, null);
+        doThrow(new IOException("Fallback test")).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
 
         keyServerList.withClients(Arrays.asList(client1, client2));
 
@@ -302,19 +305,19 @@ public class PGPKeysCacheTest {
 
         for (int i = 0; i < 2; i++) {
             keyServerList.execute(client -> {
-                client.copyKeyToOutputStream(1, null, null);
+                client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
             });
-            keyServerList.getUriForShowKey(1);
+            keyServerList.getUriForShowKey(KEY_ID_1);
         }
 
         assertThat(executedClient).containsExactly(client2, client2);
 
-        verify(client1, times(2)).copyKeyToOutputStream(1, null, null);
+        verify(client1, times(2)).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client1);
 
-        verify(client2, times(2)).copyKeyToOutputStream(1, null, null);
-        verify(client2, times(2)).getUriForShowKey(1);
+        verify(client2, times(2)).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verify(client2, times(2)).getUriForShowKey(KEY_ID_1);
 
         verifyNoMoreInteractions(client2);
     }
@@ -325,14 +328,14 @@ public class PGPKeysCacheTest {
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
 
-        doThrow(new IOException("Fallback test1")).when(client1).copyKeyToOutputStream(1, null, null);
-        doThrow(new IOException("Fallback test2")).when(client2).copyKeyToOutputStream(1, null, null);
+        doThrow(new IOException("Fallback test1")).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
+        doThrow(new IOException("Fallback test2")).when(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
 
         keyServerList.withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
                 keyServerList.execute(client ->
-                        client.copyKeyToOutputStream(1, null, null)))
+                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Fallback test2");
 
@@ -342,10 +345,10 @@ public class PGPKeysCacheTest {
         verify(keysCacheLogger).error("All servers from list was failed");
         verifyNoMoreInteractions(keysCacheLogger);
 
-        verify(client1).copyKeyToOutputStream(1, null, null);
+        verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client1);
 
-        verify(client2).copyKeyToOutputStream(1, null, null);
+        verify(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client2);
     }
 
@@ -355,14 +358,14 @@ public class PGPKeysCacheTest {
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
 
-        doThrow(new PGPKeyNotFound()).when(client1).copyKeyToOutputStream(1, null, null);
-        doThrow(new PGPKeyNotFound()).when(client2).copyKeyToOutputStream(1, null, null);
+        doThrow(new PGPKeyNotFound()).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
+        doThrow(new PGPKeyNotFound()).when(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
 
         keyServerList.withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
                 keyServerList.execute(client ->
-                        client.copyKeyToOutputStream(1, null, null)))
+                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
                 .isExactlyInstanceOf(PGPKeyNotFound.class);
 
         Logger keysCacheLogger = LoggerMock.getLoggerMock(PGPKeysCache.class);
@@ -371,10 +374,10 @@ public class PGPKeysCacheTest {
         verify(keysCacheLogger).error("All servers from list was failed");
         verifyNoMoreInteractions(keysCacheLogger);
 
-        verify(client1).copyKeyToOutputStream(1, null, null);
+        verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client1);
 
-        verify(client2).copyKeyToOutputStream(1, null, null);
+        verify(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
         verifyNoMoreInteractions(client2);
     }
 }

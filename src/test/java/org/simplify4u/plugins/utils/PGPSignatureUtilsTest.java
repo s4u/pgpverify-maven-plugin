@@ -102,4 +102,29 @@ public class PGPSignatureUtilsTest {
             assertThat(signature.getKeyID()).isEqualTo(0x8E1E35C66754351BL);
         }
     }
+
+    @Test
+    public void signatureKeyIdFromSubpackage() throws IOException, PGPSignatureException {
+        PGPSignature signature;
+
+        try (InputStream input = getClass().getResourceAsStream("/helloworld-1.0.jar.asc")) {
+            signature = PGPSignatureUtils.loadSignature(input);
+        }
+
+        PGPKeyId pgpKeyId = PGPSignatureUtils.retrieveKeyId(signature);
+        assertThat(pgpKeyId).asString().isEqualTo("0x466583F9480EBE2462C46B309F1A263E15FD0AC9");
+    }
+
+    @Test
+    public void signatureKeyIdFromSubpackageIssuerKeyInHashed() throws IOException, PGPSignatureException {
+        PGPSignature signature;
+
+        try (InputStream input = getClass().getResourceAsStream("/ant-launcher-1.9.4.jar.asc")) {
+            signature = PGPSignatureUtils.loadSignature(input);
+        }
+
+        PGPKeyId pgpKeyId = PGPSignatureUtils.retrieveKeyId(signature);
+        assertThat(pgpKeyId).asString().isEqualTo("0x5EFAD9FE82A7FBCD");
+    }
+
 }

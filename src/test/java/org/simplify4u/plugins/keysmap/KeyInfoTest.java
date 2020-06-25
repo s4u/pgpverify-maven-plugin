@@ -24,6 +24,7 @@ import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -91,7 +92,7 @@ public class KeyInfoTest {
     public void testSubKeyMach() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xEFE8086F9E93774EL);
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0xEFE8086F9E93774EL));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing -> {

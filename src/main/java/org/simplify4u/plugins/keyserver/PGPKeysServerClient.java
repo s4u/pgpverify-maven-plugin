@@ -53,6 +53,7 @@ import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.maven.settings.Proxy;
 import org.simplify4u.plugins.utils.ExceptionUtils;
+import org.simplify4u.plugins.utils.PGPKeyId;
 
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
@@ -155,8 +156,8 @@ abstract class PGPKeysServerClient {
         }
     }
 
-    private static String getQueryStringForGetKey(long keyID) {
-        return String.format("op=get&options=mr&search=0x%016X", keyID);
+    private static String getQueryStringForGetKey(PGPKeyId keyID) {
+        return String.format("op=get&options=mr&search=%s", keyID);
     }
 
     /**
@@ -167,14 +168,14 @@ abstract class PGPKeysServerClient {
      *
      * @return URI with given key
      */
-    URI getUriForGetKey(long keyID) {
+    URI getUriForGetKey(PGPKeyId keyID) {
         return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
                 keyserver.getHost(), keyserver.getPort(),
                 "/pks/lookup", getQueryStringForGetKey(keyID), null)).get();
     }
 
-    private static String getQueryStringForShowKey(long keyID) {
-        return String.format("op=vindex&fingerprint=on&search=0x%016X", keyID);
+    private static String getQueryStringForShowKey(PGPKeyId keyID) {
+        return String.format("op=vindex&fingerprint=on&search=%s", keyID);
     }
 
     /**
@@ -185,7 +186,7 @@ abstract class PGPKeysServerClient {
      *
      * @return URI with given key
      */
-    URI getUriForShowKey(long keyID) {
+    URI getUriForShowKey(PGPKeyId keyID) {
         return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
                 keyserver.getHost(), keyserver.getPort(),
                 "/pks/lookup", getQueryStringForShowKey(keyID), null)).get();
@@ -209,7 +210,7 @@ abstract class PGPKeysServerClient {
      * @throws IOException
      *         If the request fails, or the key cannot be written to the output stream.
      */
-    void copyKeyToOutputStream(long keyId, OutputStream outputStream, OnRetryConsumer onRetryConsumer)
+    void copyKeyToOutputStream(PGPKeyId keyId, OutputStream outputStream, OnRetryConsumer onRetryConsumer)
             throws IOException {
 
         final URI keyUri = getUriForGetKey(keyId);

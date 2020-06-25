@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 
 public class PublicKeyUtilsTest {
 
-    private static final long SUB_KEY_ID = 0xEFE8086F9E93774EL;
+    private static final PGPKeyId SUB_KEY_ID = PGPKeyId.from(0xEFE8086F9E93774EL);
     private static final long MASTER_KEY_ID = 0x164BD2247B936711L;
 
     private PGPPublicKeyRing publicKeyRing;
@@ -50,7 +50,7 @@ public class PublicKeyUtilsTest {
     @Test
     public void fingerPrintForMasterWithSubKey() {
 
-        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
+        PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
         assertThat(key.isMasterKey()).isFalse();
         assertThat(PublicKeyUtils.fingerprintForMaster(key, publicKeyRing))
@@ -70,7 +70,7 @@ public class PublicKeyUtilsTest {
     @Test
     public void userIdsWithSubKey() throws IOException, PGPException {
 
-        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
+        PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
         assertThat(key.isMasterKey()).isFalse();
         assertThat(PublicKeyUtils.getUserIDs(key, publicKeyRing))
@@ -100,7 +100,7 @@ public class PublicKeyUtilsTest {
     @Test
     public void keyIdDescriptionForSubKey() {
 
-        PGPPublicKey key = publicKeyRing.getPublicKey(SUB_KEY_ID);
+        PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
         assertThat(key.isMasterKey()).isFalse();
         assertThat(PublicKeyUtils.keyIdDescription(key, publicKeyRing))
@@ -111,7 +111,7 @@ public class PublicKeyUtilsTest {
     public void invalidUTF8InUserId() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0xB0F3710FA64900E7L);
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0xB0F3710FA64900E7L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->
@@ -125,7 +125,7 @@ public class PublicKeyUtilsTest {
     public void validateSubKeyWithExternalSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x3D8B00E198E21827L);
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0x3D8B00E198E21827L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->
@@ -139,7 +139,7 @@ public class PublicKeyUtilsTest {
     public void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/411063A3A0FFD119.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, 0x411063A3A0FFD119L);
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0x411063A3A0FFD119L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->
