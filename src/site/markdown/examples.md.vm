@@ -43,6 +43,68 @@ If you want check your dependency on each build, please add to your project:
       </build>
       ...
     </project>
+
+keysMap usage
+-------------
+
+keysMap with pgp fingerprint from project
+
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>pgpverify-maven-plugin</artifactId>
+              <version>${project.version}</version>
+              <configuration>
+                  <keysMapLocation>\${project.basedir}/pgp-keys-map.list</keysMapLocation>
+              </configuration>                        
+            </plugin>
+            ...
+          </plugins>
+        </pluginManagement>
+    
+
+keysMap with pgp fingerprint from external artifact
+
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>pgpverify-maven-plugin</artifactId>
+              <version>${project.version}</version>
+              <configuration>
+                  <keysMapLocation>/pgp-keys-map.list</keysMapLocation>                
+                  <verifyPlugins>true</<verifyPlugins>
+                  <verifyPluginDependencies>true</verifyPluginDependencies>
+              </configuration>
+              <dependencies>
+                  <dependency>
+                      <groupId>my.groupId</groupId>
+                      <artifactId>artifact-with-map</artifactId>
+                      <version>x.y.z</version>
+                  </dependency>
+              </dependencies>                        
+            </plugin>
+            ...
+          </plugins>
+        </pluginManagement>
+
+
+keysMap with pgp fingerprint from external resource
+
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>pgpverify-maven-plugin</artifactId>
+              <version>${project.version}</version>
+              <configuration>
+                  <keysMapLocation>https://www.example.com/pgp-keys-map.list</keysMapLocation>
+              </configuration>                        
+            </plugin>
+            ...
+          </plugins>
+        </pluginManagement>
     
 IT tests
 --------

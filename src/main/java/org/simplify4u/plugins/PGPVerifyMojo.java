@@ -291,6 +291,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * </p>
      *
      * <p>
+     * This can be path to local file, path to file on plugin classpath or url address.
+     * </p>
+     *
+     * <p>
      * <a href="keysmap-format.html">Format description.</a>
      * </p>
      *
