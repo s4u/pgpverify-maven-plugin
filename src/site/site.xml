@@ -36,7 +36,9 @@
                 <ribbonOrientation>right</ribbonOrientation>
                 <ribbonColor>gray</ribbonColor>
             </gitHub>
-            <facebookLike/>
+            <facebookLike>
+                <shareButton>true</shareButton>
+            </facebookLike>
         </fluidoSkin>
     </custom>
 

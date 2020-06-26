@@ -1,13 +1,13 @@
-Verify PGP signatures plugin
-============================
+Introduction
+============
 
 This plugin allow you to automatically verify PGP signature of all project dependency.
 
 Features
 --------
 
- - check signature of artifacts during each builds,
-   not only during artifact download from remote repository to local
+ - check signature of artifacts during each build,
+   not only during artifact download from the remote repository to local
  - possibility to map pgp key fingerprint to artifacts, so we can detect if correct key is used for making signature
  - possibility to check signature of maven plugins used during build
  - there is no external software need to install - plugin use Bouncy Castle library to manage pgp operations
