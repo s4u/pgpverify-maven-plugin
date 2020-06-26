@@ -4,15 +4,15 @@ KeysMap file format
 The format of the file is similar to, but more flexible than, a Java properties file.
 The syntax of each line of properties file is:
 
-    groupId:artifactId:packaging:version=pgpKey
+    groupId:artifactId:packaging:version=pgpKeyFingerprint
     
 Where
 
-- `groupId`    - groupId of maven artifact, this filed is required, but can be `*` for mach any   
-- `artifactId` - artifactId of maven artifact
-- `packaging`  - packaging of maven artifact, eg. `pom`, `jar` 
-- `version`    - version of maven artifact, this filed support maven version range syntax
-- `pgpKey`     - pgp key fingerprints in hex format which are allowed to sign artifact,
+- `groupId`           - groupId of maven artifact, this filed is required, but can be `*` for mach any   
+- `artifactId`        - artifactId of maven artifact
+- `packaging`         - packaging of maven artifact, eg. `pom`, `jar` 
+- `version`           - version of maven artifact, this filed support maven version range syntax
+- `pgpKeyFingerprint` - pgp key fingerprints in hex format which are allowed to sign artifact,
                  can be supplied many keys separated by comma  
 
 PGP keys special values
@@ -51,58 +51,63 @@ Examples
 
 match any artifact from group with any packaging and version 
 
-    test.groupId = 0x1234 567890
+    test.groupId = 0x1234567890123456789012345678901234567890
 ---
 
 match any artifact from group and any subgroups with any packaging and version 
 
-    test.groupId.* = 0x1234567890  
+    test.groupId.* = 0x1234567890123456789012345678901234567890  
 ---
 
-match specific artifact with any packaging and version
+match a specific artifact with any packaging and version
 
-    test.groupId:artifactId = 0x1234567890  
+    test.groupId:artifactId = 0x1234567890123456789012345678901234567890  
 ---
 
-match specific artifact with packaging and with any version
+match a specific artifact with packaging and with any version
 
-    test.groupId:artifactId:jar = 0x1234567890
+    test.groupId:artifactId:jar = 0x1234567890123456789012345678901234567890
 ---
 
-match specific artifact with packaging and version
+match a specific artifact with packaging and version
 
-    test.groupId:artifactId:jar:1.0.0 = 0x1234567890
+    test.groupId:artifactId:jar:1.0.0 = 0x1234567890123456789012345678901234567890
 ---
 
-match specific artifact with version and any packaging
+match a specific artifact with packaging and version range
 
-    test.groupId:artifactId:1.0.0 = 0x1234567890  
+    test.groupId:artifactId:jar:[1.0.0,2.0.0) = 0x1234567890123456789012345678901234567890
 ---
 
-match specific artifact with any version and packaging and many keys
+match a specific artifact with the version and any packaging
+
+    test.groupId:artifactId:1.0.0 = 0x1234567890123456789012345678901234567890  
+---
+
+match a specific artifact with any version and packaging and many keys
    
-    test.groupId:artifactId = 0x1234567890, 0x1234567890, \ 
-                              0xABCDEF0987
+    test.groupId:artifactId = 0x1234567890123456789012345678901234567890, 0x1234567890123456789012345678901234567890, \ 
+                              0x1234567890123456789012345678901234567890
 ---
 
-allow bad signature for specific artifact with version
+allow bad signature for a specific artifact with version
 
-    test.groupId:artifactId           = 0x1234567890
+    test.groupId:artifactId           = 0x1234567890123456789012345678901234567890
     test.groupId:artifactId:pom:1.0.0 = badSig
 ---
 
 match specific artifact with any packaging and version and allow that signature will not exist
 
-    test.groupId:artifactId = 0x1234567890, noSig
+    test.groupId:artifactId = 0x1234567890123456789012345678901234567890, noSig
 ---
 
 comments
    
     # my comments
     test.groupId:artifactId = \               # 
-                              0x1234567890, \ # first key 
-                              0x1234567890, \ # second key
-                              0xABCDEF0987    # end 
+                              0x1234567890123456789012345678901234567890, \ # first key 
+                              0x1234567890123456789012345678901234567890, \ # second key
+                              0x1234567890123456789012345678901234567890    # end 
 ---
 
 External resources
