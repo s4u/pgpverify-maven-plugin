@@ -24,7 +24,6 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
@@ -32,6 +31,7 @@ import org.mockito.stubbing.Answer;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -42,6 +42,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -295,5 +296,24 @@ public class ArtifactResolverTest {
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         assertThrows(MojoExecutionException.class, () -> resolver.resolveSignatures(singleton(artifact), SignatureRequirement.REQUIRED));
+    }
+
+    @Test(dataProvider = "verify-plugin-dependencies-combos")
+    public void testEnablingValidatingPluginDependenciesEnablesPlugins(boolean verifyPlugins,
+                boolean verifyPluginDependencies, boolean pluginsEnabled, boolean pluginDependenciesEnabled) {
+        final Configuration config = new Configuration(new CompositeSkipper(), new CompositeSkipper(),
+                false, verifyPlugins, verifyPluginDependencies, false);
+        assertThat(config.verifyPluginDependencies).isEqualTo(pluginDependenciesEnabled);
+        assertThat(config.verifyPlugins).isEqualTo(pluginsEnabled);
+    }
+
+    @DataProvider(name = "verify-plugin-dependencies-combos")
+    public Object[][] providerVerifyPluginDependenciesCombos() {
+        return new Object[][]{
+                {false, false, false, false},
+                {false, true, true, true},
+                {true, false, true, false},
+                {true, true, true, true},
+        };
     }
 }

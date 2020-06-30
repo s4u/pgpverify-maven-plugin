@@ -415,6 +415,7 @@ final class ArtifactResolver {
      * Configuration struct for Artifact Resolver.
      */
     public static final class Configuration {
+
         final SkipFilter dependencyFilter;
         final SkipFilter pluginFilter;
         final boolean verifyPomFiles;
@@ -437,7 +438,7 @@ final class ArtifactResolver {
             this.dependencyFilter = requireNonNull(dependencyFilter);
             this.pluginFilter = requireNonNull(pluginFilter);
             this.verifyPomFiles = verifyPomFiles;
-            this.verifyPlugins = verifyPlugins;
+            this.verifyPlugins = verifyPlugins || verifyPluginDependencies;
             this.verifyPluginDependencies = verifyPluginDependencies;
             this.verifyAtypical = verifyAtypical;
         }

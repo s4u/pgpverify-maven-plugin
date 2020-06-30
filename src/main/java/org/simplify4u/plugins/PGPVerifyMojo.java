@@ -217,6 +217,8 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Verify transitive dependencies of build plug-ins.
      *
+     * <p>When enabled, configuration parameter <code>verifyPlugins</code> is enabled implicitly.</p>
+     *
      * @since 1.8.0
      */
     @Parameter(property = "pgpverify.verifyPluginDependencies", defaultValue = "false")
