@@ -60,6 +60,15 @@ public class KeysMap {
     }
 
     /**
+     * Indicate whether some keysmap entries are actually loaded.
+     *
+     * @return Returns true iff at least one entry exists in the keysmap, or false otherwise.
+     */
+    public boolean isEmpty() {
+        return keysMapList.isEmpty();
+    }
+
+    /**
      * Artifact can has no signature.
      *
      * @param artifact

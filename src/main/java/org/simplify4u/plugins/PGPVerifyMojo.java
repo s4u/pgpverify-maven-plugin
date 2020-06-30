@@ -177,7 +177,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * so it will proceed, if not it will fail the build.
      *
      * @since 1.5.0
+     * @deprecated Deprecated as of 1.9.0: this requirement can be expressed through
+     * the keysmap.
      */
+    @Deprecated
     @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
     private boolean strictNoSignature;
 
@@ -399,9 +402,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         if (failNoSignature) {
             return SignatureRequirement.REQUIRED;
         }
-        if (strictNoSignature) {
-            return SignatureRequirement.STRICT;
-        }
         return SignatureRequirement.NONE;
     }
 
@@ -571,6 +571,10 @@ public class PGPVerifyMojo extends AbstractMojo {
      * or <code>false</code> if verification fails.
      */
     private boolean verifySignatureUnavailable(Artifact artifact) {
+        if (keysMap.isEmpty()) {
+            getLog().warn("No signature for " + artifact.getId());
+            return true;
+        }
         if (keysMap.isNoSignature(artifact)) {
             logWithQuiet.accept(() ->
                     String.format("%s PGP Signature unavailable, consistent with keys map.", artifact.getId()));
