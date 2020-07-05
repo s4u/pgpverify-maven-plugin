@@ -234,41 +234,7 @@ public class ArtifactResolverTest {
                 singleton(artifact), SignatureRequirement.NONE);
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
                 eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
-        assertEquals(resolvedSignatures.size(), 0);
-    }
-
-    @Test
-    public void testResolveSignaturesUnresolvedStrict() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
-        when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
-            artifact.setResolved(false);
-            final ArtifactResolutionResult result = new ArtifactResolutionResult();
-            result.setUnresolvedArtifacts(singletonList(artifact));
-            return result;
-        });
-        when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
-                .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
-        when(project.getArtifacts()).thenReturn(singleton(artifact));
-
-        final Map<Artifact, Artifact> resolvedSignatures = resolver.resolveSignatures(
-                singleton(artifact), SignatureRequirement.STRICT);
-        verify(repositorySystem, times(1)).createArtifactWithClassifier(
-                eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
         assertEquals(resolvedSignatures.size(), 1);
-        final Map.Entry<Artifact, Artifact> entry = resolvedSignatures.entrySet().iterator().next();
-        assertEquals(entry.getKey(), artifact);
-        assertNull(entry.getValue());
     }
 
     @Test

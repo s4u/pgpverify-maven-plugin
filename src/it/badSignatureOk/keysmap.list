@@ -15,6 +15,13 @@
 #
 
 org.apache.struts:struts-core:1.3.8       = 0xCE4460D20B66C7E1687475BAD388AD829F3E96F7
-org.apache.struts:struts-core:pom:1.3.8   = badSig # we know that this is broken and want to accept it
+antlr:antlr:2.7.2                         = noSig
+commons-beanutils:commons-beanutils:1.7.0 = noSig
+commons-chain:commons-chain:1.1           = noSig
+commons-digester:commons-digester:1.8     = noSig
+commons-logging:commons-logging:1.0.4     = noSig
+commons-validator:commons-validator:jar:1.3.1 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+commons-validator:commons-validator:pom:1.3.1 = noSig
+oro:oro:2.0.8                             = noSig
 
-commons-validator:commons-validator:1.3.1 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+org.apache.struts:struts-core:pom:1.3.8   = badSig # we know that this is broken and want to accept it

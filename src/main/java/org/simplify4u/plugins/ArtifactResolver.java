@@ -240,11 +240,7 @@ final class ArtifactResolver {
 
         final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
         for (Artifact artifact : artifacts) {
-            final Artifact ascArtifact = resolveSignature(artifact, requirement);
-
-            if (ascArtifact != null || requirement == SignatureRequirement.STRICT) {
-                artifactToAsc.put(artifact, ascArtifact);
-            }
+            artifactToAsc.put(artifact, resolveSignature(artifact, requirement));
         }
 
         return artifactToAsc;
@@ -265,12 +261,6 @@ final class ArtifactResolver {
 
         switch (requirement) {
             case NONE:
-                LOG.warn("No signature for {}", artifact.getId());
-                break;
-            case STRICT:
-                LOG.debug("No signature for {}", artifact.getId());
-                // no action needed here. If we need to show a warning message,
-                // we will determine this when verifying signatures (or lack thereof)
                 break;
             case REQUIRED:
                 LOG.error("No signature for {}", artifact.getId());
@@ -399,11 +389,6 @@ final class ArtifactResolver {
          * NONE indicates there are no requirements, meaning that missing signatures are perfectly acceptable.
          */
         NONE,
-        /**
-         * STRICT indicates that requirements of signatures (availability) are defined per artifact according to the
-         * keys map.
-         */
-        STRICT,
         /**
          * REQUIRED indicates that signatures are strictly required, meaning that missing signature is an immediate
          * failure case.
