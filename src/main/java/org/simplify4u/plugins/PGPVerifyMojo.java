@@ -339,6 +339,7 @@ public class PGPVerifyMojo extends AbstractMojo {
             return;
         }
 
+        checkDeprecated();
         prepareLogWithQuiet();
 
         final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
@@ -384,6 +385,16 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
 
         validationChecksum.saveChecksum();
+    }
+
+    /**
+     * check and warn if any of the deprecated options are used.
+     */
+    private void checkDeprecated() {
+        if (strictNoSignature) {
+            getLog().warn("strictNoSignature is deprecated "
+                    + "- this requirement can be expressed through the keysmap");
+        }
     }
 
     private void prepareLogWithQuiet() {
