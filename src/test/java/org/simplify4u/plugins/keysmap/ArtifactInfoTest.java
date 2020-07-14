@@ -16,9 +16,11 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -32,7 +34,11 @@ public class ArtifactInfoTest {
     @DataProvider(name = "lists")
     public Object[][] artifactsList() {
         return new Object[][]{
-                {"test.group:test:*", testArtifact().build(), true},
+                {"Test.Group:tesT:*", testArtifact().build(), true},
+                {"test.group:test:*", testArtifact().version("1.0.0.M5").build(), true},
+                {"test.group:test:*", testArtifact().version("0.0.0.M1").build(), true},
+                {"test.group:test:3.0.0-M1", testArtifact().version("3.0.0-M1").build(), true},
+                {"test.group:test:3.0.0-M1", testArtifact().version("3.0.0-m1").build(), true},
                 {"test.group:test:1.1.1", testArtifact().build(), true},
                 {"test.group:test:jar:1.1.1", testArtifact().build(), true},
                 {"test.group:test:pom:1.1.1", testArtifact().build(), false},
@@ -59,13 +65,28 @@ public class ArtifactInfoTest {
     public void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
 
         ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
-        assertThat(artifactInfo.isMatch(artifact)).isEqualTo(match);
+        assertThat(artifactInfo.isMatch(new ArtifactData(artifact))).isEqualTo(match);
         assertThat(artifactInfo.isKeyMatch(null, null)).isTrue();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Invalid artifact definition: test.group:test:1.0.*")
+    @Test
     public void asteriskInVersionThrowException() {
-        new ArtifactInfo("test.group:test:1.0.*", ANY_KEY);
+
+        assertThatCode(() -> new ArtifactInfo("test.group:test:1.0.*", ANY_KEY))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid artifact definition: test.group:test:1.0.*")
+                .hasCauseExactlyInstanceOf(InvalidVersionSpecificationException.class)
+                .hasRootCauseMessage("Invalid maven version range: 1.0.*");
     }
+
+    @Test
+    public void wrongVersionThrowException() {
+
+        assertThatCode(() -> new ArtifactInfo("test.group:test:[1.0.0", ANY_KEY))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid artifact definition: test.group:test:[1.0.0")
+                .hasCauseExactlyInstanceOf(InvalidVersionSpecificationException.class)
+                .hasRootCauseMessage("Unbounded range: [1.0.0");
+    }
+
 }

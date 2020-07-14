@@ -16,11 +16,11 @@
 package org.simplify4u.plugins.keysmap;
 
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -39,7 +39,7 @@ class ArtifactInfo {
     private final Pattern groupIdPattern;
     private final Pattern artifactIdPattern;
     private final Pattern packagingPattern;
-    private final VersionRange versionRange;
+    private final Function<String, Boolean> versionMatch;
 
     private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
     private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
@@ -73,7 +73,7 @@ class ArtifactInfo {
             groupIdPattern = Pattern.compile(patternPrepare(groupId));
             artifactIdPattern = Pattern.compile(patternPrepare(artifactId));
             packagingPattern = Pattern.compile(patternPrepare(packaging));
-            versionRange = VersionRange.createFromVersionSpec(versionSpecPrepare(version));
+            versionMatch = versionMatchPrepare(version);
         } catch (InvalidVersionSpecificationException | PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid artifact definition: " + strArtifact, e);
         }
@@ -96,11 +96,35 @@ class ArtifactInfo {
         return ret;
     }
 
+    private static Function<String, Boolean> versionMatchPrepare(String versionToPrepare)
+            throws InvalidVersionSpecificationException {
+
+        String versionSpec = versionSpecPrepare(versionToPrepare);
+
+        if (versionSpec == null) {
+            // special case - always true - the most common case
+            // fix for https://github.com/s4u/pgpverify-maven-plugin/issues/135
+            return version -> true;
+        }
+
+        VersionRange versionRange = VersionRange.createFromVersionSpec(versionSpec);
+        if (versionRange.hasRestrictions()) {
+            // check version in range
+            return version -> {
+                DefaultArtifactVersion artifactVersion = new DefaultArtifactVersion(version);
+                return versionRange.containsVersion(artifactVersion);
+            };
+        } else {
+            // only specific version to compare
+            return versionSpec::equals;
+        }
+    }
+
     private static String versionSpecPrepare(String versionSpec) throws InvalidVersionSpecificationException {
 
         if (versionSpec.length() == 0 || "*".equals(versionSpec)) {
             // any version
-            return "[0.0.0,)";
+            return null;
         }
 
         if (versionSpec.contains("*")) {
@@ -110,27 +134,16 @@ class ArtifactInfo {
         return versionSpec;
     }
 
-    public boolean isMatch(Artifact artifact) {
+    public boolean isMatch(ArtifactData artifact) {
 
         return isMatchPattern(groupIdPattern, artifact.getGroupId())
                 && isMatchPattern(artifactIdPattern, artifact.getArtifactId())
                 && isMatchPattern(packagingPattern, artifact.getType())
-                && isMatchVersion(artifact.getVersion());
-    }
-
-    private boolean isMatchVersion(String version) {
-
-        DefaultArtifactVersion artifactVersion = new DefaultArtifactVersion(version);
-
-        if (versionRange.hasRestrictions()) {
-            return versionRange.containsVersion(artifactVersion);
-        }
-
-        return artifactVersion.equals(versionRange.getRecommendedVersion());
+                && versionMatch.apply(artifact.getVersion());
     }
 
     private static boolean isMatchPattern(Pattern pattern, String str) {
-        Matcher m = pattern.matcher(str.toLowerCase(Locale.US));
+        Matcher m = pattern.matcher(str);
         return m.matches();
     }
 

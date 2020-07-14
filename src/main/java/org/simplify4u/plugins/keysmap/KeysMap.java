@@ -78,8 +78,10 @@ public class KeysMap {
      */
     public boolean isNoSignature(Artifact artifact) {
 
+        ArtifactData artifactData = new ArtifactData(artifact);
+
         return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
                 .anyMatch(ArtifactInfo::isNoSignature);
     }
 
@@ -93,8 +95,10 @@ public class KeysMap {
      */
     public boolean isBrokenSignature(Artifact artifact) {
 
+        ArtifactData artifactData = new ArtifactData(artifact);
+
         return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
                 .anyMatch(ArtifactInfo::isBrokenSignature);
     }
 
@@ -108,14 +112,19 @@ public class KeysMap {
      */
     public boolean isKeyMissing(Artifact artifact) {
 
+        ArtifactData artifactData = new ArtifactData(artifact);
+
         return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
                 .anyMatch(ArtifactInfo::isKeyMissing);
     }
 
     public boolean isWithKey(Artifact artifact) {
+
+        ArtifactData artifactData = new ArtifactData(artifact);
+
         for (ArtifactInfo artifactInfo : keysMapList) {
-            if (artifactInfo.isMatch(artifact)) {
+            if (artifactInfo.isMatch(artifactData)) {
                 return !artifactInfo.isNoSignature();
             }
         }
@@ -123,12 +132,15 @@ public class KeysMap {
     }
 
     public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {
+
         if (keysMapList.isEmpty()) {
             return true;
         }
 
+        ArtifactData artifactData = new ArtifactData(artifact);
+
         return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifact))
+                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
                 .anyMatch(artifactInfo -> artifactInfo.isKeyMatch(key, keyRing));
     }
 
