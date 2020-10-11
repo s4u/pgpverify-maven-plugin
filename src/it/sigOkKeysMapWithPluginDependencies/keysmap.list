@@ -109,11 +109,13 @@ commons-collections:commons-collections:3.2.2 = 0x0CC641C3A62453AB390066C4A41F13
 commons-digester:commons-digester:1.6
 commons-digester:commons-digester:1.8
 commons-digester:commons-digester:1.8.1 = 0x04582013F4F60CEB10AC621550BDCE2258812457
-commons-io:commons-io:1.4 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
-commons-io:commons-io:2.2 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
-commons-io:commons-io:2.5 = 0x6BDACA2C0493CCA133B372D09C4F7E9D98B1CC53
-commons-io:commons-io:2.6 = 0xCD5464315F0B98C77E6E8ECD9DAADC1C9FCC82D0
-commons-io:commons-io:2.7 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+
+commons-io:commons-io         = \
+                                0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
+                                0x6BDACA2C0493CCA133B372D09C4F7E9D98B1CC53, \
+                                0xCD5464315F0B98C77E6E8ECD9DAADC1C9FCC82D0, \
+                                0xD196A5E3E70732EEB2E5007F1861C322C56014B2
+
 commons-lang:commons-lang:2.4 = 0x636DE9055C4C75C7BD9830771241BC872C5E4EC0
 commons-lang:commons-lang:2.6 = 0xD196A5E3E70732EEB2E5007F1861C322C56014B2
 commons-logging:commons-logging:1.0.4
