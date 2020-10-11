@@ -98,9 +98,12 @@ com.uber.nullaway:nullaway:0.7.8 = 0xD4FB0B7B5E8C18C993A8A386EB9D04A9A679FE18
 commons-beanutils:commons-beanutils:1.7.0
 commons-beanutils:commons-beanutils:1.9.2 = 0xE8B2020BD8E1C9CAFD9288827C4504A4D75CF3DC
 commons-chain:commons-chain:1.1
-commons-codec:commons-codec:1.6 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
-commons-codec:commons-codec:1.11 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
-commons-codec:commons-codec:1.14 = 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB
+
+commons-codec:commons-codec =   0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
+                                0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
+                                0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
+                                0xBC87A3FD0A54480F0BADBEBD21939FF0CA2A6567
+
 commons-collections:commons-collections:3.1
 commons-collections:commons-collections:3.2.2 = 0x0CC641C3A62453AB390066C4A41F13C999945293
 commons-digester:commons-digester:1.6
