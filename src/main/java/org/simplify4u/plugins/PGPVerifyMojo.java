@@ -44,8 +44,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.bouncycastle.openpgp.PGPException;
@@ -84,16 +82,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
 
     @Inject
-    private MavenProject project;
-
-    @Inject
     private MavenSession session;
-
-    @Inject
-    private Settings settings;
-
-    @Inject
-    private RepositorySystem repositorySystem;
 
     @Inject
     private KeysMap keysMap;
@@ -592,13 +581,18 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return the maven proxy
      */
     Proxy getMavenProxy() {
+
+        Settings settings = session.getSettings();
+
         if (settings == null) {
             return null;
         }
+
         List<Proxy> proxies = settings.getProxies();
         if (proxies == null || proxies.isEmpty()) {
             return null;
         }
+
         if (proxyName == null) {
             return proxies.stream()
                     .filter(Proxy::isActive)
