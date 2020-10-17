@@ -31,22 +31,19 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 
 import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.bouncycastle.openpgp.PGPException;
@@ -84,35 +81,23 @@ public class PGPVerifyMojo extends AbstractMojo {
 
     private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
 
-    @Parameter(property = "project", readonly = true, required = true)
-    private MavenProject project;
-
-    @Parameter(defaultValue = "${session}", readonly = true)
+    @Inject
     private MavenSession session;
 
+    @Inject
+    private KeysMap keysMap;
+
+    @Inject
+    private ArtifactResolver artifactResolver;
+
     /**
-     * Choose which proxy to use (id from settings.xml in maven config). Uses no proxy if the proxy was not found.
-     * If it is not set, it will take the first active proxy if any or no proxy, if no active proxy was found)
+     * Choose which proxy to use (id from settings.xml in maven config). Uses no proxy if the proxy was not found. If it
+     * is not set, it will take the first active proxy if any or no proxy, if no active proxy was found)
      *
      * @since 1.8.0
      */
     @Parameter(property = "pgpverify.proxyName")
     private String proxyName;
-
-    @Parameter(defaultValue = "${settings}", readonly = true)
-    private Settings settings;
-
-    @Component
-    private RepositorySystem repositorySystem;
-
-    @Component
-    private KeysMap keysMap;
-
-    @Parameter(defaultValue = "${localRepository}", readonly = true, required = true)
-    private ArtifactRepository localRepository;
-
-    @Parameter(defaultValue = "${project.remoteArtifactRepositories}", readonly = true, required = true)
-    private List<ArtifactRepository> remoteRepositories;
 
     /**
      * The directory for storing cached PGP public keys.
@@ -167,18 +152,15 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Fail the build if any artifact without key is not present in the keys map.
      * <p>
-     * When enabled, PGPVerify will look up all artifacts in the <code>keys
-     * map</code>. Unsigned artifacts will need to be present in the keys map
-     * but are expected to have no public key, i.e. an empty string.
+     * When enabled, PGPVerify will look up all artifacts in the <code>keys map</code>. Unsigned artifacts will need to
+     * be present in the keys map but are expected to have no public key, i.e. an empty string.
      * <p>
-     * When <code>strictNoSignature</code> is enabled, PGPVerify will no longer
-     * output warnings when unsigned artifacts are encountered. Instead, it will
-     * check if the unsigned artifact is listed in the <code>keys map</code>. If
-     * so it will proceed, if not it will fail the build.
+     * When <code>strictNoSignature</code> is enabled, PGPVerify will no longer output warnings when unsigned artifacts
+     * are encountered. Instead, it will check if the unsigned artifact is listed in the <code>keys map</code>. If so it
+     * will proceed, if not it will fail the build.
      *
      * @since 1.5.0
-     * @deprecated Deprecated as of 1.9.0: this requirement can be expressed through
-     * the keysmap.
+     * @deprecated Deprecated as of 1.9.0: this requirement can be expressed through the keysmap.
      */
     @Deprecated
     @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
@@ -201,8 +183,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyPomFiles;
 
     /**
-     * Verify dependencies at a SNAPSHOT version, instead of only verifying full release version
-     * dependencies.
+     * Verify dependencies at a SNAPSHOT version, instead of only verifying full release version dependencies.
      *
      * @since 1.2.0
      */
@@ -250,8 +231,8 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyProvidedDependencies;
 
     /**
-     * Verify "system" dependencies, which are artifacts that have an explicit path specified in the
-     * POM, are always available, and are not looked up in a repository.
+     * Verify "system" dependencies, which are artifacts that have an explicit path specified in the POM, are always
+     * available, and are not looked up in a repository.
      *
      * @since 1.2.0
      */
@@ -262,15 +243,14 @@ public class PGPVerifyMojo extends AbstractMojo {
      * Verify dependencies that are part of the current build (what Maven calls the "reactor").
      *
      * <p>This setting only affects multi-module builds that have inter-dependencies between
-     * modules. It has no effect on single-module projects nor on multi-module projects that do not
-     * have dependencies among the modules.
+     * modules. It has no effect on single-module projects nor on multi-module projects that do not have dependencies
+     * among the modules.
      *
      * <p>In affected builds, if this setting is {@code true}, and the current build is not applying
-     * GPG signatures, then the output artifacts of some of the modules in the build will not be
-     * signed. Consequently, other modules within the build that depend on those output artifacts
-     * will not pass the GPG signature check because they are unsigned. When this setting is
-     * {@code false}, GPG signatures are not checked on output artifacts of modules in the current
-     * build, to avoid this issue.
+     * GPG signatures, then the output artifacts of some of the modules in the build will not be signed. Consequently,
+     * other modules within the build that depend on those output artifacts will not pass the GPG signature check
+     * because they are unsigned. When this setting is {@code false}, GPG signatures are not checked on output artifacts
+     * of modules in the current build, to avoid this issue.
      *
      * @since 1.3.0
      */
@@ -278,10 +258,9 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean verifyReactorDependencies;
 
     /**
-     * Disable the use of a checksum to check whether the collection of artifacts was validated
-     * in a previous run. If enabled and the checksum matches, skip subsequent steps that perform
-     * actual downloading of signatures and validation of artifacts against their respective
-     * signatures.
+     * Disable the use of a checksum to check whether the collection of artifacts was validated in a previous run. If
+     * enabled and the checksum matches, skip subsequent steps that perform actual downloading of signatures and
+     * validation of artifacts against their respective signatures.
      *
      * <p>Checksums save significant time when repeatedly checking large artifact collections.</p>
      *
@@ -348,10 +327,9 @@ public class PGPVerifyMojo extends AbstractMojo {
         prepareForKeys();
 
         final long artifactResolutionStart = System.nanoTime();
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
         final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
                 this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
-        final Set<Artifact> artifacts = resolver.resolveProjectArtifacts(this.project, config);
+        final Set<Artifact> artifacts = artifactResolver.resolveProjectArtifacts(session.getCurrentProject(), config);
 
         getLog().info(String.format("Resolved %d artifact(s) in %s", artifacts.size(),
                 Duration.ofNanos(System.nanoTime() - artifactResolutionStart)));
@@ -371,7 +349,7 @@ public class PGPVerifyMojo extends AbstractMojo {
 
         final long signatureResolutionStart = System.nanoTime();
         final SignatureRequirement signaturePolicy = determineSignaturePolicy();
-        final Map<Artifact, Artifact> artifactMap = resolver.resolveSignatures(artifacts, signaturePolicy);
+        final Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifacts, signaturePolicy);
 
         getLog().info(String.format("Resolved %d signature(s) in %s", artifactMap.size(),
                 Duration.ofNanos(System.nanoTime() - signatureResolutionStart)));
@@ -434,7 +412,7 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
 
         if (!this.verifyReactorDependencies) {
-            filters.add(new ReactorDependencySkipper(this.project, this.session));
+            filters.add(new ReactorDependencySkipper(this.session));
         }
 
         return new CompositeSkipper(filters);
@@ -453,8 +431,7 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Prepare cache and keys map.
      *
-     * @throws MojoFailureException
-     *         In case of failures during initialization of the PGP keys cache.
+     * @throws MojoFailureException In case of failures during initialization of the PGP keys cache.
      */
     private void prepareForKeys() throws MojoFailureException {
         initCache();
@@ -575,11 +552,10 @@ public class PGPVerifyMojo extends AbstractMojo {
     /**
      * Verify if unsigned artifact is correctly listed in keys map.
      *
-     * @param artifact
-     *         the artifact which is supposedly unsigned
+     * @param artifact the artifact which is supposedly unsigned
      *
-     * @return Returns <code>true</code> if correctly missing according to keys map,
-     * or <code>false</code> if verification fails.
+     * @return Returns <code>true</code> if correctly missing according to keys map, or <code>false</code> if
+     * verification fails.
      */
     private boolean verifySignatureUnavailable(Artifact artifact) {
         if (keysMap.isEmpty()) {
@@ -605,13 +581,18 @@ public class PGPVerifyMojo extends AbstractMojo {
      * @return the maven proxy
      */
     Proxy getMavenProxy() {
+
+        Settings settings = session.getSettings();
+
         if (settings == null) {
             return null;
         }
+
         List<Proxy> proxies = settings.getProxies();
         if (proxies == null || proxies.isEmpty()) {
             return null;
         }
+
         if (proxyName == null) {
             return proxies.stream()
                     .filter(Proxy::isActive)

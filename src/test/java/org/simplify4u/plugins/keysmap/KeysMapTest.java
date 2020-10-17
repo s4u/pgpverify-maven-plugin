@@ -16,34 +16,41 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
-import io.vavr.control.Try;
-import org.codehaus.plexus.DefaultPlexusContainer;
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.testng.annotations.AfterMethod;
+import org.assertj.core.api.Assertions;
+import org.codehaus.plexus.resource.ResourceManager;
+import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.testng.MockitoTestNGListener;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 /**
  * @author Slawomir Jaranowski.
  */
+@Listeners(MockitoTestNGListener.class)
 public class KeysMapTest {
 
-    private final PlexusContainer container = Try.of(DefaultPlexusContainer::new).get();
+    @Mock
+    private ResourceManager resourceManager;
 
+    @InjectMocks
     private KeysMap keysMap;
 
-    @BeforeMethod
-    public void setUp() throws ComponentLookupException {
-        keysMap = container.lookup(KeysMap.class);
-    }
 
-    @AfterMethod
-    public void tearDown() {
-        keysMap = null;
+    @BeforeMethod
+    void setup() throws ResourceNotFoundException {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
     }
 
     @Test
@@ -53,21 +60,28 @@ public class KeysMapTest {
 
     @Test
     public void nullLocationTest() throws Exception {
+        reset(resourceManager);
         keysMap.load(null);
 
+        verifyNoInteractions(resourceManager);
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
     @Test
     public void emptyLocationTest() throws Exception {
+        reset(resourceManager);
         keysMap.load("");
 
+        verifyNoInteractions(resourceManager);
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
     }
 
     @Test
     public void validKeyFromMap() throws Exception {
+
         keysMap.load("/keysMap.list");
+
+        verify(resourceManager).getResourceAsInputStream(anyString());
 
         assertThat(
                 keysMap.isValidKey(
@@ -125,6 +139,8 @@ public class KeysMapTest {
     public void invalidKeyFromMap() throws Exception {
         keysMap.load("/keysMap.list");
 
+        verify(resourceManager).getResourceAsInputStream(anyString());
+
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.11").build(),
@@ -136,6 +152,8 @@ public class KeysMapTest {
     public void specialValueNoSig() throws Exception {
 
         keysMap.load("/keysMap.list");
+
+        verify(resourceManager).getResourceAsInputStream(anyString());
 
         assertThat(
                 keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test").build())
@@ -162,6 +180,8 @@ public class KeysMapTest {
 
         keysMap.load("/keysMap.list");
 
+        verify(resourceManager).getResourceAsInputStream(anyString());
+
         assertThat(
                 keysMap.isBrokenSignature(testArtifact().groupId("badSig").build())
         ).isTrue();
@@ -172,15 +192,18 @@ public class KeysMapTest {
 
         keysMap.load("/keysMap.list");
 
+        verify(resourceManager).getResourceAsInputStream(anyString());
+
         assertThat(
                 keysMap.isKeyMissing(testArtifact().groupId("noKey").build())
         ).isTrue();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Key length for = 0x10 is 8 bits, should be between 64 and 160 bits")
+    @Test
     public void shortKeyShouldThrownException() throws Exception {
-        keysMap.load("/keyMap-keyToShort.list");
+        Assertions.assertThatCode(() -> keysMap.load("/keyMap-keyToShort.list"))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Key length for = 0x10 is 8 bits, should be between 64 and 160 bits");
 
     }
 }

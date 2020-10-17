@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
@@ -39,6 +41,7 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -53,6 +56,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
  */
+@Named
 final class ArtifactResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactResolver.class);
@@ -74,11 +78,11 @@ final class ArtifactResolver {
      */
     private final List<ArtifactRepository> remoteRepositoriesIgnoreCheckSum;
 
-    ArtifactResolver(RepositorySystem repositorySystem, ArtifactRepository localRepository,
-            List<ArtifactRepository> remoteRepositories) {
+    @Inject
+    ArtifactResolver(RepositorySystem repositorySystem, MavenSession session) {
         this.repositorySystem = requireNonNull(repositorySystem);
-        this.localRepository = requireNonNull(localRepository);
-        this.remoteRepositories = requireNonNull(remoteRepositories);
+        this.localRepository = requireNonNull(session.getLocalRepository());
+        this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteArtifactRepositories());
         this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteRepositories);
     }
 

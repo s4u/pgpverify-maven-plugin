@@ -16,6 +16,24 @@
 
 package org.simplify4u.plugins;
 
+import java.util.Map;
+import java.util.Set;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
@@ -25,250 +43,238 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
+import org.assertj.core.api.Condition;
+import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
+import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
-
+@Listeners(MockitoTestNGListener.class)
 public class ArtifactResolverTest {
+
+    private static final Condition<Artifact> IS_JAR_TYPE = new Condition<>(a -> "jar".equals(a.getType()), "is jar type");
+    private static final Condition<Artifact> IS_POM_TYPE = new Condition<>(a -> "pom".equals(a.getType()), "is pom type");
+
+    @Mock
+    private RepositorySystem repositorySystem;
+
+    @Mock
+    private ArtifactRepository localRepository;
+
+    @Mock
+    private MavenSession session;
+
+    @Mock
+    private MavenProject project;
+
+    private ArtifactResolver resolver;
+
+    @BeforeMethod
+    void setup() {
+        when(session.getLocalRepository()).thenReturn(localRepository);
+        when(session.getCurrentProject()).thenReturn(project);
+        when(project.getRemoteArtifactRepositories()).thenReturn(emptyList());
+
+        resolver = new ArtifactResolver(repositorySystem, session);
+    }
 
     @Test
     public void testConstructArtifactResolverWithNull() {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(null, null, null));
-        assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(null, localRepository, emptyList()));
-        assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(repositorySystem, null, emptyList()));
-        assertThrows(NullPointerException.class,
-                () -> new ArtifactResolver(repositorySystem, localRepository, null));
+
+        reset(session, project);
+
+        assertThatCode(() -> new ArtifactResolver(null, null))
+                .isExactlyInstanceOf(NullPointerException.class);
+
+        assertThatCode(() -> new ArtifactResolver(null, session))
+                .isExactlyInstanceOf(NullPointerException.class);
+
+        doThrow(new NullPointerException()).when(session).getLocalRepository();
+        assertThatCode(() -> new ArtifactResolver(repositorySystem, session))
+                .isExactlyInstanceOf(NullPointerException.class);
+
+        doReturn(localRepository).when(session).getLocalRepository();
+        doThrow(new NullPointerException()).when(session).getCurrentProject();
+        assertThatCode(() -> new ArtifactResolver(repositorySystem, session))
+                .isExactlyInstanceOf(NullPointerException.class);
     }
 
     @Test
     public void testResolveProjectArtifactsEmpty() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
 
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-
-        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+        // given
+        Configuration config = new Configuration(new CompositeSkipper(emptyList()),
                 new CompositeSkipper(emptyList()), false, false, false, false);
-        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
-        assertEquals(emptySet(), resolved);
+
+        // when
+        Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
+
+        // then
+        assertThat(resolved).isEmpty();
     }
 
     @Test
     public void testResolveProjectArtifactsWithoutPoms() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+
+        // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
+            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolvedVersion(artifact.getVersion());
             artifact.setResolved(true);
             return new ArtifactResolutionResult();
         });
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
+
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+        Configuration config = new Configuration(new CompositeSkipper(emptyList()),
                 new CompositeSkipper(emptyList()), false, false, false, false);
-        final Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
-        assertEquals(1, resolved.size());
-        assertTrue(resolved.iterator().next().isResolved());
+
+        // when
+        Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
+
+        // then
+        assertThat(resolved).hasSize(1);
+        assertThat(resolved).allMatch(Artifact::isResolved);
     }
 
     @Test
     public void testResolveProjectArtifactsWithPoms() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+
+        // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
+            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(true);
             return new ArtifactResolutionResult();
         });
+
         when(repositorySystem.createProjectArtifact(eq("g"), eq("a"), eq("1.0")))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "pom", "classifier", null));
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
+
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Configuration config = new Configuration(new CompositeSkipper(emptyList()),
+        Configuration config = new Configuration(new CompositeSkipper(emptyList()),
                 new CompositeSkipper(emptyList()), true, false, false, false);
-        final Set<Artifact> resolvedSet = resolver.resolveProjectArtifacts(project, config);
+
+        // when
+        Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
+
+        // then
         verify(repositorySystem, times(1))
                 .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
-        assertEquals(resolvedSet.size(), 2);
-        final Artifact[] resolved = resolvedSet.toArray(new Artifact[0]);
-        assertTrue(resolved[0].isResolved());
-        assertEquals(resolved[0].getType(), "jar");
-        assertTrue(resolved[1].isResolved());
-        assertEquals(resolved[1].getType(), "pom");
+
+        assertThat(resolved).hasSize(2);
+        assertThat(resolved).allMatch(Artifact::isResolved);
+
+        assertThat(resolved).areExactly(1, IS_JAR_TYPE);
+        assertThat(resolved).areExactly(1, IS_POM_TYPE);
     }
 
     @Test
     public void testResolveSignaturesEmpty() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final Map<Artifact, Artifact> resolvedSignatures = resolver.resolveSignatures(
-                emptyList(), SignatureRequirement.NONE);
-        assertEquals(resolvedSignatures.size(), 0);
+
+        // when
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(emptyList(), SignatureRequirement.NONE);
+
+        // then
+        assertThat(resolved).isEmpty();
     }
 
     @Test
     public void testResolveSignaturesResolved() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+
+        // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
+            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(true);
             return new ArtifactResolutionResult();
         });
+
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
-        when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Map<Artifact, Artifact> resolvedSignatures = resolver.resolveSignatures(
-                singleton(artifact), SignatureRequirement.NONE);
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
+
+        // then
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact), SignatureRequirement.NONE);
+
+        // then
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
                 eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
-        assertEquals(resolvedSignatures.size(), 1);
-        final Map.Entry<Artifact, Artifact> entry = resolvedSignatures.entrySet().iterator().next();
-        assertEquals(entry.getKey(), artifact);
-        assertEquals(entry.getValue().getGroupId(), "g");
-        assertEquals(entry.getValue().getArtifactId(), "a");
-        assertEquals(entry.getValue().getVersion(), "1.0");
-        assertNull(entry.getValue().getClassifier());
-        assertEquals(entry.getValue().getType(), "mock-signature-artifact");
+
+        assertThat(resolved).hasSize(1);
+        assertThat(resolved).containsOnlyKeys(artifact);
+
+        Artifact value = resolved.entrySet().iterator().next().getValue();
+        assertThat(value.getGroupId()).isEqualTo("g");
+        assertThat(value.getArtifactId()).isEqualTo("a");
+        assertThat(value.getVersion()).isEqualTo("1.0");
+        assertThat(value.getClassifier()).isNull();
+        assertThat(value.getType()).isEqualTo("mock-signature-artifact");
     }
 
     @Test
     public void testResolveSignaturesUnresolvedNone() throws MojoExecutionException {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+        // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
+            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(false);
-            final ArtifactResolutionResult result = new ArtifactResolutionResult();
+            ArtifactResolutionResult result = new ArtifactResolutionResult();
             result.setUnresolvedArtifacts(singletonList(artifact));
             return result;
         });
+
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
-        when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        final Map<Artifact, Artifact> resolvedSignatures = resolver.resolveSignatures(
-                singleton(artifact), SignatureRequirement.NONE);
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
+
+        // when
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact), SignatureRequirement.NONE);
+
+        // then
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
                 eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
-        assertEquals(resolvedSignatures.size(), 1);
+        assertThat(resolved).hasSize(1);
     }
 
     @Test
     public void testResolveSignaturesUnresolvedRequired() {
-        final RepositorySystem repositorySystem = mock(RepositorySystem.class);
-        final MavenSession session = mock(MavenSession.class);
-        final ProjectBuildingRequest projectBuildingRequest = mock(ProjectBuildingRequest.class);
-        when(session.getProjectBuildingRequest()).thenReturn(projectBuildingRequest);
-        final ArtifactRepository localRepository = mock(ArtifactRepository.class);
-        when(projectBuildingRequest.getLocalRepository()).thenReturn(localRepository);
-        final List<ArtifactRepository> remoteRepositories = emptyList();
-        when(projectBuildingRequest.getRemoteRepositories()).thenReturn(remoteRepositories);
+
+        // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            final Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
+            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
             artifact.setResolved(false);
-            final ArtifactResolutionResult result = new ArtifactResolutionResult();
+            ArtifactResolutionResult result = new ArtifactResolutionResult();
             result.setUnresolvedArtifacts(singletonList(artifact));
             return result;
         });
+
         when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-        final ArtifactResolver resolver = new ArtifactResolver(repositorySystem, localRepository, remoteRepositories);
-        final MavenProject project = mock(MavenProject.class);
-        final DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
-        when(project.getArtifacts()).thenReturn(singleton(artifact));
 
-        assertThrows(MojoExecutionException.class, () -> resolver.resolveSignatures(singleton(artifact), SignatureRequirement.REQUIRED));
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
+
+        // when -> then
+        assertThatCode(() -> resolver.resolveSignatures(singleton(artifact), SignatureRequirement.REQUIRED))
+                .isExactlyInstanceOf(MojoExecutionException.class);
     }
 
     @Test(dataProvider = "verify-plugin-dependencies-combos")
     public void testEnablingValidatingPluginDependenciesEnablesPlugins(boolean verifyPlugins,
-                boolean verifyPluginDependencies, boolean pluginsEnabled, boolean pluginDependenciesEnabled) {
-        final Configuration config = new Configuration(new CompositeSkipper(), new CompositeSkipper(),
+            boolean verifyPluginDependencies, boolean pluginsEnabled, boolean pluginDependenciesEnabled) {
+
+        Configuration config = new Configuration(new CompositeSkipper(), new CompositeSkipper(),
                 false, verifyPlugins, verifyPluginDependencies, false);
+
         assertThat(config.verifyPluginDependencies).isEqualTo(pluginDependenciesEnabled);
         assertThat(config.verifyPlugins).isEqualTo(pluginsEnabled);
     }

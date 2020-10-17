@@ -22,12 +22,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -36,15 +36,19 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Slawomir Jaranowski.
  */
-@Component(role = KeysMap.class, instantiationStrategy = "per-lookup")
+@Named
 public class KeysMap {
 
     private static final Logger LOG = LoggerFactory.getLogger(KeysMap.class);
 
-    @Requirement
     private ResourceManager resourceManager;
 
     private final ArrayList<ArtifactInfo> keysMapList = new ArrayList<>();
+
+    @Inject
+    KeysMap(ResourceManager resourceManager) {
+        this.resourceManager = resourceManager;
+    }
 
     public void load(String locale) throws ResourceNotFoundException, IOException {
         if (locale != null && !locale.trim().isEmpty()) {
@@ -71,8 +75,7 @@ public class KeysMap {
     /**
      * Artifact can has no signature.
      *
-     * @param artifact
-     *         artifact to test
+     * @param artifact artifact to test
      *
      * @return signature status
      */
@@ -88,8 +91,7 @@ public class KeysMap {
     /**
      * Artifact can has broken signature.
      *
-     * @param artifact
-     *         artifact to test
+     * @param artifact artifact to test
      *
      * @return broken signature status
      */
@@ -105,8 +107,7 @@ public class KeysMap {
     /**
      * Key for signature can be not found on public key servers.
      *
-     * @param artifact
-     *         artifact to test
+     * @param artifact artifact to test
      *
      * @return key missing status
      */

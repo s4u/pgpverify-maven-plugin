@@ -23,8 +23,8 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 
 /**
- * A filter that always skips verification of upstream dependencies that are being built as part of
- * the current build reactor.
+ * A filter that always skips verification of upstream dependencies that are being built as part of the current build
+ * reactor.
  */
 public class ReactorDependencySkipper implements SkipFilter {
     private final List<MavenProject> upstreamProjects;
@@ -32,15 +32,11 @@ public class ReactorDependencySkipper implements SkipFilter {
     /**
      * Constructor for {@code ReactorDependencySkipper}.
      *
-     * @param currentProject
-     *   The project currently being built.
-     * @param session
-     *   The current maven session.
+     * @param session The current maven session.
      */
-    public ReactorDependencySkipper(final MavenProject currentProject,
-                                    final MavenSession session) {
+    public ReactorDependencySkipper(final MavenSession session) {
         this.upstreamProjects =
-            session.getProjectDependencyGraph().getUpstreamProjects(currentProject, true);
+                session.getProjectDependencyGraph().getUpstreamProjects(session.getCurrentProject(), true);
     }
 
     @Override
@@ -49,15 +45,13 @@ public class ReactorDependencySkipper implements SkipFilter {
     }
 
     /**
-     * Check whether or not the specified artifact is an upstream dependency of this project in the
-     * current Maven build.
+     * Check whether or not the specified artifact is an upstream dependency of this project in the current Maven
+     * build.
      *
-     * @param   artifact
-     *          The to check against upstream reactor dependencies.
+     * @param artifact The to check against upstream reactor dependencies.
      *
-     * @return  {@code true} if the specified artifact is in the current Maven reactor build and is
-     *          a direct or transitive dependency of the current project; {@code false} if it is
-     *          not either.
+     * @return {@code true} if the specified artifact is in the current Maven reactor build and is a direct or
+     * transitive dependency of the current project; {@code false} if it is not either.
      */
     private boolean isUpstreamReactorDependency(final Artifact artifact) {
         for (final MavenProject upstreamProject : this.upstreamProjects) {
@@ -72,40 +66,31 @@ public class ReactorDependencySkipper implements SkipFilter {
     /**
      * Check whether the specified artifact belongs to the specified Maven project.
      *
-     * @param artifact
-     *   The artifact being checked.
-     * @param project
-     *   The project to which the artifact will be compared.
+     * @param artifact The artifact being checked.
+     * @param project  The project to which the artifact will be compared.
      *
-     * @return
-     *   {@code true} if the artifact was produced by the specified project; or
-     *   {@code false} if it is not.
+     * @return {@code true} if the artifact was produced by the specified project; or {@code false} if it is not.
      */
-    private static boolean artifactMatchesProject(final Artifact artifact,
-                                           final MavenProject project) {
+    private static boolean artifactMatchesProject(final Artifact artifact, final MavenProject project) {
         final Artifact projectArtifact = project.getArtifact();
 
         return projectArtifact != null
-               && artifactsMatch(projectArtifact, artifact);
+                && artifactsMatch(projectArtifact, artifact);
     }
 
     /**
-     * Check whether the specified artifacts are equivalent, or at least
-     * identify the same group, artifact ID, and version.
+     * Check whether the specified artifacts are equivalent, or at least identify the same group, artifact ID, and
+     * version.
      *
-     * @param artifact1
-     *   The first artifact.
-     * @param artifact2
-     *   The second artifact.
+     * @param artifact1 The first artifact.
+     * @param artifact2 The second artifact.
      *
-     * @return
-     *   If either the two artifacts are equal or correspond to the same Maven
-     *   coordinates.
+     * @return If either the two artifacts are equal or correspond to the same Maven coordinates.
      */
     private static boolean artifactsMatch(final Artifact artifact1,
-                                   final Artifact artifact2) {
+            final Artifact artifact2) {
         return artifact1.equals(artifact2)
-            || (artifact1.getGroupId().equals(artifact2.getGroupId())
+                || (artifact1.getGroupId().equals(artifact2.getGroupId())
                 && artifact1.getArtifactId().equals(artifact2.getArtifactId())
                 && artifact1.getVersion().equals(artifact2.getVersion()));
     }
