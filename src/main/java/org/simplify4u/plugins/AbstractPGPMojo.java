@@ -17,6 +17,8 @@ package org.simplify4u.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 
 import io.vavr.control.Try;
@@ -24,6 +26,7 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
@@ -118,6 +121,19 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     private boolean pgpKeyServerLoadBalance;
 
     /**
+     * Only log errors.
+     *
+     * @since 1.4.0
+     */
+    @Parameter(property = "pgpverify.quiet", defaultValue = "false")
+    private boolean quiet;
+
+    @Override
+    public final Log getLog() {
+        throw new UnsupportedOperationException("SLF4J should be used directly");
+    }
+
+    /**
      * @return Mojo name for current class.
      */
     protected abstract String getMojoName();
@@ -147,4 +163,25 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
 
         executeConfiguredMojo();
     }
+
+    protected void logWithQuiet(String message) {
+        if (quiet) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(message);
+            }
+        } else {
+            LOGGER.info(message);
+        }
+    }
+
+    protected void logWithQuiet(String message, Supplier<?>... args) {
+        if (quiet) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(message, Arrays.stream(args).map(Supplier::get).toArray());
+            }
+        } else {
+            LOGGER.info(message, Arrays.stream(args).map(Supplier::get).toArray());
+        }
+    }
+
 }
