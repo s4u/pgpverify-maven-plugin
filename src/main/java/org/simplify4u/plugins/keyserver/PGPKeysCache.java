@@ -30,18 +30,22 @@ import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Named;
 
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 
 import io.vavr.control.Try;
-import org.apache.maven.settings.Proxy;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.utils.MavenProxy;
 import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
@@ -50,24 +54,34 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Slawomir Jaranowski.
  */
-public class PGPKeysCache {
+@Named
+public final class PGPKeysCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PGPKeysCache.class);
     private static final String NL = System.lineSeparator();
 
-    private final File cachePath;
-    private final KeyServerList keyServerList;
+    private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
+
+    private final MavenProxy mavenProxy;
+
+    private File cachePath;
+    private KeyServerList keyServerList;
+
 
     private static final Object LOCK = new Object();
 
-    public PGPKeysCache(File cachePath, List<String> pgpKeysServerList, boolean loadBalance, Proxy proxy)
-            throws IOException {
-        this(cachePath, prepareClients(pgpKeysServerList, proxy), loadBalance);
+    @Inject
+    PGPKeysCache(MavenProxy mavenProxy) {
+        this.mavenProxy = mavenProxy;
     }
 
-    // used be test
-    PGPKeysCache(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance)
+    public void init(File cachePath, String keyServers, boolean loadBalance, String proxyName)
             throws IOException {
+        init(cachePath, prepareClients(keyServers, proxyName), loadBalance);
+    }
+
+    // used by test
+    void init(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance) throws IOException {
 
         this.cachePath = cachePath;
         this.keyServerList = createKeyServerList(pgpKeysServerClients, loadBalance);
@@ -89,10 +103,16 @@ public class PGPKeysCache {
         }
     }
 
-    static List<PGPKeysServerClient> prepareClients(List<String> keyServers, Proxy proxy) {
+    List<PGPKeysServerClient> prepareClients(String keyServers, String proxyName) {
 
-        return keyServers.stream()
-                .map(keyserver -> Try.of(() -> PGPKeysServerClient.getClient(keyserver, proxy)).get())
+        List<String> keyServersList = Arrays.stream(KEY_SERVERS_SPLIT_PATTERN.split(keyServers))
+                .map(String::trim)
+                .filter(s -> s.length() > 0)
+                .collect(Collectors.toList());
+
+        return keyServersList.stream()
+                .map(keyserver -> Try.of(() ->
+                        PGPKeysServerClient.getClient(keyserver, mavenProxy.getProxyByName(proxyName))).get())
                 .collect(Collectors.toList());
     }
 

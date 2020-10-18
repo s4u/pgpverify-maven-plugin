@@ -35,4 +35,10 @@ public class ProxyUtil {
     public static Proxy makeMavenProxy(String proxyUser, String proxyPassword) {
         return makeMavenProxy(proxyUser, proxyPassword, "MyProxy", true);
     }
+
+    public static Proxy makeMavenProxy(String id) {
+        Proxy proxy = new Proxy();
+        proxy.setId(id);
+        return proxy;
+    }
 }

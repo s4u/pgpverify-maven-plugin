@@ -22,30 +22,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.settings.Proxy;
-import org.apache.maven.settings.Settings;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
@@ -54,8 +46,6 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
-import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -73,40 +63,16 @@ import org.simplify4u.plugins.utils.PublicKeyUtils;
  *
  * @author Slawomir Jaranowski.
  */
-@Mojo(name = "check", requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
+@Mojo(name = PGPVerifyMojo.MOJO_NAME, requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
-public class PGPVerifyMojo extends AbstractMojo {
+public class PGPVerifyMojo extends AbstractPGPMojo {
+
+    public static final String MOJO_NAME = "check";
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "%s PGP Signature %s\n       %s UserIds: %s";
 
-    private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
-
-    @Inject
-    private MavenSession session;
-
-    @Inject
-    private KeysMap keysMap;
-
     @Inject
     private ArtifactResolver artifactResolver;
-
-    /**
-     * Choose which proxy to use (id from settings.xml in maven config). Uses no proxy if the proxy was not found. If it
-     * is not set, it will take the first active proxy if any or no proxy, if no active proxy was found)
-     *
-     * @since 1.8.0
-     */
-    @Parameter(property = "pgpverify.proxyName")
-    private String proxyName;
-
-    /**
-     * The directory for storing cached PGP public keys.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "pgpverify.keycache", defaultValue = "${settings.localRepository}/pgpkeys-cache",
-            required = true)
-    private File pgpKeysCachePath;
 
     /**
      * Scope used to build dependency list.
@@ -118,28 +84,6 @@ public class PGPVerifyMojo extends AbstractMojo {
      */
     @Parameter(property = "pgpverify.scope", defaultValue = "test")
     private String scope;
-
-    /**
-     * PGP public key servers address.
-     *
-     * <p>
-     * From version <b>1.7.0</b> you can provide many kay servers separated by comma, semicolon or whitespace.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "pgpverify.keyserver",
-            defaultValue = "hkps://hkps.pool.sks-keyservers.net,hkps://keyserver.ubuntu.com")
-    private String pgpKeyServer;
-
-    /**
-     * If many key server is provided, use all of them.
-     * <p>
-     * If set to false only first key server will be used, another as fallback.
-     *
-     * @since 1.7.0
-     */
-    @Parameter(property = "pgpverify.keyserversLoadBalance", defaultValue = "true")
-    private boolean pgpKeyServerLoadBalance;
 
     /**
      * Fail the build if any dependency doesn't have a signature.
@@ -270,36 +214,6 @@ public class PGPVerifyMojo extends AbstractMojo {
     private boolean disableChecksum;
 
     /**
-     * <p>
-     * Specifies the location of a file that contains the map of dependencies to PGP key.
-     * </p>
-     *
-     * <p>
-     * This can be path to local file, path to file on plugin classpath or url address.
-     * </p>
-     *
-     * <p>
-     * <a href="keysmap-format.html">Format description.</a>
-     * </p>
-     *
-     * <p>
-     * You can use ready keys map: <a href="https://github.com/s4u/pgp-keys-map">https://github.com/s4u/pgp-keys-map</a>
-     * </p>
-     *
-     * @since 1.1.0
-     */
-    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
-    private String keysMapLocation;
-
-    /**
-     * Skip verification altogether.
-     *
-     * @since 1.3.0
-     */
-    @Parameter(property = "pgpverify.skip", defaultValue = "false")
-    private boolean skip;
-
-    /**
      * Only log errors.
      *
      * @since 1.4.0
@@ -307,16 +221,15 @@ public class PGPVerifyMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.quiet", defaultValue = "false")
     private boolean quiet;
 
-    private PGPKeysCache pgpKeysCache;
-
     private Consumer<Supplier<String>> logWithQuiet;
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        if (skip) {
-            getLog().info("Skipping pgpverify:check");
-            return;
-        }
+    protected String getMojoName() {
+        return MOJO_NAME;
+    }
+
+    @Override
+    public void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException {
 
         checkDeprecated();
         prepareLogWithQuiet();
@@ -324,7 +237,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
         final SkipFilter dependencyFilter = prepareDependencyFilters();
         final SkipFilter pluginFilter = preparePluginFilters();
-        prepareForKeys();
 
         final long artifactResolutionStart = System.nanoTime();
         final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
@@ -426,29 +338,6 @@ public class PGPVerifyMojo extends AbstractMojo {
         }
 
         return new CompositeSkipper(filters);
-    }
-
-    /**
-     * Prepare cache and keys map.
-     *
-     * @throws MojoFailureException In case of failures during initialization of the PGP keys cache.
-     */
-    private void prepareForKeys() throws MojoFailureException {
-        initCache();
-
-        Try.run(() -> keysMap.load(keysMapLocation)).getOrElseThrow(e -> new MojoFailureException("load keys map", e));
-    }
-
-    private void initCache() throws MojoFailureException {
-
-        List<String> keyServerList = Arrays.stream(KEY_SERVERS_SPLIT_PATTERN.split(pgpKeyServer))
-                .map(String::trim)
-                .filter(s -> s.length() > 0)
-                .collect(Collectors.toList());
-
-        pgpKeysCache = Try.of(() ->
-                new PGPKeysCache(pgpKeysCachePath, keyServerList, pgpKeyServerLoadBalance, getMavenProxy()))
-                .getOrElseThrow(e -> new MojoFailureException(e.getMessage(), e));
     }
 
     private void verifyArtifactSignatures(Map<Artifact, Artifact> artifactToAsc)
@@ -573,37 +462,6 @@ public class PGPVerifyMojo extends AbstractMojo {
             getLog().error("Unsigned artifact not listed in keys map: " + artifact.getId());
         }
         return false;
-    }
-
-    /**
-     * Returns the maven proxy with a matching id or the first active one
-     *
-     * @return the maven proxy
-     */
-    Proxy getMavenProxy() {
-
-        Settings settings = session.getSettings();
-
-        if (settings == null) {
-            return null;
-        }
-
-        List<Proxy> proxies = settings.getProxies();
-        if (proxies == null || proxies.isEmpty()) {
-            return null;
-        }
-
-        if (proxyName == null) {
-            return proxies.stream()
-                    .filter(Proxy::isActive)
-                    .findFirst()
-                    .orElse(null);
-        } else {
-            return proxies.stream()
-                    .filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId()))
-                    .findFirst()
-                    .orElse(null);
-        }
     }
 
     private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,

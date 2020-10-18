@@ -47,6 +47,9 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
@@ -58,22 +61,25 @@ import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+@Listeners(MockitoTestNGListener.class)
 public class PGPKeysCacheTest {
 
     public static final PGPKeyId KEY_ID_1 = PGPKeyId.from(1L);
 
     private Path cachePath;
-    private List<PGPKeysServerClient> keysServerClients;
 
-    @BeforeMethod
-    public void setup() throws IOException {
-        LoggerMock.clearInvocations();
-        cachePath = Files.createTempDirectory("cache-path-test");
-        PGPKeysServerClient keysServerClient = mock(PGPKeysServerClient.class);
+    @Mock
+    private PGPKeysServerClient keysServerClient;
 
-        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (PGPKeyId)i.getArgument(0))))
+    @InjectMocks
+    private PGPKeysCache pgpKeysCache;
+
+    public List<PGPKeysServerClient> prepareKeyServerClient() throws IOException {
+
+        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (PGPKeyId) i.getArgument(0))))
                 .when(keysServerClient).getUriForGetKey(any(PGPKeyId.class));
 
         doAnswer(i -> {
@@ -84,11 +90,17 @@ public class PGPKeysCacheTest {
         }).when(keysServerClient).copyKeyToOutputStream(any(PGPKeyId.class), any(OutputStream.class),
                 any(PGPKeysServerClient.OnRetryConsumer.class));
 
-        keysServerClients = Collections.singletonList(keysServerClient);
+        return Collections.singletonList(keysServerClient);
+    }
+
+    @BeforeMethod
+    void setup() throws IOException {
+        LoggerMock.clearInvocations();
+        cachePath = Files.createTempDirectory("cache-path-test");
     }
 
     @AfterMethod
-    public void cleanup() throws IOException {
+    void cleanup() throws IOException {
         MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
@@ -99,7 +111,7 @@ public class PGPKeysCacheTest {
 
         assertThat(emptyCachePath).doesNotExist();
 
-        new PGPKeysCache(emptyCachePath, keysServerClients, true);
+        pgpKeysCache.init(emptyCachePath, Collections.singletonList(keysServerClient), true);
 
         assertThat(emptyCachePath)
                 .exists()
@@ -116,7 +128,7 @@ public class PGPKeysCacheTest {
                 .exists()
                 .isFile();
 
-        assertThatCode(() -> new PGPKeysCache(fileAsCachePath, keysServerClients, true))
+        assertThatCode(() -> pgpKeysCache.init(fileAsCachePath, Collections.singletonList(keysServerClient), true))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessageStartingWith("PGP keys cache path exist but is not a directory:");
     }
@@ -124,7 +136,8 @@ public class PGPKeysCacheTest {
     @Test
     public void getKeyFromCache() throws IOException, PGPException {
 
-        PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClients, true);
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
+        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
         PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
@@ -151,7 +164,8 @@ public class PGPKeysCacheTest {
     @Test
     public void nonExistingKeyInRingThrowException() throws IOException, PGPException {
 
-        PGPKeysCache pgpKeysCache = new PGPKeysCache(cachePath.toFile(), keysServerClients, true);
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
+        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
         assertThatCode(() -> pgpKeysCache.getKeyRing(PGPKeyId.from(0x1234567890L)))
