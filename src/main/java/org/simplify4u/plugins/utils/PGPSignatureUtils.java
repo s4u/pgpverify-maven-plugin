@@ -137,9 +137,10 @@ public final class PGPSignatureUtils {
      */
     public static void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
         try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(file))) {
+            byte[] buf = new byte[8192];
             int t;
-            while ((t = inArtifact.read()) >= 0) {
-                signature.update((byte) t);
+            while ((t = inArtifact.read(buf)) >= 0) {
+                signature.update(buf, 0, t);
             }
         }
     }
