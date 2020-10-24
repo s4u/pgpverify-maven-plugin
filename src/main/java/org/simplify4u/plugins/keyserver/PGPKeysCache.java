@@ -52,10 +52,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Manage PGP keys local cache.
+ *
  * @author Slawomir Jaranowski.
  */
 @Named
-public final class PGPKeysCache {
+public class PGPKeysCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PGPKeysCache.class);
     private static final String NL = System.lineSeparator();

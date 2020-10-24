@@ -22,15 +22,15 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 
 import io.vavr.control.Try;
+import lombok.Setter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.keysmap.KeysMap;
+import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,36 +41,14 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPGPMojo.class);
 
-    @Inject
-    protected MavenSession session;
 
-    @Inject
-    protected PGPKeysCache pgpKeysCache;
+    protected final ArtifactResolver artifactResolver;
 
-    @Inject
-    protected KeysMap keysMap;
+    protected final PGPKeysCache pgpKeysCache;
 
-    /**
-     * <p>
-     * Specifies the location of a file that contains the map of dependencies to PGP key.
-     * </p>
-     *
-     * <p>
-     * This can be path to local file, path to file on plugin classpath or url address.
-     * </p>
-     *
-     * <p>
-     * <a href="keysmap-format.html">Format description.</a>
-     * </p>
-     *
-     * <p>
-     * You can use ready keys map: <a href="https://github.com/s4u/pgp-keys-map">https://github.com/s4u/pgp-keys-map</a>
-     * </p>
-     *
-     * @since 1.1.0
-     */
-    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
-    private String keysMapLocation;
+    protected final PGPSignatureUtils pgpSignatureUtils;
+
+    protected final MavenSession session;
 
     /**
      * The directory for storing cached PGP public keys.
@@ -108,6 +86,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      * @since 1.3.0
      */
     @Parameter(property = "pgpverify.skip", defaultValue = "false")
+    @Setter
     private boolean skip;
 
     /**
@@ -128,6 +107,15 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.quiet", defaultValue = "false")
     private boolean quiet;
 
+    @Inject
+    AbstractPGPMojo(ArtifactResolver artifactResolver, PGPKeysCache pgpKeysCache,
+            PGPSignatureUtils pgpSignatureUtils, MavenSession session) {
+        this.artifactResolver = artifactResolver;
+        this.pgpKeysCache = pgpKeysCache;
+        this.pgpSignatureUtils = pgpSignatureUtils;
+        this.session = session;
+    }
+
     @Override
     public final Log getLog() {
         throw new UnsupportedOperationException("SLF4J should be used directly");
@@ -144,10 +132,6 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
         pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, proxyName);
     }
 
-    private void initKeysMap() throws ResourceNotFoundException, IOException {
-        keysMap.load(keysMapLocation);
-    }
-
     @Override
     public final void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -156,10 +140,8 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
             return;
         }
 
-        Try.run(() -> {
-            initPgpKeysCache();
-            initKeysMap();
-        }).getOrElseThrow(e -> new MojoFailureException(e.getMessage(), e));
+        Try.run(this::initPgpKeysCache)
+                .getOrElseThrow(e -> new MojoFailureException(e.getMessage(), e));
 
         executeConfiguredMojo();
     }

@@ -25,27 +25,37 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.Optional;
+import javax.inject.Named;
 
+import io.vavr.control.Try;
+import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
+import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.IssuerFingerprint;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPObjectFactory;
+import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPSignatureSubpacketVector;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.simplify4u.plugins.keyserver.PGPKeysCache;
+import org.simplify4u.plugins.pgp.ArtifactInfo;
+import org.simplify4u.plugins.pgp.KeyInfo;
+import org.simplify4u.plugins.pgp.PGPSignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureStatus;
 
 /**
  * Utilities for PGP Signature class.
  */
-public final class PGPSignatureUtils {
-
-    private PGPSignatureUtils() {
-        // No need to instantiate utility class.
-    }
+@Named
+public class PGPSignatureUtils {
 
     /**
      * Check PGP signature for bad algorithms.
@@ -54,7 +64,7 @@ public final class PGPSignatureUtils {
      *
      * @return Returns null if no bad algorithms used, or algorithm name if used.
      */
-    public static String checkWeakHashAlgorithm(PGPSignature signature) {
+    public String checkWeakHashAlgorithm(PGPSignature signature) {
         switch (signature.getHashAlgorithm()) {
             case HashAlgorithmTags.MD5:
                 return "MD5";
@@ -91,10 +101,9 @@ public final class PGPSignatureUtils {
      *
      * @return Returns the (first) read PGP signature.
      *
-     * @throws IOException           In case of bad content.
      * @throws PGPSignatureException In case of failure loading signature.
      */
-    public static PGPSignature loadSignature(InputStream input) throws IOException, PGPSignatureException {
+    public PGPSignature loadSignature(InputStream input) throws PGPSignatureException {
 
         try {
             InputStream sigInputStream = PGPUtil.getDecoderStream(input);
@@ -115,16 +124,33 @@ public final class PGPSignatureUtils {
 
                 if (nextObject instanceof PGPLiteralData) {
                     InputStream dataStream = ((PGPLiteralData) nextObject).getDataStream();
-                    while (dataStream.read() > 0) {
+                    byte[] buf = new byte[8192];
+                    while (dataStream.read(buf) > 0) {
                         // we must read whole packet in order to proper input stream shift
                     }
                 }
             }
-        } catch (PGPException e) {
+        } catch (IOException | PGPException e) {
             throw new PGPSignatureException(e.getMessage(), e);
         }
 
         throw new PGPSignatureException("PGP signature not found.");
+    }
+
+    /**
+     * Load PGPSignature from file.
+     *
+     * @param file the file having PGPSignature content
+     *
+     * @return Returns the (first) read PGP signature.
+     *
+     * @throws PGPSignatureException In case of failure loading signature.
+     * @throws IOException           In case of IO failures.
+     */
+    public PGPSignature loadSignature(File file) throws IOException, PGPSignatureException {
+        try (InputStream in = new FileInputStream(file)) {
+            return loadSignature(in);
+        }
     }
 
     /**
@@ -135,7 +161,7 @@ public final class PGPSignatureUtils {
      *
      * @throws IOException In case of failure to open the file or failure while reading its content.
      */
-    public static void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
+    public void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
         try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buf = new byte[8192];
             int t;
@@ -154,7 +180,7 @@ public final class PGPSignatureUtils {
      *
      * @throws PGPSignatureException In case of problem with signature data
      */
-    public static PGPKeyId retrieveKeyId(PGPSignature signature) throws PGPSignatureException {
+    public PGPKeyId retrieveKeyId(PGPSignature signature) throws PGPSignatureException {
 
         Optional<PGPSignatureSubpacketVector> hashedSubPackets = Optional
                 .ofNullable(signature.getHashedSubPackets());
@@ -215,5 +241,149 @@ public final class PGPSignatureUtils {
         }
 
         return pgpKeyId;
+    }
+
+    /**
+     * Create {@link PGPSignatureInfo} contains data about artifact, signature, public key used to verify and
+     * verification status.
+     *
+     * @param artifact    The artifact to check signature
+     * @param artifactAsc The artifact contains signature
+     * @param cache       PGP cache for access public key
+     *
+     * @return PGPSignatureInfo with verification result
+     */
+    public PGPSignatureInfo getSignatureInfo(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
+
+        PGPSignatureInfo.PGPSignatureInfoBuilder signatureInfoBuilder = PGPSignatureInfo.builder();
+
+        signatureInfoBuilder.artifact(ArtifactInfo.builder()
+                .groupId(artifact.getGroupId())
+                .artifactId(artifact.getArtifactId())
+                .type(artifact.getType())
+                .classifier(artifact.getClassifier())
+                .version(artifact.getVersion())
+                .build());
+
+        if (!artifact.isResolved()) {
+            return signatureInfoBuilder.status(SignatureStatus.ARTIFACT_NOT_RESOLVED).build();
+        }
+
+        if (artifactAsc == null || !artifactAsc.isResolved()) {
+            return signatureInfoBuilder.status(SignatureStatus.SIGNATURE_NOT_RESOLVED).build();
+        }
+
+        PGPSignature signature = Try.of(() -> loadSignature(artifactAsc.getFile()))
+                .onFailure(e ->
+                        signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.SIGNATURE_ERROR))
+                .getOrNull();
+
+        if (signature == null) {
+            return signatureInfoBuilder.build();
+        }
+
+        PGPKeyId keyId = Try.of(() -> retrieveKeyId(signature))
+                .onFailure(e ->
+                        signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.SIGNATURE_ERROR))
+                .getOrNull();
+
+        if (keyId == null) {
+            return signatureInfoBuilder.build();
+        }
+
+        signatureInfoBuilder.signature(
+                SignatureInfo.builder()
+                        .hashAlgorithm(signature.getHashAlgorithm())
+                        .keyAlgorithm(signature.getKeyAlgorithm())
+                        .date(signature.getCreationTime())
+                        .keyId(keyId.toString())
+                        .version(signature.getVersion())
+                        .build());
+
+        PGPPublicKeyRing publicKeys = Try.of(() -> cache.getKeyRing(keyId))
+                .onFailure(e -> signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.ERROR))
+                .getOrNull();
+
+        if (publicKeys == null) {
+            return signatureInfoBuilder.build();
+        }
+
+        PGPPublicKey publicKey = keyId.getKeyFromRing(publicKeys);
+
+        signatureInfoBuilder.key(KeyInfo.builder()
+                .fingerprint(PublicKeyUtils.fingerprint(publicKey))
+                .master(PublicKeyUtils.getMasterKey(publicKey, publicKeys)
+                        .map(PublicKeyUtils::fingerprint)
+                        .orElse(null))
+                .uids(PublicKeyUtils.getUserIDs(publicKey, publicKeys))
+                .version(publicKey.getVersion())
+                .algorithm(publicKey.getAlgorithm())
+                .bits(publicKey.getBitStrength())
+                .date(publicKey.getCreationTime())
+                .build());
+
+        Boolean verifyStatus = Try.of(() -> {
+            signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
+            readFileContentInto(signature, artifact.getFile());
+            return signature.verify();
+        }).onFailure(e -> signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.ERROR))
+                .getOrNull();
+
+        if (verifyStatus == null) {
+            return signatureInfoBuilder.build();
+        }
+
+        return signatureInfoBuilder
+                .status(Boolean.TRUE.equals(verifyStatus)
+                        ? SignatureStatus.SIGNATURE_VALID : SignatureStatus.SIGNATURE_INVALID)
+                .build();
+    }
+
+    /**
+     * Map Public-Key algorithms id to name
+     *
+     * @param keyAlgorithm key algorithm id
+     *
+     * @return key algorithm name
+     *
+     * @throws UnsupportedOperationException if algorithm is is not known
+     */
+    public String keyAlgorithmName(int keyAlgorithm) {
+        switch (keyAlgorithm) {
+            case PublicKeyAlgorithmTags.RSA_GENERAL:
+                return "RSA (Encrypt or Sign)";
+            case PublicKeyAlgorithmTags.RSA_ENCRYPT:
+                return "RSA Encrypt-Only";
+            case PublicKeyAlgorithmTags.RSA_SIGN:
+                return "RSA Sign-Only";
+            case PublicKeyAlgorithmTags.ELGAMAL_ENCRYPT:
+                return "Elgamal (Encrypt-Only)";
+            case PublicKeyAlgorithmTags.DSA:
+                return "DSA (Digital Signature Algorithm)";
+            case PublicKeyAlgorithmTags.ECDH:
+                return "Elliptic Curve";
+            case PublicKeyAlgorithmTags.ECDSA:
+                return "Elliptic Curve Digital Signature";
+            case PublicKeyAlgorithmTags.ELGAMAL_GENERAL:
+                return "Elgamal (Encrypt or Sign)";
+            case PublicKeyAlgorithmTags.DIFFIE_HELLMAN:
+                return "Diffie-Hellman";
+            case PublicKeyAlgorithmTags.EDDSA:
+                return "EdDSA";
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_1:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_2:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_3:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_4:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_5:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_6:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_7:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_8:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_9:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_10:
+            case PublicKeyAlgorithmTags.EXPERIMENTAL_11:
+                return "Experimental - " + keyAlgorithm;
+            default:
+                throw new UnsupportedOperationException("Unknown key algorithm value encountered: " + keyAlgorithm);
+        }
     }
 }

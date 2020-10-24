@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
+import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -44,6 +46,8 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
+import org.simplify4u.plugins.keyserver.PGPKeysCache;
+import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -73,8 +77,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "{} PGP Signature {}\n       {} UserIds: {}";
 
-    @Inject
-    private ArtifactResolver artifactResolver;
+    protected final KeysMap keysMap;
 
     /**
      * Scope used to build dependency list.
@@ -215,6 +218,35 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     @Parameter(property = "pgpverify.disableChecksum", defaultValue = "false")
     private boolean disableChecksum;
 
+    /**
+     * <p>
+     * Specifies the location of a file that contains the map of dependencies to PGP key.
+     * </p>
+     *
+     * <p>
+     * This can be path to local file, path to file on plugin classpath or url address.
+     * </p>
+     *
+     * <p>
+     * <a href="keysmap-format.html">Format description.</a>
+     * </p>
+     *
+     * <p>
+     * You can use ready keys map: <a href="https://github.com/s4u/pgp-keys-map">https://github.com/s4u/pgp-keys-map</a>
+     * </p>
+     *
+     * @since 1.1.0
+     */
+    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
+    private String keysMapLocation;
+
+    @Inject
+    PGPVerifyMojo(ArtifactResolver artifactResolver, PGPKeysCache pgpKeysCache, PGPSignatureUtils pgpSignatureUtils,
+            MavenSession session, KeysMap keysMap) {
+        super(artifactResolver, pgpKeysCache, pgpSignatureUtils, session);
+        this.keysMap = keysMap;
+    }
+
     @Override
     protected String getMojoName() {
         return MOJO_NAME;
@@ -222,6 +254,8 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
 
     @Override
     public void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException {
+
+        initKeysMap();
 
         checkDeprecated();
 
@@ -275,6 +309,12 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         if (strictNoSignature) {
             LOGGER.warn("strictNoSignature is deprecated - this requirement can be expressed through the keysmap");
         }
+    }
+
+    private void initKeysMap() throws MojoExecutionException {
+
+        Try.run(() -> keysMap.load(keysMapLocation))
+                .getOrElseThrow(e -> new MojoExecutionException(e.getMessage(), e));
     }
 
     private SignatureRequirement determineSignaturePolicy() {
@@ -349,11 +389,11 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         try {
             final PGPSignature pgpSignature;
             try (FileInputStream input = new FileInputStream(signatureFile)) {
-                pgpSignature = PGPSignatureUtils.loadSignature(input);
+                pgpSignature = pgpSignatureUtils.loadSignature(input);
             }
 
             verifyWeakSignature(pgpSignature);
-            sigKeyID = PGPSignatureUtils.retrieveKeyId(pgpSignature);
+            sigKeyID = pgpSignatureUtils.retrieveKeyId(pgpSignature);
 
             PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
             PGPPublicKey publicKey = sigKeyID.getKeyFromRing(publicKeyRing);
@@ -368,7 +408,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
             }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-            PGPSignatureUtils.readFileContentInto(pgpSignature, artifactFile);
+            pgpSignatureUtils.readFileContentInto(pgpSignature, artifactFile);
 
             LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
                     pgpSignature.getKeyAlgorithm(), pgpSignature.getHashAlgorithm());
@@ -401,7 +441,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     }
 
     private void verifyWeakSignature(PGPSignature pgpSignature) throws MojoFailureException {
-        final String weakHashAlgorithm = PGPSignatureUtils.checkWeakHashAlgorithm(pgpSignature);
+        final String weakHashAlgorithm = pgpSignatureUtils.checkWeakHashAlgorithm(pgpSignature);
         if (weakHashAlgorithm == null) {
             return;
         }

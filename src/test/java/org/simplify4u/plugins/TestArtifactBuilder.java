@@ -15,6 +15,8 @@
  */
 package org.simplify4u.plugins;
 
+import java.io.File;
+
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 
@@ -27,6 +29,8 @@ public class TestArtifactBuilder {
     private String artifactId = "test";
     private String packaging = "jar";
     private String version = "1.1.1" ;
+    private boolean resolved = true;
+    private File file;
 
     public static TestArtifactBuilder testArtifact() {
         return new TestArtifactBuilder();
@@ -52,7 +56,20 @@ public class TestArtifactBuilder {
         return this;
     }
 
+    public TestArtifactBuilder notResolved() {
+        this.resolved = false;
+        return this;
+    }
+
+    public TestArtifactBuilder file(File file) {
+        this.file = file;
+        return this;
+    }
+
     public Artifact build() {
-        return new DefaultArtifact(groupId, artifactId, version, "", packaging, "", null);
+        DefaultArtifact artifact = new DefaultArtifact(groupId, artifactId, version, "", packaging, "", null);
+        artifact.setResolved(resolved);
+        artifact.setFile(file);
+        return artifact;
     }
 }
