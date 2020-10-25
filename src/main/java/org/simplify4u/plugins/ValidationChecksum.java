@@ -156,14 +156,5 @@ final class ValidationChecksum {
             }
             return result;
         }
-
-        /**
-         * Delete a checksum if present in the specified directory.
-         *
-         * @param directory the target directory for a checksum file.
-         */
-        static void deleteChecksum(File directory) {
-            FileUtils.deleteQuietly(new File(directory, FILENAME_CHECKSUM_PRIOR_VALIDATION));
-        }
     }
 }
