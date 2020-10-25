@@ -15,14 +15,16 @@
  */
 package org.simplify4u.plugins;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-
-import java.io.File;
-
-import com.google.common.io.Files;
 
 import org.apache.maven.artifact.Artifact;
 import org.simplify4u.plugins.ValidationChecksum.Builder;
@@ -35,14 +37,16 @@ public class ValidationChecksumTest {
     private File checksumdirectory = null;
 
     @BeforeMethod
-    public void setUp() {
-        this.checksumdirectory = Files.createTempDir();
+    public void setUp() throws IOException {
+        this.checksumdirectory = Files.createTempDirectory("ValidationChecksumTest").toFile();
     }
 
     @AfterMethod
-    public void tearDown() {
-        ValidationChecksum.Builder.deleteChecksum(checksumdirectory);
-        this.checksumdirectory.delete();
+    public void tearDown() throws IOException {
+        Files.walk(checksumdirectory.toPath())
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
     }
 
     @Test

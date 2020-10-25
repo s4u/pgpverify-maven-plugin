@@ -65,14 +65,11 @@ com.google.errorprone:error_prone_check_api:2.3.3 = 0xE77417AC194160A3FABD04969A
 com.google.errorprone:error_prone_type_annotations:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
 com.google.errorprone:javac:9+181-r4173-1 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
 com.google.googlejavaformat:google-java-format:1.4 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.guava:failureaccess:1.0.1 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
-com.google.guava:guava:22.0 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
-com.google.guava:guava:23.0 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
-com.google.guava:guava:27.0.1-jre = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
-com.google.guava:guava:28.2-jre = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
-com.google.guava:guava:29.0-jre = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
-com.google.guava:guava-testlib:27.0.1-jre = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
-com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava = 0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
+
+com.google.guava        = \
+                            0x56ED3B4843DAACC79DE555557457CA33C3CE9E15, \
+                            0xBDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE
+
 com.google.gwt:gwt-user:2.8.2 = 0x1B2EF680A6214A56D6058515F6B09AEF9CC998B1
 com.google.gwt.inject:gin:2.1.2 = 0xCFB7FEC085E5A7119D7BF536BB55FDE36E55FD8B
 com.google.inject.extensions:guice-assistedinject:4.0-beta5 = 0x56ED3B4843DAACC79DE555557457CA33C3CE9E15
@@ -99,8 +96,7 @@ commons-beanutils:commons-beanutils:1.7.0
 commons-beanutils:commons-beanutils:1.9.2 = 0xE8B2020BD8E1C9CAFD9288827C4504A4D75CF3DC
 commons-chain:commons-chain:1.1
 
-commons-codec:commons-codec =   0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
-                                0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
+commons-codec:commons-codec =  \
                                 0x2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB, \
                                 0xBC87A3FD0A54480F0BADBEBD21939FF0CA2A6567
 
