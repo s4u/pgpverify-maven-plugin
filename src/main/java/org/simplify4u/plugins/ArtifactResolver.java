@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
  */
 @Named
-final class ArtifactResolver {
+public class ArtifactResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactResolver.class);
 
@@ -333,8 +333,12 @@ final class ArtifactResolver {
             throws MojoExecutionException {
         final ArtifactFilter requestFilter = a -> !dependencyFilter.shouldSkipArtifact(a);
         final ArtifactResolutionRequest request = new ArtifactResolutionRequest()
-                .setArtifact(artifact).setLocalRepository(localRepository).setRemoteRepositories(remoteRepositories)
-                .setResolutionFilter(requestFilter).setCollectionFilter(requestFilter).setResolveTransitively(true);
+                .setArtifact(artifact)
+                .setLocalRepository(localRepository)
+                .setRemoteRepositories(remoteRepositories)
+                .setResolutionFilter(requestFilter)
+                .setCollectionFilter(requestFilter)
+                .setResolveTransitively(true);
         final ArtifactResolutionResult resolution = repositorySystem.resolve(request);
         if (!resolution.isSuccess()) {
             if (resolution.hasMissingArtifacts()) {
@@ -356,7 +360,7 @@ final class ArtifactResolver {
         }
     }
 
-    private Artifact resolvePom(Artifact artifact) {
+    public Artifact resolvePom(Artifact artifact) {
         final Artifact pomArtifact = repositorySystem.createProjectArtifact(artifact.getGroupId(),
                 artifact.getArtifactId(), artifact.getVersion());
         final ArtifactResolutionResult result = request(pomArtifact, remoteRepositories);
@@ -367,7 +371,7 @@ final class ArtifactResolver {
         return pomArtifact;
     }
 
-    private Artifact resolveArtifact(Artifact artifact) {
+    public Artifact resolveArtifact(Artifact artifact) {
         final ArtifactResolutionResult result = request(artifact, remoteRepositories);
         if (!result.isSuccess()) {
             result.getExceptions().forEach(e -> LOG.warn("Failed to resolve {}: {}", artifact.getId(), e.getMessage()));

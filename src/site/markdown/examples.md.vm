@@ -105,7 +105,47 @@ keysMap with pgp fingerprint from external resource
             ...
           </plugins>
         </pluginManagement>
+
+Show information about signature 
+--------------------------------
+
+We can see information about signature for a specific artifact, running:
     
+    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:jnuit:4.12
+    
+as a result we get
+
+    Artifact:
+        groupId:     junit
+        artifactId:  junit
+        type:        jar
+        version:     4.12
+    
+    PGP signature:
+        version:     4
+        algorithm:   SHA1withRSA
+        keyId:       0xEFE8086F9E93774E
+        create date: Thu Dec 04 17:17:33 CET 2014
+        status:      valid
+    
+    PGP key:
+        version:     4
+        algorithm:   RSA (Encrypt or Sign)
+        bits:        2048
+        fingerprint: 0xD4C89EA4AAF455FD88B22087EFE8086F9E93774E
+        master key:  0x58E79B6ABC762159DC0B1591164BD2247B936711
+        create date: Sun Jul 27 14:31:46 CEST 2014
+        uids:        [.... (JUnit Development, 2014) <mail@....>]
+
+By default, information about `jar` artifact is displayed, you can specify packaging, classifier, 
+artifact property format is:
+
+    groupId:artifactId:version[:packaging[:classifier]]
+    
+You can add property `showPom` to also show information about corresponding pom file.
+
+    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:jnuit:4.12 -DshowPom
+     
 IT tests
 --------
 
