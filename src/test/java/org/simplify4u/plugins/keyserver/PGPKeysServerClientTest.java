@@ -1,45 +1,34 @@
 package org.simplify4u.plugins.keyserver;
 
-import static org.simplify4u.plugins.utils.ProxyUtil.makeMavenProxy;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.maven.settings.Proxy;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import static org.simplify4u.plugins.utils.ProxyUtil.makeMavenProxy;
 
 public class PGPKeysServerClientTest {
 
-    @Test
-    public void testIfClientWithProxySetsProperties() throws URISyntaxException, IOException {
-        URI uri = new URI("https://localhost/");
-        Proxy proxy = makeMavenProxy("user", "password");
-
-        runProxyConfig(uri, proxy);
+    @DataProvider(name = "proxy")
+    public static Object[][] proxy() {
+        return new Object[][]{
+                { makeMavenProxy("user", "password") },
+                { makeMavenProxy("", "") },
+                { makeMavenProxy(null, null) },
+                { null }};
     }
 
-    @Test
-    public void testIfClientWithOutProxyIsIgnored() throws URISyntaxException, IOException {
+    @Test(dataProvider = "proxy")
+    public void testIfClientWithProxyProperties(Proxy proxy) throws URISyntaxException, IOException {
         URI uri = new URI("https://localhost/");
-        Proxy proxy = makeMavenProxy("", "");
 
         runProxyConfig(uri, proxy);
-    }
-    @Test
-    public void testIfClientWithOutProxyIsIgnored2() throws URISyntaxException, IOException {
-        URI uri = new URI("https://localhost/");
-        Proxy proxy = makeMavenProxy(null, null);
-
-        runProxyConfig(uri, proxy);
-    }
-
-    @Test
-    public void testIfNoProxyWorks() throws URISyntaxException, IOException {
-        URI uri = new URI("https://localhost/");
-
-        runProxyConfig(uri, null);
     }
 
     private void runProxyConfig(URI uri, Proxy proxy) throws IOException {

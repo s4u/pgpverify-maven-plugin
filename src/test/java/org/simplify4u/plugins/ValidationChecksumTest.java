@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -57,7 +58,7 @@ public class ValidationChecksumTest {
     @Test
     public void testValidationChecksumBuilderArtifactsNull() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
-        assertThatCode(() -> builder.artifacts(null).build())
+        assertThatCode(() -> builder.artifacts(null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
@@ -82,7 +83,8 @@ public class ValidationChecksumTest {
                 .artifactId("maven-compiler-plugin").packaging("jar").version("1.0").build();
         final Artifact a2 = TestArtifactBuilder.testArtifact().groupId("org.apache.commons").artifactId("commons-io")
                 .packaging("jar").version("1.0").build();
-        assertThatCode(() -> builder.artifacts(asList(a1, a2, null)).build())
+        final List<Artifact> artifacts = asList(a1, a2, null);
+        assertThatCode(() -> builder.artifacts(artifacts).build())
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 

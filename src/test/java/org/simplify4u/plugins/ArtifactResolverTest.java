@@ -141,8 +141,9 @@ public class ArtifactResolverTest {
         Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
 
         // then
-        assertThat(resolved).hasSize(1);
-        assertThat(resolved).allMatch(Artifact::isResolved);
+        assertThat(resolved)
+                .hasSize(1)
+                .allMatch(Artifact::isResolved);
     }
 
     @Test
@@ -171,11 +172,10 @@ public class ArtifactResolverTest {
         verify(repositorySystem, times(1))
                 .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
 
-        assertThat(resolved).hasSize(2);
-        assertThat(resolved).allMatch(Artifact::isResolved);
-
-        assertThat(resolved).areExactly(1, IS_JAR_TYPE);
-        assertThat(resolved).areExactly(1, IS_POM_TYPE);
+        assertThat(resolved).hasSize(2)
+            .allMatch(Artifact::isResolved)
+            .areExactly(1, IS_JAR_TYPE)
+            .areExactly(1, IS_POM_TYPE);
     }
 
     @Test
@@ -210,8 +210,9 @@ public class ArtifactResolverTest {
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
                 eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
 
-        assertThat(resolved).hasSize(1);
-        assertThat(resolved).containsOnlyKeys(artifact);
+        assertThat(resolved)
+                .hasSize(1)
+                .containsOnlyKeys(artifact);
 
         Artifact value = resolved.entrySet().iterator().next().getValue();
         assertThat(value.getGroupId()).isEqualTo("g");
