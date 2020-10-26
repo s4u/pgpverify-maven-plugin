@@ -1,0 +1,27 @@
+categories:
+
+  - title: 'New features'
+    labels:
+      - 'enhancement'
+
+  - title: 'Bug Fixes'
+    labels:
+      - 'bug'
+
+  - title: 'Maintenance'
+    label:
+      - 'code quality'
+
+  - title: 'Dependency updates'
+    label:
+      -  'dependencies'
+
+change-template: '- $TITLE #$NUMBER'
+
+template: |
+  # What's Changed
+
+  $CHANGES
+
+  # Thanks
+  Many thanks for collaboration on this release for: $CONTRIBUTORS
