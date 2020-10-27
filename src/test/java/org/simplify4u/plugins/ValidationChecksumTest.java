@@ -78,13 +78,28 @@ public class ValidationChecksumTest {
 
     @Test
     public void testValidationChecksumBuilderChecksumArtifactsNullFails() {
-        final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
-        final Artifact a1 = TestArtifactBuilder.testArtifact().groupId("org.apache.maven.plugins")
-                .artifactId("maven-compiler-plugin").packaging("jar").version("1.0").build();
-        final Artifact a2 = TestArtifactBuilder.testArtifact().groupId("org.apache.commons").artifactId("commons-io")
-                .packaging("jar").version("1.0").build();
+
+        final Artifact a1 = TestArtifactBuilder.testArtifact()
+                .groupId("org.apache.maven.plugins")
+                .artifactId("maven-compiler-plugin")
+                .packaging("jar")
+                .version("1.0")
+                .build();
+
+        final Artifact a2 = TestArtifactBuilder.testArtifact()
+                .groupId("org.apache.commons")
+                .artifactId("commons-io")
+                .packaging("jar")
+                .version("1.0")
+                .build();
+
         final List<Artifact> artifacts = asList(a1, a2, null);
-        assertThatCode(() -> builder.artifacts(artifacts).build())
+
+        Builder builder = new ValidationChecksum.Builder()
+                .destination(checksumdirectory)
+                .artifacts(artifacts);
+
+        assertThatCode(builder::build)
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
