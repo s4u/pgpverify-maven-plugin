@@ -203,41 +203,33 @@ org.apache.maven.doxia:doxia-site-renderer:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012
 org.apache.maven.doxia:doxia-skin-model:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
 org.apache.maven.doxia:doxia-skin-model:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 org.apache.maven.doxia:doxia-skin-model:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven:*:3.0 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.apache.maven:maven-archiver:3.1.1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven:maven-archiver:3.5.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven:maven-artifact:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-builder-support:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-core:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-model:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-model-builder:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-plugin-api:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-repository-metadata:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-resolver-provider:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-settings:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven:maven-settings-builder:3.5.0 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
-org.apache.maven.plugins:maven-clean-plugin:3.1.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.plugins:maven-compiler-plugin:* = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.plugins:maven-dependency-plugin:3.1.2 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.plugins:maven-deploy-plugin:3.0.0-M1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.plugins:maven-install-plugin:3.0.0-M1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.plugins:maven-jar-plugin:3.2.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.plugins:maven-pmd-plugin:* = 0xC870735180244047DA600FDEC171A58398EEC284
-org.apache.maven.plugins:maven-project-info-reports-plugin:3.0.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
-org.apache.maven.plugins:maven-site-plugin:3.8.2 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
-org.apache.maven.plugins:maven-site-plugin:3.9.0 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
+org.apache.maven = \
+                                0x042B29E928995B9DB963C636C7CA19B7B620D787, \
+                                0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
+                                0xBA926F64CA647B6D853A38672E2010F8A7FF4A41, \
+                                0xF254B35617DC255D9344BCFA873A8E86B4372146, \
+                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
+org.apache.maven.plugins = \
+                                0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \
+                                0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
+                                0xC870735180244047DA600FDEC171A58398EEC284, \
+                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
 org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.0-alpha-1 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
 org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
 org.apache.maven.plugin-testing:maven-plugin-testing-tools:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
 org.apache.maven.plugin-tools:maven-plugin-annotations:3.5.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.reporting:maven-reporting-api:3.0 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
-org.apache.maven.reporting:maven-reporting-exec:1.4 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.reporting:maven-reporting-impl:2.3 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
-org.apache.maven.reporting:maven-reporting-impl:3.0.0 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
-org.apache.maven.resolver:maven-resolver-api:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.resolver:maven-resolver-impl:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.resolver:maven-resolver-spi:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
-org.apache.maven.resolver:maven-resolver-util:1.0.3 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
+org.apache.maven.reporting = \
+                                0x190D5A957FF22273E601F7A7C92C5FEC70161C62, \
+                                0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345, \
+                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
+org.apache.maven.resolver = \
+                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
 org.apache.maven.scm:*:1.10.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 org.apache.maven.shared:file-management:3.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
 org.apache.maven.shared:maven-artifact-transfer:0.9.1 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
