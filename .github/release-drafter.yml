@@ -11,6 +11,7 @@ categories:
   - title: 'Maintenance'
     label:
       - 'code quality'
+      - 'documentation'
 
   - title: 'Dependency updates'
     label:
