@@ -14,47 +14,18 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/DECORATION/1.3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/DECORATION/1.3.0 http://maven.apache.org/xsd/decoration-1.3.0.xsd">
-
-    <googleAnalyticsAccountId>UA-46704610-1</googleAnalyticsAccountId>
-
-    <publishDate position="right" />
-    <version position="right" />
-
-    <skin>
-        <groupId>org.apache.maven.skins</groupId>
-        <artifactId>maven-fluido-skin</artifactId>
-        <version>1.9</version>
-    </skin>
-
-    <custom>
-        <fluidoSkin>
-            <copyrightClass>pull-right</copyrightClass>
-            <gitHub>
-                <projectId>s4u/pgpverify-maven-plugin</projectId>
-                <ribbonOrientation>right</ribbonOrientation>
-                <ribbonColor>gray</ribbonColor>
-            </gitHub>
-            <facebookLike>
-                <shareButton>true</shareButton>
-            </facebookLike>
-        </fluidoSkin>
-    </custom>
+<project xmlns="http://maven.apache.org/DECORATION/1.8.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/DECORATION/1.8.0 http://maven.apache.org/xsd/decoration-1.8.0.xsd">
 
     <body>
-        <breadcrumbs>
-            <item name="Home" href="/index.html"/>
-        </breadcrumbs>
 
         <menu name="Overview">
-            <item name="Introduction" href="index.html" />
-            <item name="Goals" href="plugin-info.html" />
+            <item name="Introduction" href="index.html"/>
+            <item name="Goals" href="plugin-info.html"/>
             <item name="KeysMap file format" href="keysmap-format.html"/>
-            <item name="Examples of usage" href="examples.html" />
+            <item name="Examples of usage" href="examples.html"/>
         </menu>
 
-        <menu ref="reports" />
     </body>
 
 </project>
