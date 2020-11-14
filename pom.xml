@@ -31,6 +31,7 @@
 
     <name>Verify PGP signatures plugin</name>
     <description>This plugin verify PGP signature of project dependency</description>
+    <url>https://www.simplify4u.org/pgpverify-maven-plugin</url>
     <inceptionYear>2014</inceptionYear>
 
     <licenses>
@@ -63,7 +64,7 @@
 
     <distributionManagement>
         <site>
-            <id>github-pages</id>
+            <id>github</id>
             <url>${project.scm.connection}</url>
         </site>
     </distributionManagement>
@@ -472,24 +473,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-project-info-reports-plugin</artifactId>
-                <reportSets>
-                    <reportSet>
-                        <reports>
-                            <report>ci-management</report>
-                            <report>dependencies</report>
-                            <report>issue-management</report>
-                            <report>licenses</report>
-                            <report>plugins</report>
-                            <report>team</report>
-                            <report>scm</report>
-                            <report>summary</report>
-                        </reports>
-                    </reportSet>
-                </reportSets>
             </plugin>
         </plugins>
     </reporting>
