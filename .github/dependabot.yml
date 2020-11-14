@@ -4,7 +4,6 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-    time: '09:09'
   open-pull-requests-limit: 10
   ignore:
   - dependency-name: org.apache.maven:maven-artifact
@@ -16,9 +15,3 @@ updates:
   - dependency-name: org.apache.maven:maven-plugin-api
     versions:
     - "> 3.5.0"
-- package-ecosystem: github-actions
-  directory: "/"
-  schedule:
-    interval: daily
-    time: '09:09'
-  open-pull-requests-limit: 10
