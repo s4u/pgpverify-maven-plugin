@@ -43,6 +43,9 @@
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/scm.html</loc>
     </url>
     <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/show-mojo.html</loc>
+    </url>
+    <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/summary.html</loc>
     </url>
     <url>
