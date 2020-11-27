@@ -15,6 +15,29 @@
  */
 package org.simplify4u.plugins.keyserver;
 
+import com.google.common.io.ByteStreams;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+import io.vavr.control.Try;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoSession;
+import org.mockito.Spy;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
+import org.simplify4u.plugins.utils.PGPKeyId;
+import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
+import org.slf4j.Logger;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,34 +65,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
-import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
-import org.simplify4u.plugins.utils.PGPKeyId;
-import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
-import org.simplify4u.sjf4jmock.LoggerMock;
-import org.slf4j.Logger;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
-
-@Listeners(MockitoTestNGListener.class)
 public class PGPKeysCacheTest {
 
     public static final PGPKeyId KEY_ID_1 = PGPKeyId.from(1L);
 
     private Path cachePath;
+
+    @Spy
+    Logger keysCacheLogger;
 
     @Mock
     private PGPKeysServerClient keysServerClient;
@@ -93,15 +96,18 @@ public class PGPKeysCacheTest {
         return Collections.singletonList(keysServerClient);
     }
 
+    MockitoSession mockitoSession;
     @BeforeMethod
     void setup() throws IOException {
-        LoggerMock.clearInvocations();
+        mockitoSession = Mockito.mockitoSession().initMocks(this).startMocking();
         cachePath = Files.createTempDirectory("cache-path-test");
     }
 
     @AfterMethod
-    void cleanup() throws IOException {
-        MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE);
+    void cleanup() {
+        Try.run(() -> MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE))
+                .andFinallyTry(mockitoSession::finishMocking)
+                .get();
     }
 
     @Test
@@ -353,7 +359,6 @@ public class PGPKeysCacheTest {
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Fallback test2");
 
-        Logger keysCacheLogger = LoggerMock.getLoggerMock(PGPKeysCache.class);
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), eq("Fallback test1"), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), eq("Fallback test2"), anyString());
         verify(keysCacheLogger).error("All servers from list was failed");
@@ -382,7 +387,6 @@ public class PGPKeysCacheTest {
                         client.copyKeyToOutputStream(KEY_ID_1, null, null)))
                 .isExactlyInstanceOf(PGPKeyNotFound.class);
 
-        Logger keysCacheLogger = LoggerMock.getLoggerMock(PGPKeysCache.class);
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
         verify(keysCacheLogger).error("All servers from list was failed");
