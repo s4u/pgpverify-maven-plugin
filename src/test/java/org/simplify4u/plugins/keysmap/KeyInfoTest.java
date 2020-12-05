@@ -49,7 +49,8 @@ public class KeyInfoTest {
                 {"0x123456789abcdef0, 0x0fedcba987654321", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0", 0x231456789abcdef0L, false},
                 {"0x123456789abcdef0, *", 0x231456789abcdef0L, true},
-                {"0x123456789abcdef0, 0x0fedcba987654321", 0x321456789abcdef0L, false}
+                {"0x123456789abcdef0, 0x0fedcba987654321", 0x321456789abcdef0L, false},
+                {"0x0000000000000001", 0x1L, true}
         };
     }
 

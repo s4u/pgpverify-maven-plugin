@@ -15,12 +15,11 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Optional;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.bouncycastle.util.encoders.Hex;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 public class KeyInfoItemKey implements KeyInfoItem {
@@ -28,7 +27,7 @@ public class KeyInfoItemKey implements KeyInfoItem {
     private final byte[] fingerPrint;
 
     public KeyInfoItemKey(String key) {
-        fingerPrint = strKeyToBytes(key.substring(2));
+        fingerPrint = strKeyToBytes(key.substring(2).replace(" ", ""));
     }
 
     @Override
@@ -43,15 +42,7 @@ public class KeyInfoItemKey implements KeyInfoItem {
     }
 
     private static byte[] strKeyToBytes(String key) {
-
-        BigInteger bigInteger = new BigInteger(key.replace(" ", ""), 16);
-
-        byte[] bytes = bigInteger.toByteArray();
-
-        if (bytes[0] == 0) {
-            // we can remove sign byte
-            bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
-        }
+        byte[] bytes = Hex.decode(key);
 
         if (bytes.length < 8 || bytes.length > 20) {
             throw new IllegalArgumentException(
