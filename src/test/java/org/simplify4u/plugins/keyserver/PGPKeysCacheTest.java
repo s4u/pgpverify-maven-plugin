@@ -15,29 +15,6 @@
  */
 package org.simplify4u.plugins.keyserver;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
-import io.vavr.control.Try;
-import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoSession;
-import org.mockito.Spy;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
-import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
-import org.simplify4u.plugins.utils.PGPKeyId;
-import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
-import org.slf4j.Logger;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,6 +41,29 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import com.google.common.io.ByteStreams;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+import io.vavr.control.Try;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoSession;
+import org.mockito.Spy;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
+import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
+import org.simplify4u.plugins.utils.PGPKeyId;
+import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
+import org.slf4j.Logger;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class PGPKeysCacheTest {
 
@@ -97,6 +97,7 @@ public class PGPKeysCacheTest {
     }
 
     MockitoSession mockitoSession;
+
     @BeforeMethod
     void setup() throws IOException {
         mockitoSession = Mockito.mockitoSession().initMocks(this).startMocking();
@@ -165,6 +166,30 @@ public class PGPKeysCacheTest {
                 .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
 
         verifyNoInteractions(keysServerClients.get(0));
+    }
+
+    @Test
+    public void brokenKeyInCache() throws IOException, PGPException {
+
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
+        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
+
+        // create empty file for key in cache
+        Path keyDirPath = cachePath.resolve("EF").resolve("E8");
+        Files.createDirectories(keyDirPath);
+        Files.createFile(keyDirPath.resolve("EFE8086F9E93774E.asc"));
+
+        // call should retrieve key from server
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
+
+        assertThat(keyRing)
+                .hasSize(2)
+                .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
+
+        verify(keysServerClients.get(0)).getUriForGetKey(any(PGPKeyId.class));
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(PGPKeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
+        verifyNoMoreInteractions(keysServerClients.get(0));
+        clearInvocations(keysServerClients.get(0));
     }
 
     @Test

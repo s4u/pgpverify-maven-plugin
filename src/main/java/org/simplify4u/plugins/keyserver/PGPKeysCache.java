@@ -151,28 +151,41 @@ public class PGPKeysCache {
 
     public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException, PGPException {
 
-        Optional<PGPPublicKeyRing> keyRing = Optional.empty();
+        Optional<PGPPublicKeyRing> keyRing;
 
         String path = keyID.getHashPath();
         File keyFile = new File(cachePath, path);
 
         synchronized (LOCK) {
 
-            if (!keyFile.exists()) {
-                keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
-            }
-
-            try (InputStream keyFileStream = new FileInputStream(keyFile)) {
-                keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
-                return keyRing.orElseThrow(() ->
-                        new PGPException(String.format("Can't find public key %s in download file: %s",
-                                keyID, keyFile)));
-            } finally {
-                if (!keyRing.isPresent()) {
-                    deleteFile(keyFile);
+            if (keyFile.exists()) {
+                // load from cache
+                keyRing = loadKeyFromFile(keyFile, keyID);
+                if (keyRing.isPresent()) {
+                    return keyRing.get();
                 }
             }
+
+            // key not in cache or something wrong with cache
+            keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
+            return loadKeyFromFile(keyFile, keyID)
+                    .orElseThrow(() ->
+                            new PGPException(String.format("Can't find public key %s in download file: %s",
+                                    keyID, keyFile)));
         }
+    }
+
+    private static Optional<PGPPublicKeyRing> loadKeyFromFile(File keyFile, PGPKeyId keyID)
+            throws IOException, PGPException {
+        Optional<PGPPublicKeyRing> keyRing = Optional.empty();
+        try (InputStream keyFileStream = new FileInputStream(keyFile)) {
+            keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
+        } finally {
+            if (!keyRing.isPresent()) {
+                deleteFile(keyFile);
+            }
+        }
+        return keyRing;
     }
 
     private static void receiveKey(File keyFile, PGPKeyId keyId, PGPKeysServerClient keysServerClient)
