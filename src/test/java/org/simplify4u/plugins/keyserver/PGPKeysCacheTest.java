@@ -75,6 +75,9 @@ public class PGPKeysCacheTest {
     Logger keysCacheLogger;
 
     @Mock
+    private PGPPublicKeyRing emptyPgpPublicKeyRing;
+
+    @Mock
     private PGPKeysServerClient keysServerClient;
 
     @InjectMocks
@@ -200,7 +203,7 @@ public class PGPKeysCacheTest {
 
         // first call retrieve key from server
         assertThatCode(() -> pgpKeysCache.getKeyRing(PGPKeyId.from(0x1234567890L)))
-                .isExactlyInstanceOf(PGPException.class)
+                .isExactlyInstanceOf(IOException.class)
                 .hasMessageStartingWith("Can't find public key 0x0000001234567890 in download file:");
     }
 
@@ -238,10 +241,12 @@ public class PGPKeysCacheTest {
         KeyServerList serverList = new KeyServerListOne().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 2; i++) {
-            serverList.execute(client -> {
+            PGPPublicKeyRing publicKeyRing = serverList.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
+                return emptyPgpPublicKeyRing;
             });
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
             serverList.getUriForShowKey(KEY_ID_1);
         }
 
@@ -263,9 +268,11 @@ public class PGPKeysCacheTest {
         KeyServerList serverListFallback = new KeyServerListOne().withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
-                serverListFallback.execute(client ->
-                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
-                .isExactlyInstanceOf(IOException.class)
+                serverListFallback.execute(client -> {
+                    client.copyKeyToOutputStream(KEY_ID_1, null, null);
+                    return null;
+                })
+        ).isExactlyInstanceOf(IOException.class)
                 .hasMessage("Fallback test");
 
         verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
@@ -284,10 +291,12 @@ public class PGPKeysCacheTest {
         KeyServerList serverListFallback = new KeyServerListFallback().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 2; i++) {
-            serverListFallback.execute(client -> {
+            PGPPublicKeyRing publicKeyRing = serverListFallback.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
+                return emptyPgpPublicKeyRing;
             });
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
             serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
@@ -309,10 +318,12 @@ public class PGPKeysCacheTest {
         KeyServerList serverListFallback = new KeyServerListLoadBalance().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 3; i++) {
-            serverListFallback.execute(client -> {
+            PGPPublicKeyRing publicKeyRing = serverListFallback.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
+                return emptyPgpPublicKeyRing;
             });
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
             serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
@@ -349,10 +360,12 @@ public class PGPKeysCacheTest {
         List<PGPKeysServerClient> executedClient = new ArrayList<>();
 
         for (int i = 0; i < 2; i++) {
-            keyServerList.execute(client -> {
+            PGPPublicKeyRing publicKeyRing = keyServerList.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
+                return emptyPgpPublicKeyRing;
             });
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
             keyServerList.getUriForShowKey(KEY_ID_1);
         }
 
@@ -379,9 +392,11 @@ public class PGPKeysCacheTest {
         keyServerList.withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
-                keyServerList.execute(client ->
-                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
-                .isExactlyInstanceOf(IOException.class)
+                keyServerList.execute(client -> {
+                    client.copyKeyToOutputStream(KEY_ID_1, null, null);
+                    return null;
+                })
+        ).isExactlyInstanceOf(IOException.class)
                 .hasMessage("Fallback test2");
 
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), eq("Fallback test1"), anyString());
@@ -408,9 +423,11 @@ public class PGPKeysCacheTest {
         keyServerList.withClients(Arrays.asList(client1, client2));
 
         assertThatCode(() ->
-                keyServerList.execute(client ->
-                        client.copyKeyToOutputStream(KEY_ID_1, null, null)))
-                .isExactlyInstanceOf(PGPKeyNotFound.class);
+                keyServerList.execute(client -> {
+                    client.copyKeyToOutputStream(KEY_ID_1, null, null);
+                    return null;
+                })
+        ).isExactlyInstanceOf(PGPKeyNotFound.class);
 
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
