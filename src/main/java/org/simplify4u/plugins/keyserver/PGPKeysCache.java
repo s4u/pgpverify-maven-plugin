@@ -149,9 +149,8 @@ public class PGPKeysCache {
         return keyServerList.getUriForShowKey(keyID).toString();
     }
 
-    public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException, PGPException {
+    public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException {
 
-        Optional<PGPPublicKeyRing> keyRing;
 
         String path = keyID.getHashPath();
         File keyFile = new File(cachePath, path);
@@ -160,26 +159,24 @@ public class PGPKeysCache {
 
             if (keyFile.exists()) {
                 // load from cache
-                keyRing = loadKeyFromFile(keyFile, keyID);
+                Optional<PGPPublicKeyRing> keyRing = loadKeyFromFile(keyFile, keyID);
                 if (keyRing.isPresent()) {
                     return keyRing.get();
                 }
             }
 
-            // key not in cache or something wrong with cache
-            keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
-            return loadKeyFromFile(keyFile, keyID)
-                    .orElseThrow(() ->
-                            new PGPException(String.format("Can't find public key %s in download file: %s",
-                                    keyID, keyFile)));
+            // key not exists in cache or something wrong with cache, so receive from servers
+            return keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
         }
     }
 
     private static Optional<PGPPublicKeyRing> loadKeyFromFile(File keyFile, PGPKeyId keyID)
-            throws IOException, PGPException {
+            throws IOException {
         Optional<PGPPublicKeyRing> keyRing = Optional.empty();
         try (InputStream keyFileStream = new FileInputStream(keyFile)) {
             keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
+        } catch (PGPException e) {
+            throw new IOException(e);
         } finally {
             if (!keyRing.isPresent()) {
                 deleteFile(keyFile);
@@ -188,7 +185,7 @@ public class PGPKeysCache {
         return keyRing;
     }
 
-    private static void receiveKey(File keyFile, PGPKeyId keyId, PGPKeysServerClient keysServerClient)
+    private static PGPPublicKeyRing receiveKey(File keyFile, PGPKeyId keyId, PGPKeysServerClient keysServerClient)
             throws IOException {
         File dir = keyFile.getParentFile();
 
@@ -220,6 +217,12 @@ public class PGPKeysCache {
         }
 
         LOGGER.info("Receive key: {}{}\tto {}", keysServerClient.getUriForGetKey(keyId), NL, keyFile);
+
+        // try load key
+        return loadKeyFromFile(keyFile, keyId)
+                .orElseThrow(() ->
+                        new IOException(String.format("Can't find public key %s in download file: %s",
+                                keyId, keyFile)));
     }
 
     private static void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval,
@@ -254,7 +257,7 @@ public class PGPKeysCache {
 
     @FunctionalInterface
     interface KeyServerExecutor {
-        void run(PGPKeysServerClient client) throws IOException;
+        PGPPublicKeyRing run(PGPKeysServerClient client) throws IOException;
     }
 
     /**
@@ -276,16 +279,16 @@ public class PGPKeysCache {
             return lastClient.getUriForShowKey(keyID);
         }
 
-        boolean isSuccessExecute(KeyServerExecutor executor, PGPKeysServerClient client) {
+        protected Optional<PGPPublicKeyRing> executeWithClient(KeyServerExecutor executor, PGPKeysServerClient client) {
             try {
-                executor.run(client);
+                Optional<PGPPublicKeyRing> ret = Optional.of(executor.run(client));
                 lastClient = client;
-                return true;
+                return ret;
             } catch (IOException e) {
                 lastException = e;
                 LOGGER.warn("{} throw exception: {} - {} try next client", client, getMessage(e), getName());
             }
-            return false;
+            return Optional.empty();
         }
 
         @Override
@@ -295,7 +298,7 @@ public class PGPKeysCache {
 
         abstract String getName();
 
-        abstract void execute(KeyServerExecutor executor) throws IOException;
+        abstract PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException;
     }
 
     /**
@@ -309,8 +312,8 @@ public class PGPKeysCache {
         }
 
         @Override
-        void execute(KeyServerExecutor executor) throws IOException {
-            executor.run(lastClient);
+        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
+            return executor.run(lastClient);
         }
 
         @Override
@@ -330,11 +333,12 @@ public class PGPKeysCache {
         }
 
         @Override
-        void execute(KeyServerExecutor executor) throws IOException {
+        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
 
             for (PGPKeysServerClient client : keysServerClients) {
-                if (isSuccessExecute(executor, client)) {
-                    return;
+                Optional<PGPPublicKeyRing> pgpPublicKeys = executeWithClient(executor, client);
+                if (pgpPublicKeys.isPresent()) {
+                    return pgpPublicKeys.get();
                 }
             }
 
@@ -356,15 +360,15 @@ public class PGPKeysCache {
         }
 
         @Override
-        void execute(KeyServerExecutor executor) throws IOException {
+        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
 
             for (int i = 0; i < keysServerClients.size(); i++) {
 
                 PGPKeysServerClient client = keysServerClients.get(lastIndex);
                 lastIndex = (lastIndex + 1) % keysServerClients.size();
-
-                if (isSuccessExecute(executor, client)) {
-                    return;
+                Optional<PGPPublicKeyRing> pgpPublicKeys = executeWithClient(executor, client);
+                if (pgpPublicKeys.isPresent()) {
+                    return pgpPublicKeys.get();
                 }
             }
 
