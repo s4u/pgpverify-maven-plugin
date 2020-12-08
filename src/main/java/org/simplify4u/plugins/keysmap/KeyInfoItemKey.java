@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
@@ -27,7 +28,7 @@ public class KeyInfoItemKey implements KeyInfoItem {
     private final byte[] fingerPrint;
 
     public KeyInfoItemKey(String key) {
-        fingerPrint = strKeyToBytes(key.substring(2).replace(" ", ""));
+        fingerPrint = strKeyToBytes(key);
     }
 
     @Override
@@ -42,11 +43,17 @@ public class KeyInfoItemKey implements KeyInfoItem {
     }
 
     private static byte[] strKeyToBytes(String key) {
-        byte[] bytes = Hex.decode(key);
+        byte[] bytes;
+
+        try {
+            bytes = Hex.decode(key.substring(2));
+        } catch (DecoderException e) {
+            throw new IllegalArgumentException("Malformed keyID hex string " + key, e);
+        }
 
         if (bytes.length < 8 || bytes.length > 20) {
             throw new IllegalArgumentException(
-                    String.format("Key length for = 0x%s is %d bits, should be between 64 and 160 bits",
+                    String.format("Key length for = %s is %d bits, should be between 64 and 160 bits",
                             key, bytes.length * 8));
         }
 

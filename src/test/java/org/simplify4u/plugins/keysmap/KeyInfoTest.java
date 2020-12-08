@@ -48,6 +48,7 @@ public class KeyInfoTest {
                 {"0x123456789abcdef0,0x0fedcba987654321", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0, 0x0fedcba987654321", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0", 0x231456789abcdef0L, false},
+                {"0x12 34 56 78 9a bc de f0", 0x123456789abcdef0L, true},
                 {"0x123456789abcdef0, *", 0x231456789abcdef0L, true},
                 {"0x123456789abcdef0, 0x0fedcba987654321", 0x321456789abcdef0L, false},
                 {"0x0000000000000001", 0x1L, true}
@@ -105,4 +106,17 @@ public class KeyInfoTest {
                     });
         }
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "Malformed keyID hex string 0x123456789abcdef")
+    public void oddHexStringShouldThrowException() {
+        new KeyInfo("0x123456789abcdef");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "Malformed keyID hex string 0xINVALID")
+    public void invalidHexStringShouldThrowException() {
+        new KeyInfo("0xINVALID");
+    }
+
 }
