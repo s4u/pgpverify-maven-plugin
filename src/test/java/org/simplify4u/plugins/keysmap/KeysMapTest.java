@@ -18,7 +18,6 @@ package org.simplify4u.plugins.keysmap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
@@ -49,8 +48,8 @@ public class KeysMapTest {
 
     @BeforeMethod
     void setup() throws ResourceNotFoundException {
-        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
-                .when(resourceManager).getResourceAsInputStream(anyString());
+//        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+//                .when(resourceManager).getResourceAsInputStream(anyString());
     }
 
     @Test
@@ -60,7 +59,7 @@ public class KeysMapTest {
 
     @Test
     public void nullLocationTest() throws Exception {
-        reset(resourceManager);
+//        reset(resourceManager);
         keysMap.load(null);
 
         verifyNoInteractions(resourceManager);
@@ -69,7 +68,7 @@ public class KeysMapTest {
 
     @Test
     public void emptyLocationTest() throws Exception {
-        reset(resourceManager);
+//        reset(resourceManager);
         keysMap.load("");
 
         verifyNoInteractions(resourceManager);
@@ -78,6 +77,9 @@ public class KeysMapTest {
 
     @Test
     public void validKeyFromMap() throws Exception {
+
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
 
         keysMap.load("/keysMap.list");
 
@@ -137,6 +139,9 @@ public class KeysMapTest {
 
     @Test
     public void invalidKeyFromMap() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
         keysMap.load("/keysMap.list");
 
         verify(resourceManager).getResourceAsInputStream(anyString());
@@ -150,6 +155,8 @@ public class KeysMapTest {
 
     @Test
     public void specialValueNoSig() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
 
         keysMap.load("/keysMap.list");
 
@@ -177,6 +184,8 @@ public class KeysMapTest {
 
     @Test
     public void specialValueBadSig() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
 
         keysMap.load("/keysMap.list");
 
@@ -189,6 +198,8 @@ public class KeysMapTest {
 
     @Test
     public void specialValueNoKey() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
 
         keysMap.load("/keysMap.list");
 
@@ -201,9 +212,11 @@ public class KeysMapTest {
 
     @Test
     public void shortKeyShouldThrownException() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
         Assertions.assertThatCode(() -> keysMap.load("/keyMap-keyToShort.list"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Key length for = 0x10 is 8 bits, should be between 64 and 160 bits");
-
     }
 }

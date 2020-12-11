@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.mockito.Mockito;
 
 /**
  * @author Slawomir Jaranowski.
@@ -45,7 +46,7 @@ public abstract class TestUtils {
             bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
         }
 
-        PGPPublicKey pgpKey = mock(PGPPublicKey.class);
+        PGPPublicKey pgpKey = mock(PGPPublicKey.class, Mockito.withSettings().lenient());
         when(pgpKey.getFingerprint()).thenReturn(bytes);
         when(pgpKey.isMasterKey()).thenReturn(true);
 

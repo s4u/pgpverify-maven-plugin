@@ -32,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.AbstractPGPMojo;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
@@ -46,6 +47,12 @@ public class MavenProxyTest {
 
     @InjectMocks
     private MavenProxy mavenProxy;
+
+    @AfterMethod
+    void cleanup() {
+        // not possibility to setup final field in MavenProxy
+        mavenProxy = null;
+    }
 
     /**
      * test that if we set a proxy, we want to ensure that it is the right one from our config
