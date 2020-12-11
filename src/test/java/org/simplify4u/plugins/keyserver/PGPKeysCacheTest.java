@@ -45,14 +45,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import io.vavr.control.Try;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoSession;
 import org.mockito.Spy;
+import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
@@ -63,8 +61,10 @@ import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+@Listeners(MockitoTestNGListener.class)
 public class PGPKeysCacheTest {
 
     public static final PGPKeyId KEY_ID_1 = PGPKeyId.from(1L);
@@ -99,19 +99,14 @@ public class PGPKeysCacheTest {
         return Collections.singletonList(keysServerClient);
     }
 
-    MockitoSession mockitoSession;
-
     @BeforeMethod
     void setup() throws IOException {
-        mockitoSession = Mockito.mockitoSession().initMocks(this).startMocking();
         cachePath = Files.createTempDirectory("cache-path-test");
     }
 
     @AfterMethod
-    void cleanup() {
-        Try.run(() -> MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE))
-                .andFinallyTry(mockitoSession::finishMocking)
-                .get();
+    void cleanup() throws IOException {
+        MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
     @Test
