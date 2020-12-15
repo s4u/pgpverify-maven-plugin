@@ -24,10 +24,10 @@ import javax.inject.Inject;
 import static org.simplify4u.plugins.ArtifactResolver.SignatureRequirement.NONE;
 
 import io.vavr.control.Try;
+import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -35,13 +35,11 @@ import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.bouncycastle.openpgp.PGPUtil;
-import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
 import org.simplify4u.plugins.pgp.PGPSignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
-import org.simplify4u.plugins.utils.PGPSignatureUtils;
 
 /**
  * Show information about artifact signature.
@@ -55,14 +53,15 @@ public class PGPShowMojo extends AbstractPGPMojo {
 
     public static final String MOJO_NAME = "show";
 
-    private final RepositorySystem repositorySystem;
+    @Inject
+    private RepositorySystem repositorySystem;
 
     /**
      * Show signature for pom files also.
      *
      * @since 1.10.0
      */
-    @Setter
+    @Setter(AccessLevel.PACKAGE)
     @Parameter(property = "showPom", defaultValue = "false")
     protected boolean showPom;
 
@@ -72,17 +71,10 @@ public class PGPShowMojo extends AbstractPGPMojo {
      * @since 1.10.0
      */
     @Parameter(property = "artifact", required = true)
-    @Setter
+    @Setter(AccessLevel.PACKAGE)
     private String artifact;
 
     private boolean hasError;
-
-    @Inject
-    PGPShowMojo(ArtifactResolver artifactResolver, PGPKeysCache pgpKeysCache, PGPSignatureUtils pgpSignatureUtils,
-            MavenSession session, RepositorySystem repositorySystem) {
-        super(artifactResolver, pgpKeysCache, pgpSignatureUtils, session);
-        this.repositorySystem = repositorySystem;
-    }
 
     @Override
     protected String getMojoName() {

@@ -45,7 +45,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
-import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -139,7 +138,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void getKeyFromCache() throws IOException, PGPException {
+    public void getKeyFromCache() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
         pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
@@ -167,7 +166,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void brokenKeyInCache() throws IOException, PGPException {
+    public void brokenKeyInCache() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
         pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
@@ -191,7 +190,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void nonExistingKeyInRingThrowException() throws IOException, PGPException {
+    public void nonExistingKeyInRingThrowException() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
         pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);

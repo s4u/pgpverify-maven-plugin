@@ -15,11 +15,11 @@
  */
 package org.simplify4u.plugins.utils;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -31,8 +31,6 @@ import org.assertj.core.api.Condition;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
-import org.simplify4u.plugins.AbstractPGPMojo;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
@@ -48,26 +46,16 @@ public class MavenProxyTest {
     @InjectMocks
     private MavenProxy mavenProxy;
 
-    @AfterMethod
-    void cleanup() {
-        // not possibility to setup final field in MavenProxy
-        mavenProxy = null;
-    }
-
     /**
      * test that if we set a proxy, we want to ensure that it is the right one from our config
      *
-     * @throws Exception unexcpected reflection issues etc.
      */
     @Test
-    public void testIfProxyDeterminationWorksUsingIDs() throws Exception {
+    public void testIfProxyDeterminationWorksUsingIDs() {
 
         List<Proxy> proxies = Arrays.asList(
                 makeMavenProxy(null, null, "p1", true),
                 makeMavenProxy(null, null, "p2", false));
-
-        Field proxyName = AbstractPGPMojo.class.getDeclaredField("proxyName");
-        proxyName.setAccessible(true);
 
         when(settings.getProxies()).thenReturn(proxies);
 
@@ -76,23 +64,23 @@ public class MavenProxyTest {
         assertThat(mavenProxy.getProxyByName("p1").getId()).isEqualTo("p1");
 
         assertThat(mavenProxy.getProxyByName("p3")).isNull();
+
+        verify(settings, times(3)).getProxies();
+        verifyNoMoreInteractions(settings);
     }
 
     /**
      * If the proxy is not set, it should take the first active one
      *
-     * @throws Exception unexpected reflection issue
      */
     @Test
-    public void testIfProxyDeterminationWorksUsinFirstActive() throws Exception {
+    public void testIfProxyDeterminationWorksUsinFirstActive() {
 
         when(settings.getActiveProxy()).thenReturn(makeMavenProxy("p5"));
 
         assertThat(mavenProxy.getProxyByName(null))
                 .isNotNull()
                 .is(new Condition<>(p -> "p5".equals(p.getId()), ""));
-
-                //.getId(), "p5");
 
         verify(settings).getActiveProxy();
         verifyNoMoreInteractions(settings);

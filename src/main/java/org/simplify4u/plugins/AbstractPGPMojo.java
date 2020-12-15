@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 
 import io.vavr.control.Try;
+import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -41,14 +42,17 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPGPMojo.class);
 
+    @Inject
+    protected ArtifactResolver artifactResolver;
 
-    protected final ArtifactResolver artifactResolver;
+    @Inject
+    protected PGPKeysCache pgpKeysCache;
 
-    protected final PGPKeysCache pgpKeysCache;
+    @Inject
+    protected PGPSignatureUtils pgpSignatureUtils;
 
-    protected final PGPSignatureUtils pgpSignatureUtils;
-
-    protected final MavenSession session;
+    @Inject
+    protected MavenSession session;
 
     /**
      * The directory for storing cached PGP public keys.
@@ -86,7 +90,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      * @since 1.3.0
      */
     @Parameter(property = "pgpverify.skip", defaultValue = "false")
-    @Setter
+    @Setter(AccessLevel.PACKAGE)
     private boolean skip;
 
     /**
@@ -106,15 +110,6 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      */
     @Parameter(property = "pgpverify.quiet", defaultValue = "false")
     private boolean quiet;
-
-    @Inject
-    AbstractPGPMojo(ArtifactResolver artifactResolver, PGPKeysCache pgpKeysCache,
-            PGPSignatureUtils pgpSignatureUtils, MavenSession session) {
-        this.artifactResolver = artifactResolver;
-        this.pgpKeysCache = pgpKeysCache;
-        this.pgpSignatureUtils = pgpSignatureUtils;
-        this.session = session;
-    }
 
     @Override
     public final Log getLog() {

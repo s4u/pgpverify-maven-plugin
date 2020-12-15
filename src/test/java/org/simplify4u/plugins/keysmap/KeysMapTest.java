@@ -25,11 +25,9 @@ import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.assertj.core.api.Assertions;
 import org.codehaus.plexus.resource.ResourceManager;
-import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
@@ -45,13 +43,6 @@ public class KeysMapTest {
     @InjectMocks
     private KeysMap keysMap;
 
-
-    @BeforeMethod
-    void setup() throws ResourceNotFoundException {
-//        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
-//                .when(resourceManager).getResourceAsInputStream(anyString());
-    }
-
     @Test
     public void isComponentSet() {
         assertThat(keysMap).isNotNull();
@@ -59,7 +50,6 @@ public class KeysMapTest {
 
     @Test
     public void nullLocationTest() throws Exception {
-//        reset(resourceManager);
         keysMap.load(null);
 
         verifyNoInteractions(resourceManager);
@@ -68,7 +58,6 @@ public class KeysMapTest {
 
     @Test
     public void emptyLocationTest() throws Exception {
-//        reset(resourceManager);
         keysMap.load("");
 
         verifyNoInteractions(resourceManager);

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.Optional;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
@@ -55,6 +56,7 @@ import org.simplify4u.plugins.pgp.SignatureStatus;
  * Utilities for PGP Signature class.
  */
 @Named
+@Singleton
 public class PGPSignatureUtils {
 
     /**
