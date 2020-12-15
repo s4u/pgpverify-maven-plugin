@@ -31,7 +31,6 @@ import javax.inject.Inject;
 import io.vavr.control.Try;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -46,7 +45,6 @@ import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
-import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
@@ -57,7 +55,6 @@ import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
 import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PGPSignatureException;
-import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +74,8 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "{} PGP Signature {}\n       {} UserIds: {}";
 
-    protected final KeysMap keysMap;
+    @Inject
+    protected KeysMap keysMap;
 
     /**
      * Scope used to build dependency list.
@@ -239,13 +237,6 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
      */
     @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
     private String keysMapLocation;
-
-    @Inject
-    PGPVerifyMojo(ArtifactResolver artifactResolver, PGPKeysCache pgpKeysCache, PGPSignatureUtils pgpSignatureUtils,
-            MavenSession session, KeysMap keysMap) {
-        super(artifactResolver, pgpKeysCache, pgpSignatureUtils, session);
-        this.keysMap = keysMap;
-    }
 
     @Override
     protected String getMojoName() {

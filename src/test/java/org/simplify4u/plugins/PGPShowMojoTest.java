@@ -18,7 +18,8 @@ package org.simplify4u.plugins;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -47,7 +48,6 @@ import org.simplify4u.plugins.pgp.PGPSignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 import org.simplify4u.plugins.utils.PGPSignatureUtils;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
@@ -70,10 +70,9 @@ public class PGPShowMojoTest {
     @InjectMocks
     private PGPShowMojo mojo;
 
-
-    @BeforeMethod
-    void setup() {
-        mojo = new PGPShowMojo(artifactResolver, pgpKeysCache, pgpSignatureUtils, null, repositorySystem);
+    @Test
+    void shouldReturnMojoName() {
+        assertThat(mojo.getMojoName()).isEqualTo(PGPShowMojo.MOJO_NAME);
     }
 
     @DataProvider
@@ -88,24 +87,11 @@ public class PGPShowMojoTest {
         mojo.setArtifact(artifact);
 
         // when, then
-        assertThatCode(() -> mojo.execute())
+        assertThatThrownBy(() -> mojo.execute())
                 .isExactlyInstanceOf(PGPMojoException.class)
                 .hasRootCause(null)
                 .hasMessage("The parameters 'artifact' is miss or in invalid format"
                         + " - groupId:artifactId:version[:packaging[:classifier]]");
-    }
-
-    @Test
-    void shouldSkipExecute() throws MojoFailureException, MojoExecutionException {
-
-        //given
-        mojo.setSkip(true);
-
-        // when
-        mojo.execute();
-
-        // then
-        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }
 
     @Test
@@ -172,7 +158,7 @@ public class PGPShowMojoTest {
     }
 
     @Test
-    void shouldFailForNotResolvedArtifact() throws MojoFailureException, MojoExecutionException, IOException, PGPException {
+    void shouldFailForNotResolvedArtifact() throws MojoExecutionException, IOException {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().notResolved().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().packaging("jar.asc").build();
@@ -193,7 +179,46 @@ public class PGPShowMojoTest {
         when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
 
         // when
-        assertThatCode(() -> mojo.execute())
+        assertThatThrownBy(() -> mojo.execute())
+                .isExactlyInstanceOf(PGPMojoException.class)
+                .hasMessage("Some of artifact can't be checked");
+
+        // then
+        verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
+        verify(artifactResolver).resolveArtifact(artifact);
+        verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
+
+        verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
+
+        verify(pgpKeysCache).init(null, null, false, null);
+
+        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
+    }
+
+    @Test
+    void shouldFailForNotResolvedSignature() throws MojoExecutionException, IOException {
+
+        Artifact artifact = TestArtifactBuilder.testArtifact().build();
+        Artifact artifactAsc = TestArtifactBuilder.testArtifact().packaging("jar.asc").build();
+
+        //given
+        mojo.setArtifact("groupId:artifactId:1.0.0:war");
+
+        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
+                .thenReturn(artifact);
+
+        when(artifactResolver.resolveSignatures(anyCollection(), eq(NONE)))
+                .thenReturn(Collections.singletonMap(artifact, artifactAsc));
+
+        PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
+                .signature(null)
+                .status(SignatureStatus.SIGNATURE_NOT_RESOLVED)
+                .build();
+
+        when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
+
+        // when
+        assertThatThrownBy(() -> mojo.execute())
                 .isExactlyInstanceOf(PGPMojoException.class)
                 .hasMessage("Some of artifact can't be checked");
 
