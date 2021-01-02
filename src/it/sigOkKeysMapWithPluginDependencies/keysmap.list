@@ -231,24 +231,17 @@ org.apache.maven.resolver = \
                                 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
 
 org.apache.maven.scm:*:1.10.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
-org.apache.maven.shared:file-management:3.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-artifact-transfer:0.9.1 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
-org.apache.maven.shared:maven-artifact-transfer:0.10.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-artifact-transfer:0.11.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-artifact-transfer:0.12.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.apache.maven.shared:maven-common-artifact-filters:3.0.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.apache.maven.shared:maven-common-artifact-filters:3.1.0 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
-org.apache.maven.shared:maven-dependency-analyzer:1.10 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-dependency-analyzer:1.11.1 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-dependency-tree:2.2 = 0x0CDE80149711EB46DFF17AE421A24B3F8B0F594A
-org.apache.maven.shared:maven-dependency-tree:3.0.1 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
-org.apache.maven.shared:maven-invoker:2.0.11 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.apache.maven.shared:maven-shared-incremental:1.1 = 0xF254B35617DC255D9344BCFA873A8E86B4372146
-org.apache.maven.shared:maven-shared-io:3.0.0 = 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2
-org.apache.maven.shared:maven-shared-jar:1.2 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
-org.apache.maven.shared:maven-shared-utils:3.1.0 = 0x190D5A957FF22273E601F7A7C92C5FEC70161C62
-org.apache.maven.shared:maven-shared-utils:3.2.0 = 0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345
-org.apache.maven.shared:maven-shared-utils:3.2.1 = 0xB02137D875D833D9B23392ECAE5A7FB608A0221C
+
+org.apache.maven.shared       = \
+                                0x0CDE80149711EB46DFF17AE421A24B3F8B0F594A, \
+                                0x190D5A957FF22273E601F7A7C92C5FEC70161C62, \
+                                0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \
+                                0x849FB4F1AF3D17CDE4DE5E710704ADDF1D821345, \
+                                0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
+                                0xB02137D875D833D9B23392ECAE5A7FB608A0221C, \
+                                0xBA926F64CA647B6D853A38672E2010F8A7FF4A41, \
+                                0xF254B35617DC255D9344BCFA873A8E86B4372146
+
 org.apache.maven.wagon:wagon-http-lightweight:3.1.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 org.apache.maven.wagon:wagon-http-shared:3.1.0 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 org.apache.maven.wagon:wagon-provider-api:1.0-beta-6 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
