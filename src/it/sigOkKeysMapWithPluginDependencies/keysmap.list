@@ -295,8 +295,8 @@ org.codehaus.plexus:plexus-velocity:1.1.7 = noSig
 
 org.eclipse.aether:aether-util:0.9.0.M2 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
 org.eclipse.jetty = 0x5989BAF76217B843D66BE55B2D0E1FB8FE4B68B4
-org.eclipse.sisu:org.eclipse.sisu.inject:0.3.3 = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
-org.eclipse.sisu:org.eclipse.sisu.plexus:0.3.3 = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
+org.eclipse.sisu  = 0xCF17E92C9FFA55316B5DB83901D734EE5EE9C3F8
+
 org.hamcrest:hamcrest-core:1.1
 org.hamcrest:hamcrest-library:1.3 = 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E
 org.iq80.snappy:snappy:0.4 = 0x9E93DB1192CEE3D3B581AABB37E9D58EA4598641
