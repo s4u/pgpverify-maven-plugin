@@ -34,10 +34,15 @@
     <url>https://www.simplify4u.org/pgpverify-maven-plugin</url>
     <inceptionYear>2014</inceptionYear>
 
+    <organization>
+        <name>Simplify4U</name>
+        <url>https://www.simplify4u.org</url>
+    </organization>
+
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -47,6 +52,7 @@
             <id>sjaranowski</id>
             <name>Slawomir Jaranowski</name>
             <email>s.jaranowski@gmail.com</email>
+            <url>https://github.com/slawekjaranowski</url>
             <timezone>Europe/Warsaw</timezone>
         </developer>
     </developers>
