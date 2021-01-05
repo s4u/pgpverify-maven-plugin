@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import io.vavr.CheckedFunction1;
 import io.vavr.control.Try;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
@@ -33,6 +34,7 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
 
     private HttpRoute lastRoute;
     private List<InetAddress> errorAddresses = new ArrayList<>();
+    private CheckedFunction1<String, InetAddress[]> resolver = InetAddress::getAllByName;
 
     public RoundRobinRouterPlaner() {
         // default constructor
@@ -72,9 +74,9 @@ class RoundRobinRouterPlaner implements HttpRoutePlanner {
      *
      * @return arrays of IP address
      */
-    private static List<InetAddress> resolve(String hostName) throws HttpException {
+    private List<InetAddress> resolve(String hostName) throws HttpException {
 
-        return Try.of(() -> Arrays.asList(InetAddress.getAllByName(hostName)))
+        return Try.of(() -> Arrays.asList(resolver.apply(hostName)))
                 .getOrElseThrow(e -> new HttpException("UnknownHostException: " + hostName, e));
     }
 

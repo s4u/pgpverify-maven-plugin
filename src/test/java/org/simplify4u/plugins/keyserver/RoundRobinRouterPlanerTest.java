@@ -18,58 +18,78 @@ package org.simplify4u.plugins.keyserver;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+import io.vavr.CheckedFunction1;
+import io.vavr.control.Try;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.conn.routing.HttpRoute;
-import org.testng.Assert;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.testng.MockitoTestNGListener;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
-public class RoundRobinRouterPlanerIT {
+@Listeners(MockitoTestNGListener.class)
+public class RoundRobinRouterPlanerTest {
 
-    public static final String TEST_HOST = "hkps.pool.sks-keyservers.net";
+    private static final InetAddress[] EXPECTED_ADDRESSES = Try.of(() -> new InetAddress[]{
+            InetAddress.getByName("127.0.0.1"),
+            InetAddress.getByName("127.0.0.2"),
+            InetAddress.getByName("127.0.0.3"),
+    }).get();
+
+    private static final String TEST_HOST = "test.host.example.com";
+
+    @Mock
+    private CheckedFunction1<String, InetAddress[]> resolver;
+
+    @InjectMocks
+    private RoundRobinRouterPlaner routerPlaner;
+
+    @BeforeMethod
+    void setup() throws Throwable {
+        when(resolver.apply(anyString())).thenReturn(EXPECTED_ADDRESSES);
+    }
 
     @Test
-    public void shouldReturnTheSameAddressForSequentialCall() throws UnknownHostException, HttpException {
+    public void shouldReturnTheSameAddressForSequentialCall() throws HttpException {
 
-        InetAddress[] expected = InetAddress.getAllByName(TEST_HOST);
-
-        RoundRobinRouterPlaner routerPlaner = new RoundRobinRouterPlaner();
         HttpHost httpHost = new HttpHost(TEST_HOST);
 
         // first call
         HttpRoute firstRoute = routerPlaner.determineRoute(httpHost, null, null);
 
-        for (int i = 0; i < expected.length; i++) {
+        for (int i = 0; i < EXPECTED_ADDRESSES.length; i++) {
             HttpRoute httpRouteNext = routerPlaner.determineRoute(httpHost, null, null);
-            assertEquals(httpRouteNext.getTargetHost().getAddress(), firstRoute.getTargetHost().getAddress());
+            assertThat(httpRouteNext.getTargetHost().getAddress())
+                    .isEqualTo(firstRoute.getTargetHost().getAddress());
         }
     }
 
     @Test
     public void shouldReturnNextAddressAfterError() throws UnknownHostException, HttpException {
-        InetAddress[] expected = InetAddress.getAllByName(TEST_HOST);
 
-        RoundRobinRouterPlaner routerPlaner = new RoundRobinRouterPlaner();
         HttpHost httpHost = new HttpHost(TEST_HOST);
 
         List<InetAddress> actual = new ArrayList<>();
 
-        for (int i = 0; i < expected.length; i++) {
+        for (int i = 0; i < EXPECTED_ADDRESSES.length; i++) {
             HttpRoute httpRoute = routerPlaner.determineRoute(httpHost, null, null);
             routerPlaner.lastRouteCauseError();
             actual.add(httpRoute.getTargetHost().getAddress());
         }
 
-        Assert.assertEqualsNoOrder(actual.toArray(), expected);
+        assertThat(actual).containsExactlyInAnyOrder(EXPECTED_ADDRESSES);
 
         // after all failed next should be returned
         HttpRoute httpRoute = routerPlaner.determineRoute(httpHost, null, null);
-        assertTrue(Arrays.asList(expected).contains(httpRoute.getTargetHost().getAddress()));
+        assertThat(httpRoute.getTargetHost().getAddress()).isIn((Object[]) EXPECTED_ADDRESSES);
     }
 }
