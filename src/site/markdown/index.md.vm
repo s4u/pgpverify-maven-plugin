@@ -22,7 +22,7 @@ You can try it by running in your project directory:
 
 or wherever you want in order to see information about a specific artifact:
 
-    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:jnuit:4.12
+    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:junit:4.12
 
 More [examples of usage](examples.html)
 
