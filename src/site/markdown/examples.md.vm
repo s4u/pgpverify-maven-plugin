@@ -111,7 +111,7 @@ Show information about signature
 
 We can see information about signature for a specific artifact, running:
     
-    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:jnuit:4.12
+    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:junit:4.12
     
 as a result we get
 
@@ -144,7 +144,7 @@ artifact property format is:
     
 You can add property `showPom` to also show information about corresponding pom file.
 
-    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:jnuit:4.12 -DshowPom
+    mvn ${project.groupId}:pgpverify-maven-plugin:show -Dartifact=junit:junit:4.12 -DshowPom
      
 IT tests
 --------
