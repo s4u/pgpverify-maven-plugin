@@ -221,7 +221,6 @@ abstract class PGPKeysServerClient {
 
         RetryConfig config = RetryConfig.custom()
                 .maxAttempts(maxAttempts)
-                .waitDuration(Duration.ofMillis(500))
                 .intervalFunction(IntervalFunction.ofExponentialBackoff())
                 .retryOnException(PGPKeysServerClient::shouldRetryOnException)
                 .build();
