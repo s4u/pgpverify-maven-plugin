@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,16 @@ import java.util.function.Function;
 
 import io.vavr.control.Try;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.maven.settings.Proxy;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKP/HTTP.
  */
 class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
-    protected PGPKeysServerClientHttp(URI keyserver, int connectTimeout, int readTimeout, int maxAttempts, Proxy proxy)
+    protected PGPKeysServerClientHttp(URI keyserver, KeyServerClientSettings keyServerClientSettings)
             throws IOException {
 
-        super(prepareKeyServerURI(keyserver), connectTimeout, readTimeout, maxAttempts, proxy);
+        super(prepareKeyServerURI(keyserver), keyServerClientSettings);
     }
 
     private static URI prepareKeyServerURI(URI keyServer) throws IOException {

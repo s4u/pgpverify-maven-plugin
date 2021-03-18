@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,14 @@ package org.simplify4u.plugins;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.mockito.InjectMocks;
@@ -53,6 +57,9 @@ public class AbstractPGPMojoTest {
 
     @Mock
     private PGPKeysCache pgpKeysCache;
+
+    @Mock
+    private MavenSession mavenSession;
 
     @Spy
     @InjectMocks
@@ -88,7 +95,7 @@ public class AbstractPGPMojoTest {
 
         // then
         verify(mojo).executeConfiguredMojo();
-        verify(pgpKeysCache).init(null, null, false, null);
+        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
         verifyNoInteractions(logger);
     }
 }

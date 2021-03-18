@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.simplify4u.plugins.keyserver.KeyServerClientSettings;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.utils.PGPSignatureUtils;
 import org.slf4j.Logger;
@@ -77,7 +78,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
 
     /**
      * Choose which proxy to use (id from settings.xml in maven config). Uses no proxy if the proxy was not found. If it
-     * is not set, it will take the first active proxy if any or no proxy, if no active proxy was found)
+     * is not set, it will take the first active proxy if any or no proxy, if no active proxy was found.
      *
      * @since 1.8.0
      */
@@ -124,7 +125,13 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     protected abstract void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException;
 
     private void initPgpKeysCache() throws IOException {
-        pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, proxyName);
+
+        KeyServerClientSettings clientSettings = KeyServerClientSettings.builder()
+                .mavenSession(session)
+                .proxyName(proxyName)
+                .build();
+
+        pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, clientSettings);
     }
 
     @Override

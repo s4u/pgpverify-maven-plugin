@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
 import javax.inject.Named;
 
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
@@ -45,7 +44,6 @@ import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 import io.vavr.control.Try;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.utils.MavenProxy;
 import org.simplify4u.plugins.utils.PGPKeyId;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
@@ -61,25 +59,27 @@ public class PGPKeysCache {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PGPKeysCache.class);
     private static final String NL = System.lineSeparator();
+    private static final Object LOCK = new Object();
 
     private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
-
-    private final MavenProxy mavenProxy;
 
     private File cachePath;
     private KeyServerList keyServerList;
 
-
-    private static final Object LOCK = new Object();
-
-    @Inject
-    PGPKeysCache(MavenProxy mavenProxy) {
-        this.mavenProxy = mavenProxy;
+    PGPKeysCache() {
     }
 
-    public void init(File cachePath, String keyServers, boolean loadBalance, String proxyName)
+    /**
+     * Init Keys cache.
+     * @param cachePath a path where cache will be stored
+     * @param keyServers a list of key servers addresses
+     * @param loadBalance if use key servers list in balance mode
+     * @param clientSettings a kay server client settings
+     * @throws IOException in case of problems
+     */
+    public void init(File cachePath, String keyServers, boolean loadBalance, KeyServerClientSettings clientSettings)
             throws IOException {
-        init(cachePath, prepareClients(keyServers, proxyName), loadBalance);
+        init(cachePath, prepareClients(keyServers, clientSettings), loadBalance);
     }
 
     // used by test
@@ -105,7 +105,7 @@ public class PGPKeysCache {
         }
     }
 
-    List<PGPKeysServerClient> prepareClients(String keyServers, String proxyName) {
+    List<PGPKeysServerClient> prepareClients(String keyServers, KeyServerClientSettings clientSettings) {
 
         List<String> keyServersList = Arrays.stream(KEY_SERVERS_SPLIT_PATTERN.split(keyServers))
                 .map(String::trim)
@@ -114,7 +114,7 @@ public class PGPKeysCache {
 
         return keyServersList.stream()
                 .map(keyserver -> Try.of(() ->
-                        PGPKeysServerClient.getClient(keyserver, mavenProxy.getProxyByName(proxyName))).get())
+                        PGPKeysServerClient.getClient(keyserver, clientSettings)).get())
                 .collect(Collectors.toList());
     }
 
@@ -149,8 +149,14 @@ public class PGPKeysCache {
         return keyServerList.getUriForShowKey(keyID).toString();
     }
 
+    /**
+     * Return Public Key Ring from local cache or from key server.
+     *
+     * @param keyID a keyId for lookup
+     * @return Public Key Ring for given key
+     * @throws IOException in case of problems
+     */
     public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException {
-
 
         String path = keyID.getHashPath();
         File keyFile = new File(cachePath, path);

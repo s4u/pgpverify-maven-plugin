@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import io.vavr.control.Try;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.maven.settings.Proxy;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKPS/HTTPS.
@@ -40,16 +39,16 @@ import org.apache.maven.settings.Proxy;
 class PGPKeysServerClientHttps extends PGPKeysServerClient {
     private final SSLConnectionSocketFactory sslSocketFactory;
 
-    protected PGPKeysServerClientHttps(URI uri, int connectTimeout, int readTimeout, int maxAttempts, Proxy proxy)
+    protected PGPKeysServerClientHttps(URI uri, KeyServerClientSettings keyServerClientSettings)
             throws IOException {
 
-        super(prepareKeyServerURI(uri), connectTimeout, readTimeout, maxAttempts, proxy);
+        super(prepareKeyServerURI(uri), keyServerClientSettings);
 
         try {
             if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
                 final CertificateFactory cf = CertificateFactory.getInstance("X.509");
                 final Certificate ca = cf.generateCertificate(
-                        getClass().getClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
+                        Thread.currentThread().getContextClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
 
                 final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
 
