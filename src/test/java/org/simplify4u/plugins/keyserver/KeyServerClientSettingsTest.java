@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.keyserver;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
@@ -25,10 +26,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.simplify4u.plugins.utils.ProxyUtil.makeMavenProxy;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
-import org.assertj.core.api.Condition;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
 import org.testng.annotations.Listeners;
@@ -38,13 +38,13 @@ import org.testng.annotations.Test;
  * test on methods in the mojo itself
  */
 @Listeners(MockitoTestNGListener.class)
-public class MavenProxyTest {
+public class KeyServerClientSettingsTest {
+
+    @Mock
+    private MavenSession mavenSession;
 
     @Mock
     private Settings settings;
-
-    @InjectMocks
-    private MavenProxy mavenProxy;
 
     /**
      * test that if we set a proxy, we want to ensure that it is the right one from our config
@@ -57,13 +57,18 @@ public class MavenProxyTest {
                 makeMavenProxy(null, null, "p1", true),
                 makeMavenProxy(null, null, "p2", false));
 
+        when(mavenSession.getSettings()).thenReturn(settings);
         when(settings.getProxies()).thenReturn(proxies);
 
-        assertThat(mavenProxy.getProxyByName("p2").getId()).isEqualTo("p2");
+        Optional<Proxy> p1 = KeyServerClientSettings.builder().mavenSession(mavenSession).proxyName("p1").build().getProxy();
+        assertThat(p1).map(Proxy::getId).hasValue("p1");
 
-        assertThat(mavenProxy.getProxyByName("p1").getId()).isEqualTo("p1");
+        Optional<Proxy> p2 = KeyServerClientSettings.builder().mavenSession(mavenSession).proxyName("p2").build().getProxy();
+        assertThat(p2).map(Proxy::getId).hasValue("p2");
 
-        assertThat(mavenProxy.getProxyByName("p3")).isNull();
+        Optional<Proxy> p3 = KeyServerClientSettings.builder().mavenSession(mavenSession).proxyName("p3").build().getProxy();
+
+        assertThat(p3).isEmpty();
 
         verify(settings, times(3)).getProxies();
         verifyNoMoreInteractions(settings);
@@ -76,11 +81,11 @@ public class MavenProxyTest {
     @Test
     public void testIfProxyDeterminationWorksUsinFirstActive() {
 
+        when(mavenSession.getSettings()).thenReturn(settings);
         when(settings.getActiveProxy()).thenReturn(makeMavenProxy("p5"));
 
-        assertThat(mavenProxy.getProxyByName(null))
-                .isNotNull()
-                .is(new Condition<>(p -> "p5".equals(p.getId()), ""));
+        Optional<Proxy> proxy = KeyServerClientSettings.builder().mavenSession(mavenSession).build().getProxy();
+        assertThat(proxy).map(Proxy::getId).hasValue("p5");
 
         verify(settings).getActiveProxy();
         verifyNoMoreInteractions(settings);

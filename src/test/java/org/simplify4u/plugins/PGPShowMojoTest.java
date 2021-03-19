@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.simplify4u.plugins.ArtifactResolver.SignatureRequirement.NONE;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.repository.RepositorySystem;
@@ -67,8 +68,12 @@ public class PGPShowMojoTest {
     @Mock
     private RepositorySystem repositorySystem;
 
+    @Mock
+    private MavenSession session;
+
     @InjectMocks
     private PGPShowMojo mojo;
+
 
     @Test
     void shouldReturnMojoName() {
@@ -125,7 +130,7 @@ public class PGPShowMojoTest {
         verify(pgpSignatureUtils).getSignatureInfo(artifact, artifactAsc, pgpKeysCache);
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(null, null, false, null);
+        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }
@@ -152,7 +157,7 @@ public class PGPShowMojoTest {
         verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
 
 
-        verify(pgpKeysCache).init(null, null, false, null);
+        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }
@@ -190,7 +195,7 @@ public class PGPShowMojoTest {
 
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(null, null, false, null);
+        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }
@@ -229,7 +234,7 @@ public class PGPShowMojoTest {
 
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(null, null, false, null);
+        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }

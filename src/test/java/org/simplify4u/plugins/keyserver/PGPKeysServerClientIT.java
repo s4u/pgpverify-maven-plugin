@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,16 @@ import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.settings.Settings;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
@@ -44,6 +48,8 @@ public class PGPKeysServerClientIT {
     private static final int SHORT_TEST_TIMEOUT = 500;
 
     private ClientAndServer mockServer;
+
+    private MavenSession mavenSession;
 
     @DataProvider(name = "goodServerUrls")
     Object[][] goodServerUrls() {
@@ -106,6 +112,9 @@ public class PGPKeysServerClientIT {
                 .when(request().withPath("/502"))
                 .respond(response().withStatusCode(502));
 
+        mavenSession = mock(MavenSession.class);
+        when(mavenSession.getSettings()).thenReturn(mock(Settings.class));
+
     }
 
     @AfterClass(alwaysRun = true)
@@ -119,7 +128,11 @@ public class PGPKeysServerClientIT {
 
         tempFile.deleteOnExit();
 
-        final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl, null);
+        KeyServerClientSettings clientSettings = KeyServerClientSettings.builder()
+                .mavenSession(mavenSession)
+                .build();
+
+        final PGPKeysServerClient client = PGPKeysServerClient.getClient(keyServerUrl, clientSettings);
 
         try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
             client.copyKeyToOutputStream(TEST_KEYID, outputStream, null);
@@ -130,8 +143,8 @@ public class PGPKeysServerClientIT {
 
     @Test(dataProvider = "badServerUrls")
     public void testClientRetry(final String targetUrl,
-                                final String expectedExceptionString,
-                                final boolean shouldRetry) throws Exception {
+            final String expectedExceptionString,
+            final boolean shouldRetry) throws Exception {
         int maxRetries = 2;
         AtomicInteger attemptedRetries = new AtomicInteger(0);
 
@@ -139,8 +152,15 @@ public class PGPKeysServerClientIT {
 
         // We use short timeouts for both timeouts since we don't want to hold up the tests on URLs
         // we know will take a while.
+        KeyServerClientSettings clientSettings = KeyServerClientSettings.builder()
+                .mavenSession(mavenSession)
+                .connectTimeout(SHORT_TEST_TIMEOUT)
+                .readTimeout(SHORT_TEST_TIMEOUT)
+                .maxRetries(maxRetries)
+                .build();
+
         final PGPKeysServerClient client
-                = new StubbedClient(targetUri, SHORT_TEST_TIMEOUT, SHORT_TEST_TIMEOUT, maxRetries);
+                = new StubbedClient(targetUri, clientSettings);
 
         IOException caughtException = null;
 
@@ -166,14 +186,13 @@ public class PGPKeysServerClientIT {
      * A special key client that allows the URL the client is requesting to be stubbed-out by tests.
      *
      * <p>This is used by tests that are testing retry behavior, to allow them to control exactly
-     * which URL is being requested. Each URL provided by tests simulates a different type of
-     * failure.
+     * which URL is being requested. Each URL provided by tests simulates a different type of failure.
      */
     private static class StubbedClient extends PGPKeysServerClientHttps {
         private final URI stubbedUri;
 
-        StubbedClient(URI stubbedUri, int connectTimeout, int readTimeout, int maxAttempts) throws IOException {
-            super(stubbedUri, connectTimeout, readTimeout, maxAttempts, null);
+        StubbedClient(URI stubbedUri, KeyServerClientSettings clientSettings) throws IOException {
+            super(stubbedUri, clientSettings);
             this.stubbedUri = stubbedUri;
         }
 
