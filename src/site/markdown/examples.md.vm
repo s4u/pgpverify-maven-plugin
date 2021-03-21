@@ -47,7 +47,7 @@ If you want check your dependency on each build, please add to your project:
 keysMap usage
 -------------
 
-keysMap with pgp fingerprint from project
+keysMap with PGP fingerprint from project
 
         <pluginManagement>
           <plugins>
@@ -64,7 +64,7 @@ keysMap with pgp fingerprint from project
         </pluginManagement>
     
 
-keysMap with pgp fingerprint from external artifact
+keysMap with PGP fingerprint from external artifact
 
         <pluginManagement>
           <plugins>
@@ -90,7 +90,7 @@ keysMap with pgp fingerprint from external artifact
         </pluginManagement>
 
 
-keysMap with pgp fingerprint from external resource
+keysMap with PGP fingerprint from external resource
 
         <pluginManagement>
           <plugins>
@@ -137,7 +137,7 @@ as a result we get
         create date: Sun Jul 27 14:31:46 CEST 2014
         uids:        [.... (JUnit Development, 2014) <mail@....>]
 
-By default, information about `jar` artifact is displayed, you can specify packaging, classifier, 
+By default, information about `jar` artifact is displayed. You can specify packaging, classifier, 
 artifact property format is:
 
     groupId:artifactId:version[:packaging[:classifier]]
