@@ -56,14 +56,7 @@ com.google.common.html.types:proto:1.0.0 = 0x50F3DD7BC62A17B1404EB70901B3A572684
 com.google.common.html.types:types:1.0.5 = 0xBE1813EAB7F6DC12E97EB602C7CC712C619DFD9A
 com.google.dagger:dagger:2.14.1 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
 com.google.dagger:dagger-producers:2.14.1 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
-com.google.errorprone:error_prone_core:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:error_prone_annotation:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:error_prone_annotations:2.0.18 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:error_prone_annotations:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:error_prone_annotations:2.3.4 = 0x7615AD56144DF2376F49D98B1669C4BB543E0445
-com.google.errorprone:error_prone_check_api:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:error_prone_type_annotations:2.3.3 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
-com.google.errorprone:javac:9+181-r4173-1 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
+com.google.errorprone = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
 com.google.googlejavaformat:google-java-format:1.4 = 0xE77417AC194160A3FABD04969A259C7EE636C5ED
 
 com.google.guava        = \
