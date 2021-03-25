@@ -1,0 +1,19 @@
+
+# the same artifacts in both maps, different keys
+test.group        = 0x 1111 1111 1111 1111
+test.group        = 0x 1111 1111 2222 2222
+test.group:test   = 0x 1111 1111 3333 3333
+
+# only in map 1
+test.group:test1  = 0x 1111 1111 4444 4444
+
+# the same item in both maps
+test.group7:test7 = 0x 7777 7777 7777 7777
+
+# the same item in both maps
+test.group-no-sig:no-sig = noSig
+
+# only in map 1
+test.group-no-sig:no-sig1 = noSig
+
+test.group:bad-sig = badSig

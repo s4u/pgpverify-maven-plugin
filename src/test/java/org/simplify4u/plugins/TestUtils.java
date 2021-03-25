@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.util.encoders.Hex;
 import org.mockito.Mockito;
 
 /**
@@ -31,7 +32,7 @@ public abstract class TestUtils {
 
     public static PGPPublicKey getPGPgpPublicKey(long keyID) {
 
-        BigInteger bigInteger = BigInteger.valueOf(0xffffffffL & keyID);
+        BigInteger bigInteger = BigInteger.valueOf(0xffff_ffffL & keyID);
         BigInteger bigInteger2 = BigInteger.valueOf(keyID);
 
         bigInteger = bigInteger.shiftLeft(64);
@@ -46,7 +47,7 @@ public abstract class TestUtils {
             bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
         }
 
-        PGPPublicKey pgpKey = mock(PGPPublicKey.class, Mockito.withSettings().lenient());
+        PGPPublicKey pgpKey = mock(PGPPublicKey.class, Mockito.withSettings().lenient().name(Hex.toHexString(bytes)));
         when(pgpKey.getFingerprint()).thenReturn(bytes);
         when(pgpKey.isMasterKey()).thenReturn(true);
 
