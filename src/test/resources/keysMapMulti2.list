@@ -1,0 +1,18 @@
+
+# the same item in both maps, different keys
+test.group      = 0x 2222 2222 1111 1111, 0x 2222 2222 2222 2222
+test.group:test = 0x 2222 2222 3333 3333
+
+# only in map 2
+test.group2     = 0x 2222 2222 4444 4444
+
+# the same item in both maps
+test.group7:test7 = 0x 7777 7777 7777 7777
+
+# the same item in both maps
+test.group-no-sig:no-sig = noSig
+
+# only in map 2
+test.group-no-sig:no-sig2 = noSig
+
+test.group:bad-sig = 0x 2222 2222 5555 5555

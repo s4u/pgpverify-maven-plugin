@@ -201,4 +201,10 @@ public class KeysMap {
     private static ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
         return new ArtifactInfo(strArtifact.trim(), new KeyInfo(strKeys.trim()));
     }
+
+    // for testing purpose
+
+    int size() {
+        return keysMapList.size();
+    }
 }
