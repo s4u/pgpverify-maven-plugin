@@ -20,7 +20,7 @@ junit:junit:4.12=0xEFE8086F9E93774E
 commons-chain:commons-chain:1.2=0xB95BBD3FA43C4492,0x1861C322C56014B2
 #
 # Plugins:
-org.simplify4u.plugins:pgpverify-maven-plugin:*=
+org.simplify4u.plugins:pgpverify-maven-plugin = noSig, 0x57EB3F12030A57BAA31CAAD5BE3E2A5CB80794EE
 #
 # Transitive dependencies of plugins:
 antlr:antlr:2.7.2 =

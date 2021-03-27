@@ -58,7 +58,7 @@ public class KeysMapMultiTest {
         keysMap.load("/keysMapMulti1.list");
         keysMap.load("/keysMapMulti2.list");
 
-        assertThat(keysMap.size()).isEqualTo(15);
+        assertThat(keysMap.size()).isEqualTo(9);
     }
 
     @DataProvider

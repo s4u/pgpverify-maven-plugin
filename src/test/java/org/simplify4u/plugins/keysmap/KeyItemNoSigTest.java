@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,20 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-public class KeyInfoItemNoKey implements KeyInfoItem {
+import org.assertj.core.api.Assertions;
+import org.testng.annotations.Test;
 
-    @Override
-    public boolean isKeyMissing() {
-        return true;
+public class KeyItemNoSigTest {
+
+    @Test
+    public void twoInstanceShouldBeEqual() {
+        KeyItemNoSig keyItemNoSig1 = new KeyItemNoSig();
+        KeyItemNoSig keyItemNoSig2 = new KeyItemNoSig();
+
+        Assertions.assertThat(keyItemNoSig1)
+                .isNotSameAs(keyItemNoSig2)
+                .isEqualTo(keyItemNoSig2)
+                .hasSameHashCodeAs(keyItemNoSig2);
     }
+
 }

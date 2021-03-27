@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.simplify4u.plugins.keysmap;
 
 import java.util.Locale;
 
+import lombok.Getter;
 import org.apache.maven.artifact.Artifact;
 
 /**
@@ -26,6 +27,7 @@ import org.apache.maven.artifact.Artifact;
  *
  * @author Slawomir Jaranowski.
  */
+@Getter
 class ArtifactData {
 
     private final String groupId;
@@ -34,26 +36,9 @@ class ArtifactData {
     private final String version;
 
     ArtifactData(Artifact artifact) {
-
         groupId = artifact.getGroupId().toLowerCase(Locale.US);
         artifactId = artifact.getArtifactId().toLowerCase(Locale.US);
         type = artifact.getType().toLowerCase(Locale.US);
         version = artifact.getVersion().toLowerCase(Locale.US);
-    }
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getVersion() {
-        return version;
     }
 }

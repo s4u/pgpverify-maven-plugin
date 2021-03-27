@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package org.simplify4u.plugins.keysmap;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 
-public interface KeyInfoItem {
+/**
+ * Describe single key item in keysMap.
+ */
+interface KeyItem {
 
     /**
      * Artifact can has no signature.
@@ -50,7 +53,7 @@ public interface KeyInfoItem {
     /**
      * Check if current key mach with given key.
      *
-     * @param pgpPublicKey key to test
+     * @param pgpPublicKey     key to test
      * @param pgpPublicKeyRing keys ring to find master key
      *
      * @return key matching status

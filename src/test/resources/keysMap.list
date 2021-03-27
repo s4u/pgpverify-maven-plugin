@@ -21,7 +21,7 @@ testlong : fingerprint            = 0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9A
 test.*                            = any
 
 test2:test-package                 = 0xA6ADFC93EF34893F
-test2                              = 0xA6ADFC93EF34893E
+test2                              = 0xA6ADFC93EF34893E, 0xA6ADFC93EF34893E # duplicate key
 
 # noSig test
 
@@ -35,7 +35,10 @@ noSig:test2                         = noSig
 noSig:test3                         = noSig, 0x123456789abcdef0
 
 # badSig
-badSig:test                         = badSig
+badSig:test                         = badSig, badSig # duplicate special value
 
 # noKey
+noKey:test                          = noKey
+
+# duplicate artifact pattern with duplicate value
 noKey:test                          = noKey

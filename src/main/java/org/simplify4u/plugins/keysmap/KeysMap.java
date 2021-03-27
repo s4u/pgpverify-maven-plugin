@@ -21,29 +21,30 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
+ * Store and manage information loaded from keysMap file.
+ *
  * @author Slawomir Jaranowski.
  */
+@Slf4j
 @Named
 public class KeysMap {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KeysMap.class);
-
     private ResourceManager resourceManager;
 
-    private final ArrayList<ArtifactInfo> keysMapList = new ArrayList<>();
+    private final Map<ArtifactPattern, KeyItems> items = new HashMap<>();
 
     @Inject
     KeysMap(ResourceManager resourceManager) {
@@ -53,11 +54,11 @@ public class KeysMap {
     public void load(String locale) throws ResourceNotFoundException, IOException {
         if (locale != null && !locale.trim().isEmpty()) {
             try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
-                loadKeysMap(inputStream);
+                loadKeysMap(inputStream, new KeysMapContext(locale));
             }
         }
-        if (keysMapList.isEmpty()) {
-            LOG.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
+        if (items.isEmpty()) {
+            LOGGER.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
                     "check artifacts against their signature. File corruption will be detected. However, without a " +
                     "keysmap as a reference for trust, valid signatures of any public key will be accepted.");
         }
@@ -66,10 +67,10 @@ public class KeysMap {
     /**
      * Indicate whether some keysmap entries are actually loaded.
      *
-     * @return Returns true iff at least one entry exists in the keysmap, or false otherwise.
+     * @return Returns true if at least one entry exists in the keysmap, or false otherwise.
      */
     public boolean isEmpty() {
-        return keysMapList.isEmpty();
+        return items.isEmpty();
     }
 
     /**
@@ -83,9 +84,9 @@ public class KeysMap {
 
         ArtifactData artifactData = new ArtifactData(artifact);
 
-        return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
-                .anyMatch(ArtifactInfo::isNoSignature);
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> entry.getValue().isNoSignature());
     }
 
     /**
@@ -99,9 +100,9 @@ public class KeysMap {
 
         ArtifactData artifactData = new ArtifactData(artifact);
 
-        return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
-                .anyMatch(ArtifactInfo::isBrokenSignature);
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> entry.getValue().isBrokenSignature());
     }
 
     /**
@@ -115,44 +116,61 @@ public class KeysMap {
 
         ArtifactData artifactData = new ArtifactData(artifact);
 
-        return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
-                .anyMatch(ArtifactInfo::isKeyMissing);
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> entry.getValue().isKeyMissing());
     }
 
     public boolean isWithKey(Artifact artifact) {
 
         ArtifactData artifactData = new ArtifactData(artifact);
 
-        for (ArtifactInfo artifactInfo : keysMapList) {
-            if (artifactInfo.isMatch(artifactData)) {
-                return !artifactInfo.isNoSignature();
-            }
-        }
-        return false;
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> !entry.getValue().isNoSignature());
     }
 
     public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {
 
-        if (keysMapList.isEmpty()) {
+        if (items.isEmpty()) {
             return true;
         }
 
         ArtifactData artifactData = new ArtifactData(artifact);
 
-        return keysMapList.stream()
-                .filter(artifactInfo -> artifactInfo.isMatch(artifactData))
-                .anyMatch(artifactInfo -> artifactInfo.isKeyMatch(key, keyRing));
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> entry.getValue().isKeyMatch(key, keyRing));
     }
 
-    private void loadKeysMap(final InputStream inputStream) throws IOException {
-        BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII));
+    private void loadKeysMap(final InputStream inputStream, KeysMapContext keysMapContext) throws IOException {
+
+        BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII)) {
+
+            @Override
+            public String readLine() throws IOException {
+                keysMapContext.incLineNumber();
+                return super.readLine();
+            }
+        };
+
         String currentLine;
 
         while ((currentLine = getNextLine(mapReader)) != null) {
+
             String[] parts = currentLine.split("=", 2);
-            ArtifactInfo artifactInfo = createArtifactInfo(parts[0], parts.length == 1 ? "" : parts[1]);
-            keysMapList.add(artifactInfo);
+            String artifactPatternStr = parts[0].trim();
+            String keyItemsStr = parts.length == 1 ? "" : parts[1].trim();
+
+            ArtifactPattern artifactPattern = new ArtifactPattern(artifactPatternStr);
+
+            if (items.containsKey(artifactPattern)) {
+                LOGGER.debug("Existing artifact pattern: {} - only update key items in {}",
+                        artifactPatternStr, keysMapContext);
+                items.get(artifactPattern).addKeys(keyItemsStr, keysMapContext);
+            } else {
+                items.put(artifactPattern, new KeyItems().addKeys(keyItemsStr, keysMapContext));
+            }
         }
     }
 
@@ -198,13 +216,9 @@ public class KeysMap {
         return hashIndex >= 0 ? line.substring(0, hashIndex).trim() : line;
     }
 
-    private static ArtifactInfo createArtifactInfo(String strArtifact, String strKeys) {
-        return new ArtifactInfo(strArtifact.trim(), new KeyInfo(strKeys.trim()));
-    }
-
     // for testing purpose
 
     int size() {
-        return keysMapList.size();
+        return items.size();
     }
 }

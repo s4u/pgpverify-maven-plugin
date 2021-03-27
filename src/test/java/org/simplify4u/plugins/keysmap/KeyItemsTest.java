@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import org.testng.annotations.Test;
 /**
  * @author Slawomir Jaranowski.
  */
-public class KeyInfoTest {
+public class KeyItemsTest {
 
     @DataProvider(name = "keys")
     public Object[][] keys() {
@@ -58,36 +58,36 @@ public class KeyInfoTest {
     @Test(dataProvider = "keys")
     public void testIsKeyMatch(String strKeys, long key, boolean match) throws Exception {
 
-        KeyInfo keyInfo = new KeyInfo(strKeys);
-        assertThat(keyInfo.isKeyMatch(getPGPgpPublicKey(key), null)).as("isKeyMatch").isEqualTo(match);
+        KeyItems keyItems = new KeyItems().addKeys(strKeys, null);
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(key), null)).as("isKeyMatch").isEqualTo(match);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "null key not allowed")
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            expectedExceptionsMessageRegExp = "null key not allowed in keysMap: test.map lineNumber: 0")
     public void nullKeyShouldThrowsException() {
-
-        new KeyInfo(null);
+        new KeyItems().addKeys(null, new KeysMapContext("test.map"));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Invalid keyID xxxx must start with 0x or be any of .*")
     public void invalidKeyShouldThrowsException() {
 
-        new KeyInfo("xxxx");
+        new KeyItems().addKeys("xxxx", null);
     }
 
 
     @Test
     public void testIsNoSignature() {
 
-        KeyInfo keyInfo = new KeyInfo("");
-        assertThat(keyInfo.isNoSignature()).isTrue();
+        KeyItems keyItems = new KeyItems().addKeys("", null);
+        assertThat(keyItems.isNoSignature()).isTrue();
     }
 
     @Test
     public void testIsNoSignatureIncorrect() {
 
-        KeyInfo keyInfo = new KeyInfo("0x123456789abcdef0");
-        assertThat(keyInfo.isNoSignature()).isFalse();
+        KeyItems keyItems = new KeyItems().addKeys("0x123456789abcdef0", null);
+        assertThat(keyItems.isNoSignature()).isFalse();
     }
 
     @Test
@@ -98,10 +98,10 @@ public class KeyInfoTest {
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing -> {
-                        // keyInfo with master key fingerprint
-                        KeyInfo keyInfo = new KeyInfo(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()));
+                        // keyItems with master key fingerprint
+                        KeyItems keyItems = new KeyItems().addKeys(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()), null);
 
-                        assertThat(keyInfo.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing))
+                        assertThat(keyItems.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing))
                                 .isTrue();
                     });
         }
@@ -110,13 +110,13 @@ public class KeyInfoTest {
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Malformed keyID hex string 0x123456789abcdef")
     public void oddHexStringShouldThrowException() {
-        new KeyInfo("0x123456789abcdef");
+        new KeyItems().addKeys("0x123456789abcdef", null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "Malformed keyID hex string 0xINVALID")
     public void invalidHexStringShouldThrowException() {
-        new KeyInfo("0xINVALID");
+        new KeyItems().addKeys("0xINVALID", null);
     }
 
 }

@@ -16,10 +16,14 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
@@ -28,6 +32,7 @@ import org.codehaus.plexus.resource.ResourceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
+import org.slf4j.Logger;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
@@ -39,6 +44,12 @@ public class KeysMapTest {
 
     @Mock
     private ResourceManager resourceManager;
+
+    @Mock(name = "org.simplify4u.plugins.keysmap.KeysMap")
+    private Logger loggerKeysMap;
+
+    @Mock(name = "org.simplify4u.plugins.keysmap.KeyItems")
+    private Logger loggerKeyItems;
 
     @InjectMocks
     private KeysMap keysMap;
@@ -207,5 +218,25 @@ public class KeysMapTest {
         Assertions.assertThatCode(() -> keysMap.load("/keyMap-keyToShort.list"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Key length for = 0x10 is 8 bits, should be between 64 and 160 bits");
+    }
+
+    @Test
+    public void properLogShouldBeGeneratedForProcessingItems() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
+        keysMap.load("/keysMap.list");
+
+        assertThat(keysMap.size()).isEqualTo(10);
+
+        verify(loggerKeysMap)
+                .debug(eq("Existing artifact pattern: {} - only update key items in {}"), anyString(), any(KeysMapContext.class));
+        verifyNoMoreInteractions(loggerKeysMap);
+
+        verify(loggerKeyItems, times(3))
+                .warn(eq("Duplicate key item: {} in: {}"), any(KeyItem.class), any(KeysMapContext.class));
+        verify(loggerKeyItems)
+                .warn(eq("Empty value for key is deprecated - please provide some  value - now assume as noSig in: {}"), any(KeysMapContext.class));
+        verifyNoMoreInteractions(loggerKeyItems);
     }
 }

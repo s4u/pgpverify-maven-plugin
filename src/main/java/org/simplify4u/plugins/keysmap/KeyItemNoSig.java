@@ -15,10 +15,25 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-public class KeyInfoItemNoSig implements KeyInfoItem {
+import lombok.EqualsAndHashCode;
+
+/**
+ * Special key value.
+ * <p>
+ * Given artifact pattern can has no signature.
+ */
+@EqualsAndHashCode
+class KeyItemNoSig implements KeyItem {
+
+    public static final String DESC = "noSig";
 
     @Override
     public boolean isNoSignature() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return DESC;
     }
 }
