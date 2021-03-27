@@ -9,16 +9,16 @@ The syntax of each line of properties file is:
 Where
 
 - `groupId`           - groupId of Maven artifact, this field is required, but can be `*` for match any   
-- `artifactId`        - artifactId of Maven artifact
-- `packaging`         - packaging of Maven artifact, eg. `pom`, `jar` 
-- `version`           - version of Maven artifact, this filed support Maven version range syntax
+- `artifactId`        - artifactId of Maven artifact - optional
+- `packaging`         - packaging of Maven artifact, eg. `pom`, `jar` - optional 
+- `version`           - version of Maven artifact, this filed support Maven version range syntax - optional
 - `pgpKeyFingerprint` - PGP key fingerprints in hex format which are allowed to sign artifact,
                  multiple keys can be supplied separated by comma  
 
 PGP keys special values
 ----------------------
 
-`pgpKey` field can contains multiple PGP fingerprints, separated by comma,
+`pgpKey` field can contains multiple PGP fingerprints, separated by a comma,
 each fingerprint must start with `0x`. Whitespace is allowed in hex fingerprint.
 
 `pgpKey` can also contain special values:
@@ -31,8 +31,9 @@ each fingerprint must start with `0x`. Whitespace is allowed in hex fingerprint.
 The order of items and matching
 -------------------------------
 
-The order of items is not important, all matching items are checked for keys or special values.
-Process is continued until first matching item is found or end of items is reached.
+The order of items is not important.
+
+In first step items are filtered for matching artifact and then fingerprints or special key value are searched until first is found.
 
 Comments 
 --------
@@ -99,6 +100,18 @@ allow bad signature for a specific artifact with version
 match specific artifact with any packaging and version and allow that signature will not exist
 
     test.groupId:artifactId = 0x1234567890123456789012345678901234567890, noSig
+---
+
+define fingerprints for group and one for specific artifact
+
+    test.groupId            = 0x1111222233334444555566667777888899990000
+    test.groupId:artifactId = 0x0000999988887777666655554444333322221111
+
+in this case every artifact from group `test.groupId` can be signed by key `0x1111222233334444555566667777888899990000`.
+
+artifact `test.groupId:artifactId` can be signed by `0x0000999988887777666655554444333322221111`
+and also by `0x1111222233334444555566667777888899990000`.
+
 ---
 
 comments
