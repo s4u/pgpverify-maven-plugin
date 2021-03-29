@@ -121,7 +121,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
                 classifier -> messageBuilder.a("\tclassifier:  ").strong(classifier).newline());
         messageBuilder.a("\tversion:     ").strong(artifactInfo.getVersion()).newline();
         if (signatureInfo.getStatus() == SignatureStatus.ARTIFACT_NOT_RESOLVED) {
-            messageBuilder.a("\t").error("artifact was not resolved  - try mvn -U ...").newline();
+            messageBuilder.a("\t").failure("artifact was not resolved  - try mvn -U ...").newline();
         }
 
         messageBuilder.newline();
@@ -140,12 +140,12 @@ public class PGPShowMojo extends AbstractPGPMojo {
             if (signatureInfo.getStatus() == SignatureStatus.SIGNATURE_VALID) {
                 messageBuilder.success("valid");
             } else {
-                messageBuilder.error("invalid");
+                messageBuilder.failure("invalid");
             }
             messageBuilder.newline();
         } else if (signatureInfo.getStatus() == SignatureStatus.SIGNATURE_NOT_RESOLVED) {
             messageBuilder.a("\t")
-                    .error("PGP signature was not resolved - try mvn -U ...").newline();
+                    .failure("PGP signature was not resolved - try mvn -U ...").newline();
         }
 
         messageBuilder.newline();
@@ -168,7 +168,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
         messageBuilder.newline();
 
         Optional.ofNullable(signatureInfo.getErrorMessage()).ifPresent(errorMessage ->
-                messageBuilder.error(errorMessage).newline());
+                messageBuilder.failure(errorMessage).newline());
 
         LOGGER.info(messageBuilder.toString());
 
