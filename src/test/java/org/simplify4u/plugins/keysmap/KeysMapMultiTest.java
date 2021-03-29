@@ -16,12 +16,12 @@
 package org.simplify4u.plugins.keysmap;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
+import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.apache.maven.artifact.Artifact;
@@ -39,7 +39,6 @@ import org.testng.annotations.Test;
 @Listeners(MockitoTestNGListener.class)
 public class KeysMapMultiTest {
 
-    private static final Function<String, Boolean> A_TRUE = v -> true;
     @Mock
     private ResourceManager resourceManager;
 
@@ -55,8 +54,8 @@ public class KeysMapMultiTest {
     @Test
     public void loadMultipleKeysMapShouldContainsAllItems() throws ResourceNotFoundException, IOException {
 
-        keysMap.load("/keysMapMulti1.list");
-        keysMap.load("/keysMapMulti2.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
         assertThat(keysMap.size()).isEqualTo(9);
     }
@@ -99,8 +98,8 @@ public class KeysMapMultiTest {
     @Test(dataProvider = "artifactWithKeyToTest")
     public void keyShouldBeValid(Artifact artifact, PGPPublicKey key) throws ResourceNotFoundException, IOException {
 
-        keysMap.load("/keysMapMulti1.list");
-        keysMap.load("/keysMapMulti2.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
         assertThat(keysMap.isValidKey(artifact, key, null)).isTrue();
     }
@@ -117,8 +116,8 @@ public class KeysMapMultiTest {
 
     @Test(dataProvider = "artifactWithNoSig")
     public void noSigShouldBeFound(Artifact artifact) throws ResourceNotFoundException, IOException {
-        keysMap.load("/keysMapMulti1.list");
-        keysMap.load("/keysMapMulti2.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
         assertThat(keysMap.isNoSignature(artifact)).isTrue();
     }
@@ -126,8 +125,8 @@ public class KeysMapMultiTest {
     @Test
     public void badSigShouldBeFound() throws ResourceNotFoundException, IOException {
 
-        keysMap.load("/keysMapMulti1.list");
-        keysMap.load("/keysMapMulti2.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
+        keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
         assertThat(keysMap.isBrokenSignature(testArtifact().artifactId("bad-sig").build())).isTrue();
     }

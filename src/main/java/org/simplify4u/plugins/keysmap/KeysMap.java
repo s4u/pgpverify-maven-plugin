@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  * Portions Copyright 2020 Danny van Heumen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,10 +22,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -51,16 +54,20 @@ public class KeysMap {
         this.resourceManager = resourceManager;
     }
 
-    public void load(String locale) throws ResourceNotFoundException, IOException {
-        if (locale != null && !locale.trim().isEmpty()) {
-            try (final InputStream inputStream = resourceManager.getResourceAsInputStream(locale)) {
-                loadKeysMap(inputStream, new KeysMapContext(locale));
+    /**
+     * Load keys map from given resources.
+     *
+     * @param locationConfig a configuration for keys map
+     *
+     * @throws ResourceNotFoundException if resource not exist
+     * @throws IOException               in other io error
+     */
+    public void load(@NonNull KeysMapLocationConfig locationConfig) throws ResourceNotFoundException, IOException {
+        String location = locationConfig.getLocation();
+        if (location != null && !location.trim().isEmpty()) {
+            try (final InputStream inputStream = resourceManager.getResourceAsInputStream(location)) {
+                loadKeysMap(inputStream, locationConfig, new KeysMapContext(location));
             }
-        }
-        if (items.isEmpty()) {
-            LOGGER.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
-                    "check artifacts against their signature. File corruption will be detected. However, without a " +
-                    "keysmap as a reference for trust, valid signatures of any public key will be accepted.");
         }
     }
 
@@ -143,7 +150,9 @@ public class KeysMap {
                 .anyMatch(entry -> entry.getValue().isKeyMatch(key, keyRing));
     }
 
-    private void loadKeysMap(final InputStream inputStream, KeysMapContext keysMapContext) throws IOException {
+    private void loadKeysMap(final InputStream inputStream,
+            KeysMapLocationConfig locationConfig,
+            KeysMapContext keysMapContext) throws IOException {
 
         BufferedReader mapReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.US_ASCII)) {
 
@@ -163,15 +172,30 @@ public class KeysMap {
             String keyItemsStr = parts.length == 1 ? "" : parts[1].trim();
 
             ArtifactPattern artifactPattern = new ArtifactPattern(artifactPatternStr);
+            List<KeyItem> includeValues = getFilterForItem(artifactPatternStr, locationConfig.getIncludes());
+            List<KeyItem> excludeValues = getFilterForItem(artifactPatternStr, locationConfig.getExcludes());
+
+            KeyItems keyItems = new KeyItems().addKeys(keyItemsStr, keysMapContext);
+            keyItems.includes(includeValues);
+            keyItems.excludes(excludeValues);
 
             if (items.containsKey(artifactPattern)) {
                 LOGGER.debug("Existing artifact pattern: {} - only update key items in {}",
                         artifactPatternStr, keysMapContext);
-                items.get(artifactPattern).addKeys(keyItemsStr, keysMapContext);
+                items.get(artifactPattern).addKeys(keyItems, keysMapContext);
             } else {
-                items.put(artifactPattern, new KeyItems().addKeys(keyItemsStr, keysMapContext));
+                if (!keyItems.isEmpty()) {
+                    items.put(artifactPattern, keyItems);
+                }
             }
         }
+    }
+
+    private static List<KeyItem> getFilterForItem(String artifactPattern, List<KeysMapLocationConfig.Filter> filters) {
+        return filters.stream()
+                .filter(filter -> filter.getPattern().matcher(artifactPattern).matches())
+                .map(KeysMapLocationConfig.Filter::getValue)
+                .collect(Collectors.toList());
     }
 
     private static String getNextLine(BufferedReader mapReader) throws IOException {

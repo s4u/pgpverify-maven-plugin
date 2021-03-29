@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,7 @@ import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keysmap.KeysMap;
+import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -230,13 +232,17 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
      * </p>
      *
      * <p>
+     * Since version <b>1.12.0</b> - <a href="keysmap-multiple.html">Multiple KeysMpa configuration</a>
+     * </p>
+     *
+     * <p>
      * You can use ready keys map: <a href="https://github.com/s4u/pgp-keys-map">https://github.com/s4u/pgp-keys-map</a>
      * </p>
      *
      * @since 1.1.0
      */
-    @Parameter(property = "pgpverify.keysMapLocation", defaultValue = "")
-    private String keysMapLocation;
+    @Parameter(property = "pgpverify.keysMapLocation", alias = "keysMapLocations")
+    private List<KeysMapLocationConfig> keysMapLocation = new ArrayList<>();
 
     @Override
     protected String getMojoName() {
@@ -302,10 +308,19 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         }
     }
 
-    private void initKeysMap() throws MojoExecutionException {
+    private void initKeysMap() {
 
-        Try.run(() -> keysMap.load(keysMapLocation))
-                .getOrElseThrow(e -> new MojoExecutionException(e.getMessage(), e));
+        LOGGER.debug("keysMapLocation={}", keysMapLocation);
+
+        keysMapLocation.forEach(location ->
+                Try.run(() -> keysMap.load(location))
+                        .getOrElseThrow(e -> new PGPMojoException(e.getMessage(), e)));
+
+        if (keysMap.isEmpty()) {
+            LOGGER.warn("No keysmap specified in configuration or keysmap contains no entries. PGPVerify will only " +
+                    "check artifacts against their signature. File corruption will be detected. However, without a " +
+                    "keysmap as a reference for trust, valid signatures of any public key will be accepted.");
+        }
     }
 
     private SignatureRequirement determineSignaturePolicy() {

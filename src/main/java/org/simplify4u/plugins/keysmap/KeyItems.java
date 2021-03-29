@@ -15,14 +15,9 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -35,14 +30,6 @@ import org.bouncycastle.openpgp.PGPPublicKeyRing;
  */
 @Slf4j
 class KeyItems {
-
-    private static final Map<String, KeyItem> SPECIAL_KEYS = Stream.of(
-            new SimpleEntry<>("*", new KeyItemAnyKey()),
-            new SimpleEntry<>(KeyItemAnyKey.DESC, new KeyItemAnyKey()),
-            new SimpleEntry<>(KeyItemBrokenSig.DESC, new KeyItemBrokenSig()),
-            new SimpleEntry<>(KeyItemNoKey.DESC, new KeyItemNoKey()),
-            new SimpleEntry<>(KeyItemNoSig.DESC, new KeyItemNoSig())
-    ).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     private final List<KeyItem> keys = new ArrayList<>();
 
@@ -62,9 +49,9 @@ class KeyItems {
 
         // compatibility behavior
         if (strKeys.trim().isEmpty()) {
-            LOGGER.warn("Empty value for key is deprecated - please provide some  value - now assume as noSig in: {}",
+            LOGGER.warn("Empty value for key is deprecated - please provide some value - now assume as noSig in: {}",
                     keysMapContext);
-            addKey(SPECIAL_KEYS.get(KeyItemNoSig.DESC), keysMapContext);
+            addKey(KeyItemSpecialValue.NO_SIG.getKeyItem(), keysMapContext);
             return this;
         }
 
@@ -75,18 +62,28 @@ class KeyItems {
                     if (key.startsWith("0x")) {
                         addKey(new KeyItemFingerprint(key), keysMapContext);
                     } else {
-
-                        KeyItem keyInfoItem = SPECIAL_KEYS.entrySet().stream()
-                                .filter(entry -> entry.getKey().equalsIgnoreCase(key))
-                                .map(Entry::getValue)
-                                .findFirst()
+                        KeyItem keyInfoItem = KeyItemSpecialValue.keyItemFromString(key)
                                 .orElseThrow(()
                                         -> new IllegalArgumentException("Invalid keyID " + key + " must start with 0x "
-                                        + "or be any of " + SPECIAL_KEYS.keySet()));
+                                        + "or be any of " + KeyItemSpecialValue.getAllowedValue()));
                         addKey(keyInfoItem, keysMapContext);
                     }
                 });
 
+        return this;
+    }
+
+
+    /**
+     * Add keys from another KeyItems.
+     *
+     * @param keyItems       a keyItem with key to add
+     * @param keysMapContext a context of current processing
+     *
+     * @return a current object instance
+     */
+    public KeyItems addKeys(KeyItems keyItems, KeysMapContext keysMapContext) {
+        keyItems.keys.forEach(key -> addKey(key, keysMapContext));
         return this;
     }
 
@@ -118,5 +115,33 @@ class KeyItems {
 
     public boolean isBrokenSignature() {
         return keys.stream().anyMatch(KeyItem::isBrokenSignature);
+    }
+
+    /**
+     * Only this values are available.
+     *
+     * @param values a values that can be on list
+     */
+    public void includes(List<KeyItem> values) {
+        if (values.contains(KeyItemSpecialValue.ANY.getKeyItem())) {
+            return;
+        }
+        keys.removeIf(k -> !values.contains(k));
+    }
+
+    /**
+     * This value are not allowed.
+     *
+     * @param values a values to exclude.
+     */
+    public void excludes(List<KeyItem> values) {
+        if (values.isEmpty()) {
+            return;
+        }
+        keys.removeIf(values::contains);
+    }
+
+    public boolean isEmpty() {
+        return keys.isEmpty();
     }
 }
