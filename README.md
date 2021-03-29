@@ -5,10 +5,10 @@
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=org.simplify4u.plugins%3Apgpverify-maven-plugin&metric=coverage)](https://sonarcloud.io/dashboard?id=org.simplify4u.plugins%3Apgpverify-maven-plugin)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=org.simplify4u.plugins%3Apgpverify-maven-plugin&metric=ncloc)](https://sonarcloud.io/dashboard?id=org.simplify4u.plugins%3Apgpverify-maven-plugin)
 
-This plugin allow you to automatically verify PGP signature of all project dependency.
+This plugin allows you to automatically verify PGP signatures of all project dependencies.
 
 # Project homepage
 
-More information you can find on site:
+You can find more information on the site:
 
 https://www.simplify4u.org/pgpverify-maven-plugin/
