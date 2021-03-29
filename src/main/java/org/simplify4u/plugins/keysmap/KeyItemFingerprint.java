@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,24 @@ package org.simplify4u.plugins.keysmap;
 
 import java.util.Optional;
 
+import static org.simplify4u.plugins.utils.HexUtils.stringToFingerprint;
+
+import lombok.EqualsAndHashCode;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.util.encoders.DecoderException;
-import org.bouncycastle.util.encoders.Hex;
+import org.simplify4u.plugins.utils.HexUtils;
 import org.simplify4u.plugins.utils.PublicKeyUtils;
 
-public class KeyInfoItemKey implements KeyInfoItem {
+/**
+ * Represent key as fingerprint for given artifact pattern.
+ */
+@EqualsAndHashCode
+class KeyItemFingerprint implements KeyItem {
 
     private final byte[] fingerPrint;
 
-    public KeyInfoItemKey(String key) {
-        fingerPrint = strKeyToBytes(key);
+    public KeyItemFingerprint(String key) {
+        fingerPrint = stringToFingerprint(key);
     }
 
     @Override
@@ -42,24 +48,6 @@ public class KeyInfoItemKey implements KeyInfoItem {
         return masterKey.filter(publicKey -> isKeyMatch(publicKey, pgpPublicKeyRing)).isPresent();
     }
 
-    private static byte[] strKeyToBytes(String key) {
-        byte[] bytes;
-
-        try {
-            bytes = Hex.decode(key.substring(2));
-        } catch (DecoderException e) {
-            throw new IllegalArgumentException("Malformed keyID hex string " + key, e);
-        }
-
-        if (bytes.length < 8 || bytes.length > 20) {
-            throw new IllegalArgumentException(
-                    String.format("Key length for = %s is %d bits, should be between 64 and 160 bits",
-                            key, bytes.length * 8));
-        }
-
-        return bytes;
-    }
-
     private static boolean compareArrays(byte[] keyBytes, byte[] fingerprint) {
 
         for (int i = 1; i <= keyBytes.length && i <= fingerprint.length; i++) {
@@ -68,5 +56,10 @@ public class KeyInfoItemKey implements KeyInfoItem {
             }
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return HexUtils.fingerprintToString(fingerPrint);
     }
 }

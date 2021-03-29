@@ -27,9 +27,7 @@ import org.testng.annotations.Test;
 /**
  * @author Slawomir Jaranowski.
  */
-public class ArtifactInfoTest {
-
-    private static final KeyInfo ANY_KEY = new KeyInfo("*");
+public class ArtifactPatternTest {
 
     @DataProvider(name = "lists")
     public Object[][] artifactsList() {
@@ -64,15 +62,14 @@ public class ArtifactInfoTest {
     @Test(dataProvider = "lists")
     public void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
 
-        ArtifactInfo artifactInfo = new ArtifactInfo(pattern, ANY_KEY);
-        assertThat(artifactInfo.isMatch(new ArtifactData(artifact))).isEqualTo(match);
-        assertThat(artifactInfo.isKeyMatch(null, null)).isTrue();
+        ArtifactPattern artifactPattern = new ArtifactPattern(pattern);
+        assertThat(artifactPattern.isMatch(new ArtifactData(artifact))).isEqualTo(match);
     }
 
     @Test
     public void asteriskInVersionThrowException() {
 
-        assertThatCode(() -> new ArtifactInfo("test.group:test:1.0.*", ANY_KEY))
+        assertThatCode(() -> new ArtifactPattern("test.group:test:1.0.*"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid artifact definition: test.group:test:1.0.*")
                 .hasCauseExactlyInstanceOf(InvalidVersionSpecificationException.class)
@@ -82,11 +79,21 @@ public class ArtifactInfoTest {
     @Test
     public void wrongVersionThrowException() {
 
-        assertThatCode(() -> new ArtifactInfo("test.group:test:[1.0.0", ANY_KEY))
+        assertThatCode(() -> new ArtifactPattern("test.group:test:[1.0.0"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid artifact definition: test.group:test:[1.0.0")
                 .hasCauseExactlyInstanceOf(InvalidVersionSpecificationException.class)
                 .hasRootCauseMessage("Unbounded range: [1.0.0");
     }
 
+    @Test
+    public void twoInstanceWithTheSamePatternShouldBeEqual() {
+        ArtifactPattern artifactPattern1 = new ArtifactPattern("test.group.*:test*");
+        ArtifactPattern artifactPattern2 = new ArtifactPattern("test.group.*:test*");
+
+        assertThat(artifactPattern1)
+                .isNotSameAs(artifactPattern2)
+                .isEqualTo(artifactPattern2)
+                .hasSameHashCodeAs(artifactPattern2);
+    }
 }

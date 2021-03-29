@@ -19,7 +19,7 @@ junit:junit:4.12=0xEFE8086F9E93774E
 commons-chain:commons-chain:1.2=0xB95BBD3FA43C4492,0x1861C322C56014B2
 #
 # Plugins:
-org.simplify4u.plugins:pgpverify-maven-plugin = noSig, 0x6636274B2E8BEA9D15A61143F8484389379ACEAC
+org.simplify4u.plugins:pgpverify-maven-plugin = noSig, 0x57EB3F12030A57BAA31CAAD5BE3E2A5CB80794EE
 
 org.apache.maven.plugins = \
     0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \

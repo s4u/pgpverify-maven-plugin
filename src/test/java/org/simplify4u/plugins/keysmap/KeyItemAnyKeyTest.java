@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,19 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-public class KeyInfoItemBrokenSig implements KeyInfoItem {
+import org.assertj.core.api.Assertions;
+import org.testng.annotations.Test;
 
-    @Override
-    public boolean isBrokenSignature() {
-        return true;
+public class KeyItemAnyKeyTest {
+
+    @Test
+    public void twoInstanceShouldBeEqual() {
+        KeyItemAnyKey keyItemAnyKey1 = new KeyItemAnyKey();
+        KeyItemAnyKey keyItemAnyKey2 = new KeyItemAnyKey();
+
+        Assertions.assertThat(keyItemAnyKey1)
+                .isNotSameAs(keyItemAnyKey2)
+                .isEqualTo(keyItemAnyKey2)
+                .hasSameHashCodeAs(keyItemAnyKey2);
     }
 }

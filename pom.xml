@@ -498,6 +498,16 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>sign-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- signature can be used in IT test, so must be executed early -->
+                        <phase>pre-integration-test</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>
@@ -581,7 +591,9 @@
                     <skip>${maven.test.skip}</skip>
                     <failOnWarning>true</failOnWarning>
                     <ignoredUnusedDeclaredDependencies>
-                        <ignoredUnusedDeclaredDependency>org.simplify4u:slf4j-mock:jar:*</ignoredUnusedDeclaredDependency>
+                        <ignoredUnusedDeclaredDependency>
+                            org.simplify4u:slf4j-mock:jar:*
+                        </ignoredUnusedDeclaredDependency>
                     </ignoredUnusedDeclaredDependencies>
                 </configuration>
             </plugin>

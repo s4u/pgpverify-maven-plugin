@@ -15,11 +15,21 @@
  */
 package org.simplify4u.plugins.utils;
 
-public final class HexUtils {
+import lombok.experimental.UtilityClass;
+import org.bouncycastle.util.encoders.DecoderException;
+import org.bouncycastle.util.encoders.Hex;
 
-    private HexUtils() {
-    }
+/**
+ * Utility for converting finger to / from string
+ */
+@UtilityClass
+public class HexUtils {
 
+    /**
+     * Convert byte array of fingerprint to string of hex
+     * @param bytes fingerprint
+     * @return fingerprint as string
+     */
     public static String fingerprintToString(byte[] bytes) {
         StringBuilder ret = new StringBuilder();
         ret.append("0x");
@@ -27,5 +37,28 @@ public final class HexUtils {
             ret.append(String.format("%02X", b));
         }
         return ret.toString();
+    }
+
+    /**
+     * Convert fingerprint in string format to byte array.
+     * @param key fingerprint as string
+     * @return fingerprint as byte array
+     */
+    public static byte[] stringToFingerprint(String key) {
+        byte[] bytes;
+
+        try {
+            bytes = Hex.decode(key.substring(2));
+        } catch (DecoderException e) {
+            throw new IllegalArgumentException("Malformed keyID hex string " + key, e);
+        }
+
+        if (bytes.length < 8 || bytes.length > 20) {
+            throw new IllegalArgumentException(
+                    String.format("Key length for = %s is %d bits, should be between 64 and 160 bits",
+                            key, bytes.length * 8));
+        }
+
+        return bytes;
     }
 }

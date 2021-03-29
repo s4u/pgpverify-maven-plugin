@@ -21,33 +21,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import lombok.EqualsAndHashCode;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 
 /**
  * Store information about artifact definition from KeysMap file.
  *
  * @author Slawomir Jaranowski.
  */
-class ArtifactInfo {
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+class ArtifactPattern {
 
-    private final KeyInfo keyInfo;
+    private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
+    private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
+    private static final Pattern PACKAGING = Pattern.compile("^[a-zA-Z]+$");
+
+    /**
+     * Original pattern from keysMap. Used to compare if object is equal to another.
+     */
+    @EqualsAndHashCode.Include
+    private final String pattern;
 
     private final Pattern groupIdPattern;
     private final Pattern artifactIdPattern;
     private final Pattern packagingPattern;
     private final Function<String, Boolean> versionMatch;
 
-    private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
-    private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
-    private static final Pattern PACKAGING = Pattern.compile("^[a-zA-Z]+$");
+    public ArtifactPattern(String pattern) {
 
-    public ArtifactInfo(String strArtifact, KeyInfo keyInfo) {
-
-        String[] split = strArtifact.split(":");
+        this.pattern = pattern;
+        String[] split = this.pattern.split(":");
         String groupId = split.length > 0 ? split[0].trim().toLowerCase(Locale.US) : "";
         String artifactId = split.length > 1 ? split[1].trim().toLowerCase(Locale.US) : "";
 
@@ -75,9 +80,8 @@ class ArtifactInfo {
             packagingPattern = Pattern.compile(patternPrepare(packaging));
             versionMatch = versionMatchPrepare(version);
         } catch (InvalidVersionSpecificationException | PatternSyntaxException e) {
-            throw new IllegalArgumentException("Invalid artifact definition: " + strArtifact, e);
+            throw new IllegalArgumentException("Invalid artifact definition: " + pattern, e);
         }
-        this.keyInfo = keyInfo;
     }
 
     private static String patternPrepare(String str) {
@@ -145,21 +149,5 @@ class ArtifactInfo {
     private static boolean isMatchPattern(Pattern pattern, String str) {
         Matcher m = pattern.matcher(str);
         return m.matches();
-    }
-
-    public boolean isKeyMatch(PGPPublicKey key, PGPPublicKeyRing keyRing) {
-        return keyInfo.isKeyMatch(key, keyRing);
-    }
-
-    public boolean isNoSignature() {
-        return keyInfo.isNoSignature();
-    }
-
-    public boolean isBrokenSignature() {
-        return keyInfo.isBrokenSignature();
-    }
-
-    public boolean isKeyMissing() {
-        return keyInfo.isKeyMissing();
     }
 }

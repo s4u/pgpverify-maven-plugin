@@ -15,13 +15,25 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import lombok.EqualsAndHashCode;
 
-public class KeyInfoItemAnyKey implements KeyInfoItem {
+/**
+ * Special key value.
+ * <p>
+ * Given artifact pattern can has no key.
+ */
+@EqualsAndHashCode
+class KeyItemNoKey implements KeyItem {
+
+    public static final String DESC = "noKey";
 
     @Override
-    public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
+    public boolean isKeyMissing() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return DESC;
     }
 }
