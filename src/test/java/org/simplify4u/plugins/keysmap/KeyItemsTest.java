@@ -17,9 +17,13 @@ package org.simplify4u.plugins.keysmap;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Optional;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.bouncycastle.openpgp.PGPException;
@@ -62,17 +66,27 @@ public class KeyItemsTest {
         assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(key), null)).as("isKeyMatch").isEqualTo(match);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "null key not allowed in keysMap: test.map lineNumber: 0")
+    @Test
     public void nullKeyShouldThrowsException() {
-        new KeyItems().addKeys(null, new KeysMapContext("test.map"));
+        // given
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems();
+
+        // then
+        assertThatThrownBy(() -> keyItems.addKeys((String) null, keysMapContext))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("null key not allowed in keysMap: test.map lineNumber: 0");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Invalid keyID xxxx must start with 0x or be any of .*")
+    @Test
     public void invalidKeyShouldThrowsException() {
+        // given
+        KeyItems keyItems = new KeyItems();
 
-        new KeyItems().addKeys("xxxx", null);
+        // then
+        assertThatThrownBy(() -> keyItems.addKeys("xxxx", null))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid keyID xxxx must start with 0x or be any of *,any,badSig,noKey,noSig");
     }
 
 
@@ -107,16 +121,110 @@ public class KeyItemsTest {
         }
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Malformed keyID hex string 0x123456789abcdef")
+    @Test
     public void oddHexStringShouldThrowException() {
-        new KeyItems().addKeys("0x123456789abcdef", null);
+        // given
+        KeyItems keyItems = new KeyItems();
+
+        // then
+        assertThatThrownBy(() -> keyItems.addKeys("0x123456789abcdef", null))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Malformed keyID hex string 0x123456789abcdef");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "Malformed keyID hex string 0xINVALID")
+    @Test
     public void invalidHexStringShouldThrowException() {
-        new KeyItems().addKeys("0xINVALID", null);
+        // given
+        KeyItems keyItems = new KeyItems();
+
+        // then
+        assertThatThrownBy(() -> keyItems.addKeys("0xINVALID", null))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Malformed keyID hex string 0xINVALID");
+    }
+
+    @Test
+    public void onlyIncludedValuesShouldBePreserved() {
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+
+        keyItems.includes(asList(KeyItemSpecialValue.NO_SIG.getKeyItem(), KeyItemSpecialValue.NO_KEY.getKeyItem()));
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isFalse();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isFalse();
+    }
+
+    @Test
+    public void includedAnyValuesShouldDoNothing() {
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+
+        keyItems.includes(singletonList(KeyItemSpecialValue.ANY.getKeyItem()));
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+    }
+
+    @Test
+    public void emptyIncludedValuesRemoveAllItems() {
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
+
+        assertThat(keyItems.isEmpty()).isFalse();
+
+        keyItems.includes(Collections.emptyList());
+
+        assertThat(keyItems.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void excludedValuesShouldBeRemoved() {
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+
+        keyItems.excludes(asList(KeyItemSpecialValue.NO_SIG.getKeyItem(), KeyItemSpecialValue.NO_KEY.getKeyItem()));
+
+        assertThat(keyItems.isNoSignature()).isFalse();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isFalse();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+    }
+
+    @Test
+    public void emptyExcludedValuesDoNothing() {
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+
+        keyItems.excludes(Collections.emptyList());
+
+        assertThat(keyItems.isNoSignature()).isTrue();
+        assertThat(keyItems.isBrokenSignature()).isTrue();
+        assertThat(keyItems.isKeyMissing()).isTrue();
+        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
     }
 
 }

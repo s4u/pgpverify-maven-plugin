@@ -24,11 +24,12 @@ import static org.mockito.Mockito.when;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.util.encoders.Hex;
 import org.mockito.Mockito;
+import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
 
 /**
  * @author Slawomir Jaranowski.
  */
-public abstract class TestUtils {
+public final class TestUtils {
 
     public static PGPPublicKey getPGPgpPublicKey(long keyID) {
 
@@ -52,5 +53,11 @@ public abstract class TestUtils {
         when(pgpKey.isMasterKey()).thenReturn(true);
 
         return pgpKey;
+    }
+
+    public static KeysMapLocationConfig aKeysMapLocationConfig(String location) {
+        KeysMapLocationConfig config = new KeysMapLocationConfig();
+        config.set(location);
+        return config;
     }
 }

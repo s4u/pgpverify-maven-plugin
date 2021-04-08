@@ -16,6 +16,8 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -25,9 +27,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
+import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
 import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
-import org.assertj.core.api.Assertions;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -61,7 +63,9 @@ public class KeysMapTest {
 
     @Test
     public void nullLocationTest() throws Exception {
-        keysMap.load(null);
+
+        assertThatThrownBy(() -> keysMap.load(null))
+                .isExactlyInstanceOf(NullPointerException.class);
 
         verifyNoInteractions(resourceManager);
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
@@ -69,7 +73,7 @@ public class KeysMapTest {
 
     @Test
     public void emptyLocationTest() throws Exception {
-        keysMap.load("");
+        keysMap.load(aKeysMapLocationConfig(""));
 
         verifyNoInteractions(resourceManager);
         assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
@@ -81,7 +85,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         verify(resourceManager).getResourceAsInputStream(anyString());
 
@@ -126,12 +130,15 @@ public class KeysMapTest {
                         testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
                         getPGPgpPublicKey(0xA6ADFC93EF34893FL), null)
         ).isTrue();
+
         assertThat(
                 keysMap.isWithKey(testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build())
         ).isTrue();
+
         assertThat(
                 keysMap.isWithKey(testArtifact().groupId("noSig").artifactId("test").version("1").build())
         ).isFalse();
+
         assertThat(
                 keysMap.isWithKey(testArtifact().groupId("noSig").artifactId("non-existent").version("9999").build())
         ).isFalse();
@@ -142,7 +149,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         verify(resourceManager).getResourceAsInputStream(anyString());
 
@@ -158,7 +165,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         verify(resourceManager).getResourceAsInputStream(anyString());
 
@@ -187,7 +194,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         verify(resourceManager).getResourceAsInputStream(anyString());
 
@@ -201,7 +208,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         verify(resourceManager).getResourceAsInputStream(anyString());
 
@@ -215,7 +222,8 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        Assertions.assertThatCode(() -> keysMap.load("/keyMap-keyToShort.list"))
+        KeysMapLocationConfig keysMapLocationConfig = aKeysMapLocationConfig("/keyMap-keyToShort.list");
+        assertThatCode(() -> keysMap.load(keysMapLocationConfig))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Key length for = 0x10 is 8 bits, should be between 64 and 160 bits");
     }
@@ -225,7 +233,7 @@ public class KeysMapTest {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
-        keysMap.load("/keysMap.list");
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
         assertThat(keysMap.size()).isEqualTo(10);
 
@@ -236,7 +244,67 @@ public class KeysMapTest {
         verify(loggerKeyItems, times(3))
                 .warn(eq("Duplicate key item: {} in: {}"), any(KeyItem.class), any(KeysMapContext.class));
         verify(loggerKeyItems)
-                .warn(eq("Empty value for key is deprecated - please provide some  value - now assume as noSig in: {}"), any(KeysMapContext.class));
+                .warn(eq("Empty value for key is deprecated - please provide some value - now assume as noSig in: {}"), any(KeysMapContext.class));
         verifyNoMoreInteractions(loggerKeyItems);
     }
+
+    @Test
+    public void onlyIncludedItemsFromMapByValue() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
+        KeysMapLocationConfig config = aKeysMapLocationConfig("/keysMap.list");
+        KeysMapLocationConfig.Filter filter = new KeysMapLocationConfig.Filter();
+        filter.setValue("noSig");
+        config.addInclude(filter);
+
+        keysMap.load(config);
+
+        assertThat(keysMap.size()).isEqualTo(3);
+
+        assertThat(keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test3").build())).isTrue();
+        assertThat(keysMap.isKeyMissing(testArtifact().groupId("noKey").build())).isFalse();
+    }
+
+    @Test
+    public void onlyIncludedItemsFromMapByPattern() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
+        KeysMapLocationConfig config = aKeysMapLocationConfig("/keysMap.list");
+        KeysMapLocationConfig.Filter filter = new KeysMapLocationConfig.Filter();
+        filter.setPattern(".*test2");
+        config.addInclude(filter);
+
+        keysMap.load(config);
+
+        assertThat(keysMap.size()).isEqualTo(2);
+
+        assertThat(keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test2").build())).isTrue();
+        assertThat(
+                keysMap.isValidKey(
+                        testArtifact().groupId("test2").build(),
+                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null)
+        ).isTrue();
+    }
+
+    @Test
+    public void excludeItemsFromMap() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
+        KeysMapLocationConfig config = aKeysMapLocationConfig("/keysMap.list");
+        KeysMapLocationConfig.Filter filter = new KeysMapLocationConfig.Filter();
+        filter.setPattern(".*:test2");
+        filter.setValue("noSig");
+        config.addExclude(filter);
+
+        keysMap.load(config);
+
+        assertThat(keysMap.size()).isEqualTo(9);
+
+        assertThat(keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test2").build())).isFalse();
+        assertThat(keysMap.isKeyMissing(testArtifact().groupId("noKey").build())).isTrue();
+    }
+
 }

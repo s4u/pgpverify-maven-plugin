@@ -1,0 +1,65 @@
+Multiple KeysMap configuration
+==============================
+
+You can use multiple sources of `keysMap` with the plugin.
+
+Basic usage
+-----------
+
+```xml
+<plugin>
+    <groupId>org.simplify4u.plugins</groupId>
+    <artifactId>pgpverify-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <configuration>
+        <keysMapLocations>
+            <keysMapLocation>keysmap1.list</keysMapLocation>
+            <keysMapLocation>keysmap2.list</keysMapLocation>
+        </keysMapLocations>
+    </configuration>
+</plugin>
+```
+
+Filtering of loaded keysMap
+---------------------------
+
+You can also filter content of loaded `keysMap`
+
+```xml
+<plugin>
+    <groupId>org.simplify4u.plugins</groupId>
+    <artifactId>pgpverify-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <configuration>
+        <keysMapLocations>
+            <keysMapLocation>
+                <location>keysmap1.list</location>
+                <include>
+                    <pattern>org\.apache\..*</pattern>
+                </include>
+                <include>
+                    <pattern>commons.*</pattern>
+                    <value>noSig</value>
+                </include>
+            </keysMapLocation>
+            <keysMapLocation>
+                <location>keysmap2.list</location>
+                <exclude>
+                    <pattern>org\.example\..*</pattern>
+                    <value>noKey</value>
+                </exclude>
+                <exclude>
+                    <pattern>org\.example2\..*</pattern>
+                </exclude>
+            </keysMapLocation>
+        </keysMapLocations>
+    </configuration>
+</plugin>
+```
+
+You can define many `include` and `exclude` tags for specific `keysMap`.
+
+| item                      |  description                                                        | default |
+| ------------------------- | ------------------------------------------------------------------- | ------- |
+| include,exclude / pattern | it is a java Pattern which will be applied to artifact in `keysMap` | `.*`    |
+| include,exclude / value   | it must be one of special value: `any`,`badSig`,`noKey`,`noSig`     | `any`   |

@@ -542,7 +542,6 @@
                             <showErrors>true</showErrors>
                             <mavenOpts>${argLine}</mavenOpts>
                             <parallelThreads>2C</parallelThreads>
-                            <streamLogsOnFailures>true</streamLogsOnFailures>
                         </configuration>
                     </execution>
                 </executions>
@@ -608,5 +607,19 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <profiles>
+        <profile>
+            <id>ci-system</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <properties>
+                <invoker.streamLogsOnFailures>true</invoker.streamLogsOnFailures>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
