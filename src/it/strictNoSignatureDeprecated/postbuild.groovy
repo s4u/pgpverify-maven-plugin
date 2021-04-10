@@ -15,5 +15,5 @@
  */
 def buildLog = new File( basedir, 'build.log' ).text
 
-assert buildLog.contains('[WARNING] strictNoSignature is deprecated - this requirement can be expressed through the keysmap')
+assert buildLog.contains('[WARNING] strictNoSignature is deprecated - this requirement can be expressed through the keysMap')
 assert buildLog.contains('[INFO] BUILD SUCCESS')
