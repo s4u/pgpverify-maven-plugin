@@ -99,21 +99,14 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     private boolean failNoSignature;
 
     /**
-     * Fail the build if any artifact without key is not present in the keys map.
-     * <p>
-     * When enabled, PGPVerify will look up all artifacts in the <code>keys map</code>. Unsigned artifacts will need to
-     * be present in the keys map but are expected to have no public key, i.e. an empty string.
-     * <p>
-     * When <code>strictNoSignature</code> is enabled, PGPVerify will no longer output warnings when unsigned artifacts
-     * are encountered. Instead, it will check if the unsigned artifact is listed in the <code>keys map</code>. If so it
-     * will proceed, if not it will fail the build.
+     * Does nothing - to be removed.
      *
      * @since 1.5.0
-     * @deprecated Deprecated as of 1.9.0: this requirement can be expressed through the keysmap.
+     * @deprecated Deprecated as of 1.9.0: this requirement can be expressed through the keysMap.
      */
     @Deprecated
-    @Parameter(property = "pgpverify.strictNoSignature", defaultValue = "false")
-    private boolean strictNoSignature;
+    @Parameter(property = "pgpverify.strictNoSignature")
+    private Boolean strictNoSignature;
 
     /**
      * Fail the build if any dependency has a weak signature.
@@ -303,8 +296,8 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
      * check and warn if any of the deprecated options are used.
      */
     private void checkDeprecated() {
-        if (strictNoSignature) {
-            LOGGER.warn("strictNoSignature is deprecated - this requirement can be expressed through the keysmap");
+        if (strictNoSignature != null) {
+            LOGGER.warn("strictNoSignature is deprecated - this requirement can be expressed through the keysMap");
         }
     }
 

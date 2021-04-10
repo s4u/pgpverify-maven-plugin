@@ -65,7 +65,6 @@
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
                 <configuration>
-                    <strictNoSignature>true</strictNoSignature>
                     <keysMapLocation>${project.basedir}/keysmap.list</keysMapLocation>
                     <verifyPlugins>true</verifyPlugins>
                     <verifyAtypical>true</verifyAtypical>
