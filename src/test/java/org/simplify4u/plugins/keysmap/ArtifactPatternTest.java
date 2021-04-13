@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class ArtifactPatternTest {
                 {"test.group:test:jar", testArtifact().packaging("pom").build(), false},
                 {"test.*:test", testArtifact().build(), true},
                 {"test.*", testArtifact().build(), true},
+                {"*", testArtifact().build(), true},
         };
     }
 

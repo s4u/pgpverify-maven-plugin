@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Slawomir Jaranowski
+ * Copyright 2019-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-def buildLog = new File( basedir, 'build.log' )
+def buildLog = new File( basedir, 'build.log' ).text
 
-assert buildLog.text.contains('[ERROR] No signature for test:project-test-jar:test-jar:tests:0.0.1')
-assert buildLog.text.contains('[INFO] BUILD FAILURE')
+assert buildLog.contains('[WARNING] No signature for test:project-test-jar:test-jar:tests:0.0.1')
+assert buildLog.contains('[WARNING] No signature for test:project-test-jar:pom:0.0.1')
+
+assert buildLog.contains('[INFO] BUILD SUCCESS')

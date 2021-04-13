@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2014-2021 Slawomir Jaranowski
  * Portions Copyright 2017-2018 Wren Security.
  * Portions Copyright 2019-2020 Danny van Heumen.
  *
@@ -44,7 +44,6 @@ import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
-import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
@@ -94,9 +93,11 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
      * Fail the build if any dependency doesn't have a signature.
      *
      * @since 1.1.0
+     * @deprecated Deprecated as of 1.13.0: this requirement can be expressed through the keysMap.
      */
-    @Parameter(property = "pgpverify.failNoSignature", defaultValue = "false")
-    private boolean failNoSignature;
+    @Deprecated
+    @Parameter(property = "pgpverify.failNoSignature")
+    private Boolean failNoSignature;
 
     /**
      * Does nothing - to be removed.
@@ -275,8 +276,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         }
 
         final long signatureResolutionStart = System.nanoTime();
-        final SignatureRequirement signaturePolicy = determineSignaturePolicy();
-        final Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifacts, signaturePolicy);
+        final Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifacts);
 
         LOGGER.info("Resolved {} signature(s) in {}", artifactMap.size(),
                 Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
@@ -299,6 +299,18 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         if (strictNoSignature != null) {
             LOGGER.warn("strictNoSignature is deprecated - this requirement can be expressed through the keysMap");
         }
+        if (failNoSignature != null) {
+            LOGGER.warn("failNoSignature is deprecated - this requirement can be expressed through the keysMap");
+        }
+        if (Boolean.TRUE.equals(failNoSignature) && keysMap.isEmpty()) {
+            // for backward compatibility
+            LOGGER.warn("failNoSignature is true and keysMap is empty we add `* = any` to keysMap "
+                    + "for backward compatibility");
+            KeysMapLocationConfig keysMapLocationConfig = new KeysMapLocationConfig();
+            keysMapLocationConfig.set("/any-valid-signatures.list");
+            Try.run(() -> keysMap.load(keysMapLocationConfig))
+                    .getOrElseThrow(e -> new PGPMojoException(e.getMessage(), e));
+        }
     }
 
     private void initKeysMap() {
@@ -314,13 +326,6 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
                     "check artifacts against their signature. File corruption will be detected. However, without a " +
                     "keysmap as a reference for trust, valid signatures of any public key will be accepted.");
         }
-    }
-
-    private SignatureRequirement determineSignaturePolicy() {
-        if (failNoSignature) {
-            return SignatureRequirement.REQUIRED;
-        }
-        return SignatureRequirement.NONE;
     }
 
     private SkipFilter prepareDependencyFilters() {
