@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015 Slawomir Jaranowski
+  ~ Copyright 2015-2021 Slawomir Jaranowski
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@
                 <artifactId>pgpverify-maven-plugin</artifactId>
                 <version>@project.version@</version>
                 <configuration>
-                    <failNoSignature>true</failNoSignature>
                     <verifySystemDependencies>true</verifySystemDependencies>
                 </configuration>
                 <executions>

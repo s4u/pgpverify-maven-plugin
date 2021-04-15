@@ -1,5 +1,6 @@
 /*
  * Copyright 2019 Danny van Heumen
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +50,6 @@ import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
-import org.simplify4u.plugins.ArtifactResolver.SignatureRequirement;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -156,7 +156,7 @@ public class ArtifactResolverTest {
             return new ArtifactResolutionResult();
         });
 
-        when(repositorySystem.createProjectArtifact(eq("g"), eq("a"), eq("1.0")))
+        when(repositorySystem.createProjectArtifact("g", "a", "1.0"))
                 .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "pom", "classifier", null));
 
         DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
@@ -170,19 +170,19 @@ public class ArtifactResolverTest {
 
         // then
         verify(repositorySystem, times(1))
-                .createProjectArtifact(eq("g"), eq("a"), eq("1.0"));
+                .createProjectArtifact("g", "a", "1.0");
 
         assertThat(resolved).hasSize(2)
-            .allMatch(Artifact::isResolved)
-            .areExactly(1, IS_JAR_TYPE)
-            .areExactly(1, IS_POM_TYPE);
+                .allMatch(Artifact::isResolved)
+                .areExactly(1, IS_JAR_TYPE)
+                .areExactly(1, IS_POM_TYPE);
     }
 
     @Test
     public void testResolveSignaturesEmpty() throws MojoExecutionException {
 
         // when
-        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(emptyList(), SignatureRequirement.NONE);
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(emptyList());
 
         // then
         assertThat(resolved).isEmpty();
@@ -204,7 +204,7 @@ public class ArtifactResolverTest {
         DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
 
         // then
-        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact), SignatureRequirement.NONE);
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact));
 
         // then
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
@@ -239,34 +239,12 @@ public class ArtifactResolverTest {
         DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
 
         // when
-        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact), SignatureRequirement.NONE);
+        Map<Artifact, Artifact> resolved = resolver.resolveSignatures(singleton(artifact));
 
         // then
         verify(repositorySystem, times(1)).createArtifactWithClassifier(
                 eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull());
         assertThat(resolved).hasSize(1);
-    }
-
-    @Test
-    public void testResolveSignaturesUnresolvedRequired() {
-
-        // given
-        when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
-            artifact.setResolved(false);
-            ArtifactResolutionResult result = new ArtifactResolutionResult();
-            result.setUnresolvedArtifacts(singletonList(artifact));
-            return result;
-        });
-
-        when(repositorySystem.createArtifactWithClassifier(eq("g"), eq("a"), eq("1.0"), eq("jar"), isNull()))
-                .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "mock-signature-artifact", null, new DefaultArtifactHandler()));
-
-        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
-
-        // when -> then
-        assertThatCode(() -> resolver.resolveSignatures(singleton(artifact), SignatureRequirement.REQUIRED))
-                .isExactlyInstanceOf(MojoExecutionException.class);
     }
 
     @Test(dataProvider = "verify-plugin-dependencies-combos")

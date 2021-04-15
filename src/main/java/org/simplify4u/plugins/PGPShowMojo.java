@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
-
-import static org.simplify4u.plugins.ArtifactResolver.SignatureRequirement.NONE;
 
 import io.vavr.control.Try;
 import lombok.AccessLevel;
@@ -94,7 +92,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
             artifactsToCheck.add(artifactResolver.resolvePom(artifactToCheck));
         }
 
-        Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifactsToCheck, NONE);
+        Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifactsToCheck);
 
         artifactMap.forEach(this::processArtifact);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Slawomir Jaranowski
+ * Copyright 2019-2021 Slawomir Jaranowski
  * Portions Copyright 2019-2020 Danny van Heumen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -238,20 +238,19 @@ public class ArtifactResolver {
      * @throws MojoExecutionException If the signature could not be retrieved and the Mojo has been configured to fail
      *                                on a missing signature.
      */
-    Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts, SignatureRequirement requirement)
+    Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts)
             throws MojoExecutionException {
         LOG.debug("Start resolving ASC files");
 
         final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
         for (Artifact artifact : artifacts) {
-            artifactToAsc.put(artifact, resolveSignature(artifact, requirement));
+            artifactToAsc.put(artifact, resolveSignature(artifact));
         }
 
         return artifactToAsc;
     }
 
-    private Artifact resolveSignature(Artifact artifact, SignatureRequirement requirement)
-            throws MojoExecutionException {
+    private Artifact resolveSignature(Artifact artifact) {
         final Artifact aAsc = repositorySystem.createArtifactWithClassifier(
                 artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
                 artifact.getType(), artifact.getClassifier());
@@ -261,16 +260,6 @@ public class ArtifactResolver {
         if (ascResult.isSuccess()) {
             LOG.debug("{} {}", aAsc, aAsc.getFile());
             return aAsc;
-        }
-
-        switch (requirement) {
-            case NONE:
-                break;
-            case REQUIRED:
-                LOG.error("No signature for {}", artifact.getId());
-                throw new MojoExecutionException("No signature for " + artifact.getId());
-            default:
-                throw new UnsupportedOperationException("Unsupported signature requirement.");
         }
 
         return null;
@@ -387,21 +376,6 @@ public class ArtifactResolver {
         request.setRemoteRepositories(remoteRepositoriesToResolve);
 
         return repositorySystem.resolve(request);
-    }
-
-    /**
-     * Enum specifying the levels of signature requirements.
-     */
-    enum SignatureRequirement {
-        /**
-         * NONE indicates there are no requirements, meaning that missing signatures are perfectly acceptable.
-         */
-        NONE,
-        /**
-         * REQUIRED indicates that signatures are strictly required, meaning that missing signature is an immediate
-         * failure case.
-         */
-        REQUIRED,
     }
 
     /**

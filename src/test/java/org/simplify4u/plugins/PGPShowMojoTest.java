@@ -29,7 +29,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.simplify4u.plugins.ArtifactResolver.SignatureRequirement.NONE;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
@@ -109,14 +108,13 @@ public class PGPShowMojoTest {
         mojo.setArtifact("groupId:artifactId:1.0.0:war");
 
         when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull())).thenReturn(artifact);
-        when(artifactResolver.resolveSignatures(anyCollection(), eq(NONE))).thenReturn(Collections.singletonMap(artifact, artifactAsc));
+        when(artifactResolver.resolveSignatures(anyCollection())).thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
 
         PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
                 .status(SignatureStatus.SIGNATURE_VALID)
                 .build();
 
-        //when(pgpSignatureUtils.keyAlgorithmName(anyInt())).thenCallRealMethod();
         when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
 
         // when
@@ -125,7 +123,7 @@ public class PGPShowMojoTest {
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
         verify(artifactResolver).resolveArtifact(artifact);
-        verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
+        verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(pgpSignatureUtils).getSignatureInfo(artifact, artifactAsc, pgpKeysCache);
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
@@ -154,7 +152,7 @@ public class PGPShowMojoTest {
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolvePom(artifact);
-        verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
+        verify(artifactResolver).resolveSignatures(anyCollection());
 
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
@@ -174,7 +172,7 @@ public class PGPShowMojoTest {
         when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
                 .thenReturn(artifact);
 
-        when(artifactResolver.resolveSignatures(anyCollection(), eq(NONE)))
+        when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
         PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
@@ -191,7 +189,7 @@ public class PGPShowMojoTest {
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
         verify(artifactResolver).resolveArtifact(artifact);
-        verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
+        verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
@@ -212,7 +210,7 @@ public class PGPShowMojoTest {
         when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
                 .thenReturn(artifact);
 
-        when(artifactResolver.resolveSignatures(anyCollection(), eq(NONE)))
+        when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
         PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
@@ -230,7 +228,7 @@ public class PGPShowMojoTest {
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
         verify(artifactResolver).resolveArtifact(artifact);
-        verify(artifactResolver).resolveSignatures(anyCollection(), eq(NONE));
+        verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
