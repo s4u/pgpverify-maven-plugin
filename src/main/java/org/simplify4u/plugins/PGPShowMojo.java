@@ -35,7 +35,7 @@ import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.PGPSignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 
@@ -72,8 +72,6 @@ public class PGPShowMojo extends AbstractPGPMojo {
     @Setter(AccessLevel.PACKAGE)
     private String artifact;
 
-    private boolean hasError;
-
     @Override
     protected String getMojoName() {
         return MOJO_NAME;
@@ -81,7 +79,6 @@ public class PGPShowMojo extends AbstractPGPMojo {
 
     @Override
     protected void executeConfiguredMojo() throws MojoExecutionException {
-
 
         Set<Artifact> artifactsToCheck = new HashSet<>();
         Artifact artifactToCheck = prepareArtifactToCheck();
@@ -94,16 +91,21 @@ public class PGPShowMojo extends AbstractPGPMojo {
 
         Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifactsToCheck);
 
-        artifactMap.forEach(this::processArtifact);
+        Boolean result = artifactMap.entrySet().stream()
+                .map(this::processArtifact)
+                .reduce(true, (a, b) -> a && b);
 
-        if (hasError) {
+        if (Boolean.FALSE.equals(result)) {
             throw new PGPMojoException("Some of artifact can't be checked");
         }
     }
 
-    private void processArtifact(Artifact artifact, Artifact artifactAsc) {
+    private boolean processArtifact(Map.Entry<Artifact,Artifact> artifactEntry) {
 
-        PGPSignatureInfo signatureInfo = pgpSignatureUtils.getSignatureInfo(artifact, artifactAsc, pgpKeysCache);
+        Artifact artifactToCheck = artifactEntry.getKey();
+        Artifact sig = artifactEntry.getValue();
+
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifactToCheck, sig, pgpKeysCache);
 
         MessageBuilder messageBuilder = MessageUtils.buffer();
         messageBuilder.newline();
@@ -170,8 +172,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
 
         LOGGER.info(messageBuilder.toString());
 
-        hasError |= (signatureInfo.getStatus() != SignatureStatus.SIGNATURE_VALID
-                && signatureInfo.getStatus() != SignatureStatus.SIGNATURE_INVALID);
+        return signatureInfo.getStatus() == SignatureStatus.SIGNATURE_VALID;
     }
 
     private Artifact prepareArtifactToCheck() {

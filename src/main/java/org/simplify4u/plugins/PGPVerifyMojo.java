@@ -380,7 +380,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     }
 
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact) throws MojoFailureException {
-        if (ascArtifact == null) {
+        if (ascArtifact == null || !ascArtifact.isResolved()) {
             return verifySignatureUnavailable(artifact);
         }
         final File artifactFile = artifact.getFile();

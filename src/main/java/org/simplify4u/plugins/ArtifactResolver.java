@@ -19,12 +19,12 @@ package org.simplify4u.plugins;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -232,22 +232,10 @@ public class ArtifactResolver {
      *
      * @param artifacts The artifacts for which a signatures are desired.
      *
-     * @return Either a Maven artifact for the signature file, or {@code null} if the signature file could not be
-     * retrieved.
-     *
-     * @throws MojoExecutionException If the signature could not be retrieved and the Mojo has been configured to fail
-     *                                on a missing signature.
+     * @return Map artifact to signature
      */
-    Map<Artifact, Artifact> resolveSignatures(Iterable<Artifact> artifacts)
-            throws MojoExecutionException {
-        LOG.debug("Start resolving ASC files");
-
-        final LinkedHashMap<Artifact, Artifact> artifactToAsc = new LinkedHashMap<>();
-        for (Artifact artifact : artifacts) {
-            artifactToAsc.put(artifact, resolveSignature(artifact));
-        }
-
-        return artifactToAsc;
+    Map<Artifact, Artifact> resolveSignatures(Collection<Artifact> artifacts) {
+        return artifacts.stream().collect(Collectors.toMap(Function.identity(), this::resolveSignature));
     }
 
     private Artifact resolveSignature(Artifact artifact) {
@@ -257,12 +245,12 @@ public class ArtifactResolver {
         aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
 
         final ArtifactResolutionResult ascResult = request(aAsc, remoteRepositoriesIgnoreCheckSum);
-        if (ascResult.isSuccess()) {
-            LOG.debug("{} {}", aAsc, aAsc.getFile());
-            return aAsc;
+        if (!ascResult.isSuccess()) {
+            ascResult.getExceptions().forEach(
+                    e -> LOG.debug("Failed to resolve asc {}: {}", aAsc.getId(), e.getMessage()));
         }
 
-        return null;
+        return aAsc;
     }
 
     /**
