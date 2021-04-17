@@ -25,10 +25,11 @@ import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.mockito.Mockito;
 import org.simplify4u.plugins.TestArtifactBuilder;
+import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.PGPSignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 import org.testng.annotations.DataProvider;
@@ -39,14 +40,14 @@ public class PGPSignatureUtilsTest {
     private final PGPSignatureUtils pgpSignatureUtils = new PGPSignatureUtils();
 
     @Test
-    public void testLoadSignatureNull() {
+    void testLoadSignatureNull() {
 
         assertThatCode(() -> pgpSignatureUtils.loadSignature((InputStream) null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testLoadSignatureNoContent() throws IOException {
+    void testLoadSignatureNoContent() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/empty.asc")) {
             assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
@@ -56,7 +57,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void loadSignatureInvalidContent() throws IOException {
+    void loadSignatureInvalidContent() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/wrong.asc")) {
             assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
@@ -66,7 +67,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void testLoadSignatureContentNotSignature() throws IOException {
+    void testLoadSignatureContentNotSignature() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
             assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
@@ -76,7 +77,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void testLoadSignatureContentIsSignature() throws IOException, PGPSignatureException {
+    void testLoadSignatureContentIsSignature() throws IOException, PGPSignatureException {
 
         try (InputStream input = getClass().getResourceAsStream("/helloworld-1.0.jar.asc")) {
             PGPSignature signature = pgpSignatureUtils.loadSignature(input);
@@ -85,14 +86,14 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void testCheckWeakHashAlgorithmNull() {
+    void testCheckWeakHashAlgorithmNull() {
 
         assertThatCode(() -> pgpSignatureUtils.checkWeakHashAlgorithm(null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
     @Test(dataProvider = "provider-signature-hash-algorithms")
-    public void testCheckWeakHashAlgorithmAllAlgorithms(int algorithm, boolean strong) {
+    void testCheckWeakHashAlgorithmAllAlgorithms(int algorithm, boolean strong) {
 
         PGPSignature sig = mock(PGPSignature.class);
         when(sig.getHashAlgorithm()).thenReturn(algorithm);
@@ -101,7 +102,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @DataProvider(name = "provider-signature-hash-algorithms")
-    public Object[][] providerSignatureHashAlgorithms() {
+    Object[][] providerSignatureHashAlgorithms() {
         return new Object[][]{
                 {HashAlgorithmTags.MD5, false},
                 {HashAlgorithmTags.SHA1, true},
@@ -118,7 +119,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void testCheckWeakHashAlgorithmsUnknownAlgorithm() {
+    void testCheckWeakHashAlgorithmsUnknownAlgorithm() {
 
         PGPSignature sig = mock(PGPSignature.class);
         when(sig.getHashAlgorithm()).thenReturn(999);
@@ -128,7 +129,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void loadSignatureFromPGPMessage() throws IOException, PGPSignatureException {
+    void loadSignatureFromPGPMessage() throws IOException, PGPSignatureException {
 
         try (InputStream input = getClass().getResourceAsStream("/fop-0.95.pom.asc")) {
             PGPSignature signature = pgpSignatureUtils.loadSignature(input);
@@ -137,7 +138,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void signatureKeyIdFromSubpackage() throws IOException, PGPSignatureException {
+    void signatureKeyIdFromSubpackage() throws IOException, PGPSignatureException {
         PGPSignature signature;
 
         try (InputStream input = getClass().getResourceAsStream("/helloworld-1.0.jar.asc")) {
@@ -149,7 +150,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    public void signatureKeyIdFromSubpackageIssuerKeyInHashed() throws IOException, PGPSignatureException {
+    void signatureKeyIdFromSubpackageIssuerKeyInHashed() throws IOException, PGPSignatureException {
         PGPSignature signature;
 
         try (InputStream input = getClass().getResourceAsStream("/ant-launcher-1.9.4.jar.asc")) {
@@ -161,9 +162,9 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    void getSignatureThrowNullPointer() {
+    void checkSignatureThrowNullPointer() {
 
-        assertThatCode(() -> pgpSignatureUtils.getSignatureInfo(null, null, null))
+        assertThatCode(() -> pgpSignatureUtils.checkSignature(null, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
@@ -178,12 +179,12 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    void getSignatureArtifactNotResolved() {
+    void checkSignatureArtifactNotResolved() {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().notResolved().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().notResolved().build();
 
-        PGPSignatureInfo signatureInfo = pgpSignatureUtils.getSignatureInfo(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.ARTIFACT_NOT_RESOLVED);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -193,12 +194,12 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    void getSignatureAscNotResolved() {
+    void checkSignatureAscNotResolved() {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().notResolved().build();
 
-        PGPSignatureInfo signatureInfo = pgpSignatureUtils.getSignatureInfo(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_NOT_RESOLVED);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -206,14 +207,14 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    void getSignatureInvalidAsc() {
+    void checkSignatureInvalidAsc() {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact()
                 .file(new File(getClass().getResource("/empty.asc").getFile()))
                 .build();
 
-        PGPSignatureInfo signatureInfo = pgpSignatureUtils.getSignatureInfo(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_ERROR);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -221,7 +222,49 @@ public class PGPSignatureUtilsTest {
     }
 
     @Test
-    void getSignaturePositiveFlow() throws IOException, PGPException {
+    void checkSignatureKeyNotFound() throws IOException {
+
+        Artifact artifact = TestArtifactBuilder.testArtifact()
+                .file(new File(getClass().getResource("/helloworld-1.0.jar").getFile()))
+                .build();
+
+        Artifact artifactAsc = TestArtifactBuilder.testArtifact()
+                .file(new File(getClass().getResource("/helloworld-1.0.jar.asc").getFile()))
+                .build();
+
+        PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
+        when(keysCache.getKeyRing(any())).thenThrow(new PGPKeyNotFound("Key not found"));
+
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
+
+        assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.KEY_NOT_FOUND);
+        assertThat(signatureInfo.getErrorMessage()).isEqualTo("Key not found");
+        assertThat(signatureInfo.getErrorCause()).isExactlyInstanceOf(PGPKeyNotFound.class);
+    }
+
+    @Test
+    void checkSignatureKeyIOException() throws IOException {
+
+        Artifact artifact = TestArtifactBuilder.testArtifact()
+                .file(new File(getClass().getResource("/helloworld-1.0.jar").getFile()))
+                .build();
+
+        Artifact artifactAsc = TestArtifactBuilder.testArtifact()
+                .file(new File(getClass().getResource("/helloworld-1.0.jar.asc").getFile()))
+                .build();
+
+        PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
+        when(keysCache.getKeyRing(any())).thenThrow(new IOException("Test Exception"));
+
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
+
+        assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.ERROR);
+        assertThat(signatureInfo.getErrorMessage()).isEqualTo("Test Exception");
+        assertThat(signatureInfo.getErrorCause()).isExactlyInstanceOf(IOException.class);
+    }
+
+    @Test
+    void checkSignaturePositiveFlow() throws IOException, PGPException {
 
         Artifact artifact = TestArtifactBuilder.testArtifact()
                 .file(new File(getClass().getResource("/helloworld-1.0.jar").getFile()))
@@ -240,7 +283,7 @@ public class PGPSignatureUtilsTest {
         PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
         when(keysCache.getKeyRing(any())).thenReturn(pgpPublicKeys);
 
-        PGPSignatureInfo signatureInfo = pgpSignatureUtils.getSignatureInfo(artifact, artifactAsc, keysCache);
+        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_VALID);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -264,7 +307,7 @@ public class PGPSignatureUtilsTest {
     }
 
     @DataProvider
-    public static Object[] keyAlgorithms() {
+    Object[] keyAlgorithms() {
         return Arrays.stream(PublicKeyAlgorithmTags.class.getDeclaredFields())
                 .map(filed -> Try.of(()->filed.getInt(null)).get())
                 .toArray();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,18 @@
  */
 package org.simplify4u.plugins.pgp;
 
+import java.util.Optional;
+
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * Result of signature validation.
+ */
 @Value
 @Builder
-public class PGPSignatureInfo {
+public class SignatureCheckResult {
 
     @NonNull
     ArtifactInfo artifact;
@@ -31,5 +36,10 @@ public class PGPSignatureInfo {
 
     @NonNull
     SignatureStatus status;
-    String errorMessage;
+
+    Throwable errorCause;
+
+    public String getErrorMessage() {
+        return Optional.ofNullable(errorCause).map(Throwable::getMessage).orElse(null);
+    }
 }

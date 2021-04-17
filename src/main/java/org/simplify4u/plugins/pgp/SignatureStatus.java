@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,13 @@
  */
 package org.simplify4u.plugins.pgp;
 
+/**
+ * Signature check status.
+ */
 public enum SignatureStatus {
     ARTIFACT_NOT_RESOLVED,
     SIGNATURE_NOT_RESOLVED,
+    KEY_NOT_FOUND,
     ERROR,
     SIGNATURE_ERROR,
     SIGNATURE_VALID,

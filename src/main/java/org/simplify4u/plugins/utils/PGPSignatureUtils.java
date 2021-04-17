@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2017-2021 Slawomir Jaranowski
  * Portions Copyright 2017-2018 Wren Security.
  * Portions Copyright 2019 Danny van Heumen
  *
@@ -45,10 +45,11 @@ import org.bouncycastle.openpgp.PGPSignatureSubpacketVector;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.PGPSignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 
@@ -246,18 +247,18 @@ public class PGPSignatureUtils {
     }
 
     /**
-     * Create {@link PGPSignatureInfo} contains data about artifact, signature, public key used to verify and
+     * Create {@link SignatureCheckResult} contains data about artifact, signature, public key used to verify and
      * verification status.
      *
      * @param artifact    The artifact to check signature
      * @param artifactAsc The artifact contains signature
      * @param cache       PGP cache for access public key
      *
-     * @return PGPSignatureInfo with verification result
+     * @return check verification result
      */
-    public PGPSignatureInfo getSignatureInfo(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
+    public SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
 
-        PGPSignatureInfo.PGPSignatureInfoBuilder signatureInfoBuilder = PGPSignatureInfo.builder();
+        SignatureCheckResult.SignatureCheckResultBuilder signatureInfoBuilder = SignatureCheckResult.builder();
 
         signatureInfoBuilder.artifact(ArtifactInfo.builder()
                 .groupId(artifact.getGroupId())
@@ -277,7 +278,7 @@ public class PGPSignatureUtils {
 
         PGPSignature signature = Try.of(() -> loadSignature(artifactAsc.getFile()))
                 .onFailure(e ->
-                        signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.SIGNATURE_ERROR))
+                        signatureInfoBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
                 .getOrNull();
 
         if (signature == null) {
@@ -286,7 +287,7 @@ public class PGPSignatureUtils {
 
         PGPKeyId keyId = Try.of(() -> retrieveKeyId(signature))
                 .onFailure(e ->
-                        signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.SIGNATURE_ERROR))
+                        signatureInfoBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
                 .getOrNull();
 
         if (keyId == null) {
@@ -303,7 +304,8 @@ public class PGPSignatureUtils {
                         .build());
 
         PGPPublicKeyRing publicKeys = Try.of(() -> cache.getKeyRing(keyId))
-                .onFailure(e -> signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.ERROR))
+                .onFailure(e -> signatureInfoBuilder.errorCause(e).status(SignatureStatus.ERROR))
+                .onFailure(PGPKeyNotFound.class, e -> signatureInfoBuilder.status(SignatureStatus.KEY_NOT_FOUND))
                 .getOrNull();
 
         if (publicKeys == null) {
@@ -328,7 +330,7 @@ public class PGPSignatureUtils {
             signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
             readFileContentInto(signature, artifact.getFile());
             return signature.verify();
-        }).onFailure(e -> signatureInfoBuilder.errorMessage(e.getMessage()).status(SignatureStatus.ERROR))
+        }).onFailure(e -> signatureInfoBuilder.errorCause(e).status(SignatureStatus.ERROR))
                 .getOrNull();
 
         if (verifyStatus == null) {

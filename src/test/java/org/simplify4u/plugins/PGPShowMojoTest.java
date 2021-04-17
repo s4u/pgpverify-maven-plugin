@@ -44,7 +44,7 @@ import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.PGPSignatureInfo;
+import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 import org.simplify4u.plugins.utils.PGPSignatureUtils;
@@ -111,11 +111,11 @@ public class PGPShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection())).thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
 
-        PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
                 .status(SignatureStatus.SIGNATURE_VALID)
                 .build();
 
-        when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
+        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         mojo.execute();
@@ -125,7 +125,7 @@ public class PGPShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
-        verify(pgpSignatureUtils).getSignatureInfo(artifact, artifactAsc, pgpKeysCache);
+        verify(pgpSignatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
         verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
@@ -175,11 +175,11 @@ public class PGPShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
-        PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
                 .status(SignatureStatus.ARTIFACT_NOT_RESOLVED)
                 .build();
 
-        when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
+        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         assertThatThrownBy(() -> mojo.execute())
@@ -213,12 +213,12 @@ public class PGPShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
-        PGPSignatureInfo pgpSignatureInfo = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
                 .signature(null)
                 .status(SignatureStatus.SIGNATURE_NOT_RESOLVED)
                 .build();
 
-        when(pgpSignatureUtils.getSignatureInfo(any(), any(), any())).thenReturn(pgpSignatureInfo);
+        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         assertThatThrownBy(() -> mojo.execute())
@@ -237,8 +237,8 @@ public class PGPShowMojoTest {
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
     }
 
-    private PGPSignatureInfo.PGPSignatureInfoBuilder aPGPSignatureInfoBuilder() {
-        return PGPSignatureInfo.builder()
+    private SignatureCheckResult.SignatureCheckResultBuilder aPGPSignatureInfoBuilder() {
+        return SignatureCheckResult.builder()
                 .artifact(ArtifactInfo.builder()
                         .groupId("groupId")
                         .artifactId("artifactId")
