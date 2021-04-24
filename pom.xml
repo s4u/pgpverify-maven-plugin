@@ -83,6 +83,12 @@
         <resilience4j.version>1.7.0</resilience4j.version>
         <mockserver.version>5.11.2</mockserver.version>
         <project.build.outputTimestamp>2021-04-10T17:26:08Z</project.build.outputTimestamp>
+
+        <!-- default value for ide -->
+        <maven.test.skip/>
+
+        <!-- skip invoker if tests are skipped -->
+        <invoker.skip>${maven.test.skip}</invoker.skip>
     </properties>
 
     <dependencyManagement>
@@ -482,11 +488,13 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>it-resources</id>
                         <phase>pre-integration-test</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
+                            <skip>${maven.test.skip}</skip>
                             <outputDirectory>${project.build.directory}/it-repo</outputDirectory>
                             <resources>
                                 <resource>
