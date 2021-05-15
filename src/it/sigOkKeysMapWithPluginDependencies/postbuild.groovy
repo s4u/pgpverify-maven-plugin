@@ -35,7 +35,6 @@ assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.maven:maven-compat:jar:.*
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.maven.shared:maven-dependency-tree:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.sonatype.plexus:plexus-sec-dispatcher:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.codehaus.mojo:animal-sniffer-annotations:jar:.* PGP Signature OK$.*')
-assert buildLog.matches('(?ms).*^\\[INFO\\] com.google.inject:guice:jar:no_aop:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.bouncycastle:bcpg-jdk15on:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.httpcomponents:httpcore:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] com.vladsch.flexmark:flexmark-all:jar:.* PGP Signature OK$.*')
