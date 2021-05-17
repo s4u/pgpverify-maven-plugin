@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.pgp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +36,7 @@ import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
+import org.simplify4u.plugins.utils.HexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +154,7 @@ public final class PublicKeyUtils {
      * @throws PGPException
      *         if problem with PGP data
      */
-    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, PGPKeyId keyId)
+    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, KeyId keyId)
             throws IOException, PGPException {
 
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);

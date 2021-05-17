@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.pgp;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -47,18 +47,14 @@ import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.pgp.ArtifactInfo;
-import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.SignatureCheckResult;
-import org.simplify4u.plugins.pgp.SignatureInfo;
-import org.simplify4u.plugins.pgp.SignatureStatus;
+import org.simplify4u.plugins.utils.HexUtils;
 
 /**
  * Utilities for PGP Signature class.
  */
 @Named
 @Singleton
-public class PGPSignatureUtils {
+public class SignatureUtils {
 
     /**
      * Check PGP signature for bad algorithms.
@@ -104,9 +100,9 @@ public class PGPSignatureUtils {
      *
      * @return Returns the (first) read PGP signature.
      *
-     * @throws PGPSignatureException In case of failure loading signature.
+     * @throws SignatureException In case of failure loading signature.
      */
-    public PGPSignature loadSignature(InputStream input) throws PGPSignatureException {
+    public PGPSignature loadSignature(InputStream input) throws SignatureException {
 
         try {
             InputStream sigInputStream = PGPUtil.getDecoderStream(input);
@@ -134,10 +130,10 @@ public class PGPSignatureUtils {
                 }
             }
         } catch (IOException | PGPException e) {
-            throw new PGPSignatureException(e.getMessage(), e);
+            throw new SignatureException(e.getMessage(), e);
         }
 
-        throw new PGPSignatureException("PGP signature not found.");
+        throw new SignatureException("PGP signature not found.");
     }
 
     /**
@@ -147,10 +143,10 @@ public class PGPSignatureUtils {
      *
      * @return Returns the (first) read PGP signature.
      *
-     * @throws PGPSignatureException In case of failure loading signature.
+     * @throws SignatureException In case of failure loading signature.
      * @throws IOException           In case of IO failures.
      */
-    public PGPSignature loadSignature(File file) throws IOException, PGPSignatureException {
+    public PGPSignature loadSignature(File file) throws IOException, SignatureException {
         try (InputStream in = new FileInputStream(file)) {
             return loadSignature(in);
         }
@@ -181,9 +177,9 @@ public class PGPSignatureUtils {
      *
      * @return Returns the keyId from signature
      *
-     * @throws PGPSignatureException In case of problem with signature data
+     * @throws SignatureException In case of problem with signature data
      */
-    public PGPKeyId retrieveKeyId(PGPSignature signature) throws PGPSignatureException {
+    public KeyId retrieveKeyId(PGPSignature signature) throws SignatureException {
 
         Optional<PGPSignatureSubpacketVector> hashedSubPackets = Optional
                 .ofNullable(signature.getHashedSubPackets());
@@ -214,7 +210,7 @@ public class PGPSignatureUtils {
 
         // test issuerKeyId package and keyId form signature
         if (issuerKeyId.isPresent() && signature.getKeyID() != issuerKeyId.get()) {
-            throw new PGPSignatureException(
+            throw new SignatureException(
                     String.format("Signature KeyID 0x%016X is not equals to IssuerKeyID 0x%016X",
                             signature.getKeyID(), issuerKeyId.get()));
         }
@@ -228,22 +224,22 @@ public class PGPSignatureUtils {
             System.arraycopy(fingerprint, fingerprint.length - 8, bKey, 0, 8);
             BigInteger bigInteger = new BigInteger(bKey);
             if (bigInteger.longValue() != issuerKeyId.get()) {
-                throw new PGPSignatureException(
+                throw new SignatureException(
                         String.format("Signature IssuerFingerprint 0x%s not contains IssuerKeyID 0x%016X",
                                 HexUtils.fingerprintToString(fingerprint), issuerKeyId.get()));
             }
         }
 
-        PGPKeyId pgpKeyId;
+        KeyId keyId;
         if (issuerFingerprint.isPresent()) {
-            pgpKeyId = PGPKeyId.from(issuerFingerprint.get().getFingerprint());
+            keyId = KeyId.from(issuerFingerprint.get().getFingerprint());
         } else if (issuerKeyId.isPresent()) {
-            pgpKeyId = PGPKeyId.from(issuerKeyId.get());
+            keyId = KeyId.from(issuerKeyId.get());
         } else {
-            pgpKeyId = PGPKeyId.from(signature.getKeyID());
+            keyId = KeyId.from(signature.getKeyID());
         }
 
-        return pgpKeyId;
+        return keyId;
     }
 
     /**
@@ -285,7 +281,7 @@ public class PGPSignatureUtils {
             return signatureInfoBuilder.build();
         }
 
-        PGPKeyId keyId = Try.of(() -> retrieveKeyId(signature))
+        KeyId keyId = Try.of(() -> retrieveKeyId(signature))
                 .onFailure(e ->
                         signatureInfoBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
                 .getOrNull();
@@ -299,7 +295,7 @@ public class PGPSignatureUtils {
                         .hashAlgorithm(signature.getHashAlgorithm())
                         .keyAlgorithm(signature.getKeyAlgorithm())
                         .date(signature.getCreationTime())
-                        .keyId(keyId.toString())
+                        .keyId(keyId)
                         .version(signature.getVersion())
                         .build());
 
@@ -315,9 +311,10 @@ public class PGPSignatureUtils {
         PGPPublicKey publicKey = keyId.getKeyFromRing(publicKeys);
 
         signatureInfoBuilder.key(KeyInfo.builder()
-                .fingerprint(PublicKeyUtils.fingerprint(publicKey))
+                .fingerprint(new KeyFingerprint(publicKey.getFingerprint()))
                 .master(PublicKeyUtils.getMasterKey(publicKey, publicKeys)
-                        .map(PublicKeyUtils::fingerprint)
+                        .map(PGPPublicKey::getFingerprint)
+                        .map(KeyFingerprint::new)
                         .orElse(null))
                 .uids(PublicKeyUtils.getUserIDs(publicKey, publicKeys))
                 .version(publicKey.getVersion())

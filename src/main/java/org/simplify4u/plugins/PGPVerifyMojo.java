@@ -47,6 +47,9 @@ import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
+import org.simplify4u.plugins.pgp.KeyId;
+import org.simplify4u.plugins.pgp.PublicKeyUtils;
+import org.simplify4u.plugins.pgp.SignatureException;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -54,9 +57,6 @@ import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
 import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
-import org.simplify4u.plugins.utils.PGPKeyId;
-import org.simplify4u.plugins.utils.PGPSignatureException;
-import org.simplify4u.plugins.utils.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -389,15 +389,15 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         LOGGER.debug("Artifact file: {}", artifactFile);
         LOGGER.debug("Artifact sign: {}", signatureFile);
 
-        PGPKeyId sigKeyID = null;
+        KeyId sigKeyID = null;
         try {
             final PGPSignature pgpSignature;
             try (FileInputStream input = new FileInputStream(signatureFile)) {
-                pgpSignature = pgpSignatureUtils.loadSignature(input);
+                pgpSignature = signatureUtils.loadSignature(input);
             }
 
             verifyWeakSignature(pgpSignature);
-            sigKeyID = pgpSignatureUtils.retrieveKeyId(pgpSignature);
+            sigKeyID = signatureUtils.retrieveKeyId(pgpSignature);
 
             PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
             PGPPublicKey publicKey = sigKeyID.getKeyFromRing(publicKeyRing);
@@ -412,7 +412,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
             }
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-            pgpSignatureUtils.readFileContentInto(pgpSignature, artifactFile);
+            signatureUtils.readFileContentInto(pgpSignature, artifactFile);
 
             LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
                     pgpSignature.getKeyAlgorithm(), pgpSignature.getHashAlgorithm());
@@ -428,7 +428,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
             LOGGER.error("PGP key {} not found on keyserver for artifact {}",
                     pgpKeysCache.getUrlForShowKey(sigKeyID), artifact.getId());
             return false;
-        } catch (PGPSignatureException e) {
+        } catch (SignatureException e) {
             if (keysMap.isBrokenSignature(artifact)) {
                 logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
                 return true;
@@ -445,7 +445,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     }
 
     private void verifyWeakSignature(PGPSignature pgpSignature) throws MojoFailureException {
-        final String weakHashAlgorithm = pgpSignatureUtils.checkWeakHashAlgorithm(pgpSignature);
+        final String weakHashAlgorithm = signatureUtils.checkWeakHashAlgorithm(pgpSignature);
         if (weakHashAlgorithm == null) {
             return;
         }

@@ -44,8 +44,8 @@ import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 import io.vavr.control.Try;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.utils.PGPKeyId;
-import org.simplify4u.plugins.utils.PublicKeyUtils;
+import org.simplify4u.plugins.pgp.KeyId;
+import org.simplify4u.plugins.pgp.PublicKeyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,7 +145,7 @@ public class PGPKeysCache {
      *
      * @return url from current key server
      */
-    public String getUrlForShowKey(PGPKeyId keyID) {
+    public String getUrlForShowKey(KeyId keyID) {
         return keyServerList.getUriForShowKey(keyID).toString();
     }
 
@@ -156,7 +156,7 @@ public class PGPKeysCache {
      * @return Public Key Ring for given key
      * @throws IOException in case of problems
      */
-    public PGPPublicKeyRing getKeyRing(PGPKeyId keyID) throws IOException {
+    public PGPPublicKeyRing getKeyRing(KeyId keyID) throws IOException {
 
         String path = keyID.getHashPath();
         File keyFile = new File(cachePath, path);
@@ -176,7 +176,7 @@ public class PGPKeysCache {
         }
     }
 
-    private static Optional<PGPPublicKeyRing> loadKeyFromFile(File keyFile, PGPKeyId keyID)
+    private static Optional<PGPPublicKeyRing> loadKeyFromFile(File keyFile, KeyId keyID)
             throws IOException {
         Optional<PGPPublicKeyRing> keyRing = Optional.empty();
         try (InputStream keyFileStream = new FileInputStream(keyFile)) {
@@ -191,7 +191,7 @@ public class PGPKeysCache {
         return keyRing;
     }
 
-    private static PGPPublicKeyRing receiveKey(File keyFile, PGPKeyId keyId, PGPKeysServerClient keysServerClient)
+    private static PGPPublicKeyRing receiveKey(File keyFile, KeyId keyId, PGPKeysServerClient keysServerClient)
             throws IOException {
         File dir = keyFile.getParentFile();
 
@@ -281,7 +281,7 @@ public class PGPKeysCache {
             return this;
         }
 
-        URI getUriForShowKey(PGPKeyId keyID) {
+        URI getUriForShowKey(KeyId keyID) {
             return lastClient.getUriForShowKey(keyID);
         }
 

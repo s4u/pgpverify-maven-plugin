@@ -105,13 +105,13 @@ public class PGPShowMojo extends AbstractPGPMojo {
         Artifact artifactToCheck = artifactEntry.getKey();
         Artifact sig = artifactEntry.getValue();
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifactToCheck, sig, pgpKeysCache);
+        SignatureCheckResult signatureCheckResult = signatureUtils.checkSignature(artifactToCheck, sig, pgpKeysCache);
 
         MessageBuilder messageBuilder = MessageUtils.buffer();
         messageBuilder.newline();
         messageBuilder.newline();
 
-        ArtifactInfo artifactInfo = signatureInfo.getArtifact();
+        ArtifactInfo artifactInfo = signatureCheckResult.getArtifact();
 
         messageBuilder.a("Artifact:").newline();
         messageBuilder.a("\tgroupId:     ").strong(artifactInfo.getGroupId()).newline();
@@ -120,13 +120,13 @@ public class PGPShowMojo extends AbstractPGPMojo {
         Optional.ofNullable(artifactInfo.getClassifier()).ifPresent(
                 classifier -> messageBuilder.a("\tclassifier:  ").strong(classifier).newline());
         messageBuilder.a("\tversion:     ").strong(artifactInfo.getVersion()).newline();
-        if (signatureInfo.getStatus() == SignatureStatus.ARTIFACT_NOT_RESOLVED) {
+        if (signatureCheckResult.getStatus() == SignatureStatus.ARTIFACT_NOT_RESOLVED) {
             messageBuilder.a("\t").failure("artifact was not resolved  - try mvn -U ...").newline();
         }
 
         messageBuilder.newline();
 
-        SignatureInfo signature = signatureInfo.getSignature();
+        SignatureInfo signature = signatureCheckResult.getSignature();
         if (signature != null) {
             messageBuilder.a("PGP signature:").newline();
             messageBuilder.a("\tversion:     ").strong(signature.getVersion()).newline();
@@ -137,25 +137,25 @@ public class PGPShowMojo extends AbstractPGPMojo {
             messageBuilder.a("\tkeyId:       ").strong(signature.getKeyId()).newline();
             messageBuilder.a("\tcreate date: ").strong(signature.getDate()).newline();
             messageBuilder.a("\tstatus:      ");
-            if (signatureInfo.getStatus() == SignatureStatus.SIGNATURE_VALID) {
+            if (signatureCheckResult.getStatus() == SignatureStatus.SIGNATURE_VALID) {
                 messageBuilder.success("valid");
             } else {
                 messageBuilder.failure("invalid");
             }
             messageBuilder.newline();
-        } else if (signatureInfo.getStatus() == SignatureStatus.SIGNATURE_NOT_RESOLVED) {
+        } else if (signatureCheckResult.getStatus() == SignatureStatus.SIGNATURE_NOT_RESOLVED) {
             messageBuilder.a("\t")
                     .failure("PGP signature was not resolved - try mvn -U ...").newline();
         }
 
         messageBuilder.newline();
 
-        KeyInfo key = signatureInfo.getKey();
+        KeyInfo key = signatureCheckResult.getKey();
         if (key != null) {
             messageBuilder.a("PGP key:").newline();
             messageBuilder.a("\tversion:     ").strong(key.getVersion()).newline();
             messageBuilder.a("\talgorithm:   ")
-                    .strong(pgpSignatureUtils.keyAlgorithmName(key.getAlgorithm())).newline();
+                    .strong(signatureUtils.keyAlgorithmName(key.getAlgorithm())).newline();
             messageBuilder.a("\tbits:        ").strong(key.getBits()).newline();
             messageBuilder.a("\tfingerprint: ").strong(key.getFingerprint()).newline();
             Optional.ofNullable(key.getMaster()).ifPresent(masterKey ->
@@ -167,12 +167,12 @@ public class PGPShowMojo extends AbstractPGPMojo {
 
         messageBuilder.newline();
 
-        Optional.ofNullable(signatureInfo.getErrorMessage()).ifPresent(errorMessage ->
+        Optional.ofNullable(signatureCheckResult.getErrorMessage()).ifPresent(errorMessage ->
                 messageBuilder.failure(errorMessage).newline());
 
         LOGGER.info(messageBuilder.toString());
 
-        return signatureInfo.getStatus() == SignatureStatus.SIGNATURE_VALID;
+        return signatureCheckResult.getStatus() == SignatureStatus.SIGNATURE_VALID;
     }
 
     private Artifact prepareArtifactToCheck() {

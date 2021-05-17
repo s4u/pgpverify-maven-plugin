@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Slawomir Jaranowski
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,28 @@
  */
 package org.simplify4u.plugins.pgp;
 
-import java.util.Collection;
-import java.util.Date;
-
-import lombok.Builder;
-import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import org.simplify4u.plugins.utils.HexUtils;
 
 /**
- * Store information about used key.
+ * Represent a key fingerprint.
  */
-@Builder
 @Value
-public class KeyInfo {
+@RequiredArgsConstructor
+public class KeyFingerprint {
 
-    @NonNull
-    KeyFingerprint fingerprint;
+    byte[] fingerprint;
 
-    KeyFingerprint master;
+    /**
+     * Costruct a key fingerprint from string representation.
+     * @param strFingerprint a key fingerprint as string
+     */
+    public KeyFingerprint(String strFingerprint) {
+        fingerprint = HexUtils.stringToFingerprint(strFingerprint);
+    }
 
-    Collection<String> uids;
-
-    int version;
-    int algorithm;
-
-    int bits;
-
-    Date date;
+    public String toString() {
+        return HexUtils.fingerprintToString(fingerprint);
+    }
 }

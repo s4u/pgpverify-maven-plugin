@@ -36,14 +36,14 @@ import org.apache.maven.settings.Settings;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
-import org.simplify4u.plugins.utils.PGPKeyId;
+import org.simplify4u.plugins.pgp.KeyId;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class PGPKeysServerClientIT {
-    private static final PGPKeyId TEST_KEYID = PGPKeyId.from(0xF8484389379ACEACL);
+    private static final KeyId TEST_KEYID = KeyId.from(0xF8484389379ACEACL);
 
     private static final int SHORT_TEST_TIMEOUT = 500;
 
@@ -197,12 +197,12 @@ public class PGPKeysServerClientIT {
         }
 
         @Override
-        URI getUriForShowKey(PGPKeyId keyID) {
+        URI getUriForShowKey(KeyId keyID) {
             return this.stubbedUri;
         }
 
         @Override
-        URI getUriForGetKey(PGPKeyId keyID) {
+        URI getUriForGetKey(KeyId keyID) {
             return this.stubbedUri;
         }
     }

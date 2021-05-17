@@ -1,4 +1,19 @@
-package org.simplify4u.plugins.utils;
+/*
+ * Copyright 2021 Slawomir Jaranowski
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.simplify4u.plugins.pgp;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,22 +42,18 @@ import org.mockito.Mockito;
 import org.simplify4u.plugins.TestArtifactBuilder;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.pgp.ArtifactInfo;
-import org.simplify4u.plugins.pgp.KeyInfo;
-import org.simplify4u.plugins.pgp.SignatureCheckResult;
-import org.simplify4u.plugins.pgp.SignatureInfo;
-import org.simplify4u.plugins.pgp.SignatureStatus;
+import org.simplify4u.plugins.utils.HexUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class PGPSignatureUtilsTest {
+public class SignatureUtilsTest {
 
-    private final PGPSignatureUtils pgpSignatureUtils = new PGPSignatureUtils();
+    private final SignatureUtils signatureUtils = new SignatureUtils();
 
     @Test
     void testLoadSignatureNull() {
 
-        assertThatCode(() -> pgpSignatureUtils.loadSignature((InputStream) null))
+        assertThatCode(() -> signatureUtils.loadSignature((InputStream) null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
@@ -50,8 +61,8 @@ public class PGPSignatureUtilsTest {
     void testLoadSignatureNoContent() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/empty.asc")) {
-            assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
-                    .isExactlyInstanceOf(PGPSignatureException.class)
+            assertThatCode(() -> signatureUtils.loadSignature(input))
+                    .isExactlyInstanceOf(SignatureException.class)
                     .hasMessage("PGP signature not found.");
         }
     }
@@ -60,8 +71,8 @@ public class PGPSignatureUtilsTest {
     void loadSignatureInvalidContent() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/wrong.asc")) {
-            assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
-                    .isExactlyInstanceOf(PGPSignatureException.class)
+            assertThatCode(() -> signatureUtils.loadSignature(input))
+                    .isExactlyInstanceOf(SignatureException.class)
                     .hasRootCauseExactlyInstanceOf(IOException.class);
         }
     }
@@ -70,17 +81,17 @@ public class PGPSignatureUtilsTest {
     void testLoadSignatureContentNotSignature() throws IOException {
 
         try (InputStream input = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
-            assertThatCode(() -> pgpSignatureUtils.loadSignature(input))
-                    .isExactlyInstanceOf(PGPSignatureException.class)
+            assertThatCode(() -> signatureUtils.loadSignature(input))
+                    .isExactlyInstanceOf(SignatureException.class)
                     .hasMessage("PGP signature not found.");
         }
     }
 
     @Test
-    void testLoadSignatureContentIsSignature() throws IOException, PGPSignatureException {
+    void testLoadSignatureContentIsSignature() throws IOException, SignatureException {
 
         try (InputStream input = getClass().getResourceAsStream("/helloworld-1.0.jar.asc")) {
-            PGPSignature signature = pgpSignatureUtils.loadSignature(input);
+            PGPSignature signature = signatureUtils.loadSignature(input);
             assertThat(signature.getKeyID()).isEqualTo(0xF8484389379ACEACL);
         }
     }
@@ -88,7 +99,7 @@ public class PGPSignatureUtilsTest {
     @Test
     void testCheckWeakHashAlgorithmNull() {
 
-        assertThatCode(() -> pgpSignatureUtils.checkWeakHashAlgorithm(null))
+        assertThatCode(() -> signatureUtils.checkWeakHashAlgorithm(null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
@@ -98,7 +109,7 @@ public class PGPSignatureUtilsTest {
         PGPSignature sig = mock(PGPSignature.class);
         when(sig.getHashAlgorithm()).thenReturn(algorithm);
 
-        assertThat(pgpSignatureUtils.checkWeakHashAlgorithm(sig) == null).isEqualTo(strong);
+        assertThat(signatureUtils.checkWeakHashAlgorithm(sig) == null).isEqualTo(strong);
     }
 
     @DataProvider(name = "provider-signature-hash-algorithms")
@@ -124,47 +135,47 @@ public class PGPSignatureUtilsTest {
         PGPSignature sig = mock(PGPSignature.class);
         when(sig.getHashAlgorithm()).thenReturn(999);
 
-        assertThatCode(() -> pgpSignatureUtils.checkWeakHashAlgorithm(sig))
+        assertThatCode(() -> signatureUtils.checkWeakHashAlgorithm(sig))
                 .isExactlyInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    void loadSignatureFromPGPMessage() throws IOException, PGPSignatureException {
+    void loadSignatureFromPGPMessage() throws IOException, SignatureException {
 
         try (InputStream input = getClass().getResourceAsStream("/fop-0.95.pom.asc")) {
-            PGPSignature signature = pgpSignatureUtils.loadSignature(input);
+            PGPSignature signature = signatureUtils.loadSignature(input);
             assertThat(signature.getKeyID()).isEqualTo(0x8E1E35C66754351BL);
         }
     }
 
     @Test
-    void signatureKeyIdFromSubpackage() throws IOException, PGPSignatureException {
+    void signatureKeyIdFromSubpackage() throws IOException, SignatureException {
         PGPSignature signature;
 
         try (InputStream input = getClass().getResourceAsStream("/helloworld-1.0.jar.asc")) {
-            signature = pgpSignatureUtils.loadSignature(input);
+            signature = signatureUtils.loadSignature(input);
         }
 
-        PGPKeyId pgpKeyId = pgpSignatureUtils.retrieveKeyId(signature);
-        assertThat(pgpKeyId).asString().isEqualTo("0x6636274B2E8BEA9D15A61143F8484389379ACEAC");
+        KeyId keyId = signatureUtils.retrieveKeyId(signature);
+        assertThat(keyId).asString().isEqualTo("0x6636274B2E8BEA9D15A61143F8484389379ACEAC");
     }
 
     @Test
-    void signatureKeyIdFromSubpackageIssuerKeyInHashed() throws IOException, PGPSignatureException {
+    void signatureKeyIdFromSubpackageIssuerKeyInHashed() throws IOException, SignatureException {
         PGPSignature signature;
 
         try (InputStream input = getClass().getResourceAsStream("/ant-launcher-1.9.4.jar.asc")) {
-            signature = pgpSignatureUtils.loadSignature(input);
+            signature = signatureUtils.loadSignature(input);
         }
 
-        PGPKeyId pgpKeyId = pgpSignatureUtils.retrieveKeyId(signature);
-        assertThat(pgpKeyId).asString().isEqualTo("0x5EFAD9FE82A7FBCD");
+        KeyId keyId = signatureUtils.retrieveKeyId(signature);
+        assertThat(keyId).asString().isEqualTo("0x5EFAD9FE82A7FBCD");
     }
 
     @Test
     void checkSignatureThrowNullPointer() {
 
-        assertThatCode(() -> pgpSignatureUtils.checkSignature(null, null, null))
+        assertThatCode(() -> signatureUtils.checkSignature(null, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
@@ -184,7 +195,7 @@ public class PGPSignatureUtilsTest {
         Artifact artifact = TestArtifactBuilder.testArtifact().notResolved().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().notResolved().build();
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.ARTIFACT_NOT_RESOLVED);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -199,7 +210,7 @@ public class PGPSignatureUtilsTest {
         Artifact artifact = TestArtifactBuilder.testArtifact().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().notResolved().build();
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_NOT_RESOLVED);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -214,7 +225,7 @@ public class PGPSignatureUtilsTest {
                 .file(new File(getClass().getResource("/empty.asc").getFile()))
                 .build();
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, null);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, null);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_ERROR);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -235,7 +246,7 @@ public class PGPSignatureUtilsTest {
         PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
         when(keysCache.getKeyRing(any())).thenThrow(new PGPKeyNotFound("Key not found"));
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, keysCache);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.KEY_NOT_FOUND);
         assertThat(signatureInfo.getErrorMessage()).isEqualTo("Key not found");
@@ -256,7 +267,7 @@ public class PGPSignatureUtilsTest {
         PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
         when(keysCache.getKeyRing(any())).thenThrow(new IOException("Test Exception"));
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, keysCache);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.ERROR);
         assertThat(signatureInfo.getErrorMessage()).isEqualTo("Test Exception");
@@ -276,14 +287,14 @@ public class PGPSignatureUtilsTest {
 
         PGPPublicKeyRing pgpPublicKeys;
         try (InputStream inputStream = getClass().getResourceAsStream("/F8484389379ACEAC.asc")) {
-            pgpPublicKeys = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0xF8484389379ACEACL))
+            pgpPublicKeys = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xF8484389379ACEACL))
                     .orElse(null);
         }
 
         PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
         when(keysCache.getKeyRing(any())).thenReturn(pgpPublicKeys);
 
-        SignatureCheckResult signatureInfo = pgpSignatureUtils.checkSignature(artifact, artifactAsc, keysCache);
+        SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, keysCache);
 
         assertThat(signatureInfo.getStatus()).isEqualTo(SignatureStatus.SIGNATURE_VALID);
         assertThat(signatureInfo.getArtifact()).is(compareWitArtifact(artifact));
@@ -291,13 +302,13 @@ public class PGPSignatureUtilsTest {
         assertThat(signatureInfo.getSignature()).isEqualTo(SignatureInfo.builder()
                 .keyAlgorithm(1)
                 .hashAlgorithm(8)
-                .keyId("0x6636274B2E8BEA9D15A61143F8484389379ACEAC")
+                .keyId(KeyId.from(HexUtils.stringToFingerprint("0x6636274B2E8BEA9D15A61143F8484389379ACEAC")))
                 .date(Date.from(ZonedDateTime.parse("2020-10-24T06:55:35Z").toInstant()))
                 .version(4)
                 .build());
 
         assertThat(signatureInfo.getKey()).isEqualTo(KeyInfo.builder()
-                .fingerprint("0x6636274B2E8BEA9D15A61143F8484389379ACEAC")
+                .fingerprint(new KeyFingerprint("0x6636274B2E8BEA9D15A61143F8484389379ACEAC"))
                 .uids(Collections.singleton("Slawomir Jaranowski <s.jaranowski@gmail.com>"))
                 .version(4)
                 .algorithm(1)
@@ -315,12 +326,12 @@ public class PGPSignatureUtilsTest {
 
     @Test(dataProvider = "keyAlgorithms")
     void keyAlgorithmNameShouldBeResolved(int keyAlgorithm) {
-        assertThat(pgpSignatureUtils.keyAlgorithmName(keyAlgorithm)).isNotBlank();
+        assertThat(signatureUtils.keyAlgorithmName(keyAlgorithm)).isNotBlank();
     }
 
     @Test
     void unKnownKeyAlgorithmThrowExceptio() {
-        assertThatCode(() -> pgpSignatureUtils.keyAlgorithmName(9999998))
+        assertThatCode(() -> signatureUtils.keyAlgorithmName(9999998))
                 .isExactlyInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Unknown key algorithm value encountered: 9999998");
     }

@@ -53,8 +53,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.apache.maven.settings.Proxy;
+import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.utils.ExceptionUtils;
-import org.simplify4u.plugins.utils.PGPKeyId;
 
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
@@ -66,8 +66,19 @@ abstract class PGPKeysServerClient {
 
     private final KeyServerClientSettings keyServerClientSettings;
 
+    /**
+     * OnRetry hook interface.
+     */
     @FunctionalInterface
     public interface OnRetryConsumer {
+        /**
+         * Call when retry operation occurs on a key server client.
+         *
+         * @param address               address used to retrieve key
+         * @param numberOfRetryAttempts a number of try
+         * @param waitInterval          wait time
+         * @param lastThrowable         problem that cause to retry
+         */
         void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable);
 
     }
@@ -117,7 +128,7 @@ abstract class PGPKeysServerClient {
         }
     }
 
-    private static String getQueryStringForGetKey(PGPKeyId keyID) {
+    private static String getQueryStringForGetKey(KeyId keyID) {
         return String.format("op=get&options=mr&search=%s", keyID);
     }
 
@@ -128,13 +139,13 @@ abstract class PGPKeysServerClient {
      *
      * @return URI with given key
      */
-    URI getUriForGetKey(PGPKeyId keyID) {
+    URI getUriForGetKey(KeyId keyID) {
         return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
                 keyserver.getHost(), keyserver.getPort(),
                 "/pks/lookup", getQueryStringForGetKey(keyID), null)).get();
     }
 
-    private static String getQueryStringForShowKey(PGPKeyId keyID) {
+    private static String getQueryStringForShowKey(KeyId keyID) {
         return String.format("op=vindex&fingerprint=on&search=%s", keyID);
     }
 
@@ -145,7 +156,7 @@ abstract class PGPKeysServerClient {
      *
      * @return URI with given key
      */
-    URI getUriForShowKey(PGPKeyId keyID) {
+    URI getUriForShowKey(KeyId keyID) {
         return Try.of(() -> new URI(keyserver.getScheme(), keyserver.getUserInfo(),
                 keyserver.getHost(), keyserver.getPort(),
                 "/pks/lookup", getQueryStringForShowKey(keyID), null)).get();
@@ -164,7 +175,7 @@ abstract class PGPKeysServerClient {
      *
      * @throws IOException If the request fails, or the key cannot be written to the output stream.
      */
-    void copyKeyToOutputStream(PGPKeyId keyId, OutputStream outputStream, OnRetryConsumer onRetryConsumer)
+    void copyKeyToOutputStream(KeyId keyId, OutputStream outputStream, OnRetryConsumer onRetryConsumer)
             throws IOException {
 
         final URI keyUri = getUriForGetKey(keyId);
