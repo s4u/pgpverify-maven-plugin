@@ -26,7 +26,7 @@ public class SignatureInfo {
 
     int hashAlgorithm;
     int keyAlgorithm;
-    String keyId;
+    KeyId keyId;
     Date date;
     int version;
 }

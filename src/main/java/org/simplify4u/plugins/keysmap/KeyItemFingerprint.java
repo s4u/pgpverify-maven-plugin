@@ -22,8 +22,8 @@ import static org.simplify4u.plugins.utils.HexUtils.stringToFingerprint;
 import lombok.EqualsAndHashCode;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.pgp.PublicKeyUtils;
 import org.simplify4u.plugins.utils.HexUtils;
-import org.simplify4u.plugins.utils.PublicKeyUtils;
 
 /**
  * Represent key as fingerprint for given artifact pattern.

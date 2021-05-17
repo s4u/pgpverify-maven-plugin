@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.pgp;
 
-public class PGPSignatureException extends Exception {
+/**
+ * Exception for signature problem.
+ */
+public class SignatureException extends Exception {
 
     private static final long serialVersionUID = -7765012289742692489L;
 
-    public PGPSignatureException(String message) {
+    /**
+     * Exception with message detail.
+     * @param message a massage
+     */
+    public SignatureException(String message) {
         super(message);
     }
 
-    public PGPSignatureException(String message, Throwable cause) {
+    /**
+     * Exception with message detail and cause.
+     * @param message a message
+     * @param cause a cause
+     */
+    public SignatureException(String message, Throwable cause) {
         super(message, cause);
     }
 }

@@ -32,7 +32,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.simplify4u.plugins.keyserver.KeyServerClientSettings;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.utils.PGPSignatureUtils;
+import org.simplify4u.plugins.pgp.SignatureUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +50,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     protected PGPKeysCache pgpKeysCache;
 
     @Inject
-    protected PGPSignatureUtils pgpSignatureUtils;
+    protected SignatureUtils signatureUtils;
 
     @Inject
     protected MavenSession session;

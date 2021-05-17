@@ -54,8 +54,8 @@ import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
-import org.simplify4u.plugins.utils.PGPKeyId;
-import org.simplify4u.plugins.utils.PGPKeyId.PGPKeyIdLong;
+import org.simplify4u.plugins.pgp.KeyId;
+import org.simplify4u.plugins.pgp.KeyId.KeyIdLong;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -66,7 +66,7 @@ import org.testng.annotations.Test;
 @Listeners(MockitoTestNGListener.class)
 public class PGPKeysCacheTest {
 
-    public static final PGPKeyId KEY_ID_1 = PGPKeyId.from(1L);
+    public static final KeyId KEY_ID_1 = KeyId.from(1L);
 
     private Path cachePath;
 
@@ -84,15 +84,15 @@ public class PGPKeysCacheTest {
 
     public List<PGPKeysServerClient> prepareKeyServerClient() throws IOException {
 
-        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (PGPKeyId) i.getArgument(0))))
-                .when(keysServerClient).getUriForGetKey(any(PGPKeyId.class));
+        doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (KeyId) i.getArgument(0))))
+                .when(keysServerClient).getUriForGetKey(any(KeyId.class));
 
         doAnswer(i -> {
             try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
                 ByteStreams.copy(inputStream, i.getArgument(1));
             }
             return null;
-        }).when(keysServerClient).copyKeyToOutputStream(any(PGPKeyId.class), any(OutputStream.class),
+        }).when(keysServerClient).copyKeyToOutputStream(any(KeyId.class), any(OutputStream.class),
                 any(PGPKeysServerClient.OnRetryConsumer.class));
 
         return Collections.singletonList(keysServerClient);
@@ -144,19 +144,19 @@ public class PGPKeysCacheTest {
         pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
-        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
 
         assertThat(keyRing)
                 .hasSize(2)
                 .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
 
-        verify(keysServerClients.get(0)).getUriForGetKey(any(PGPKeyId.class));
-        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(PGPKeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
+        verify(keysServerClients.get(0)).getUriForGetKey(any(KeyId.class));
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(KeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
         verifyNoMoreInteractions(keysServerClients.get(0));
         clearInvocations(keysServerClients.get(0));
 
         // second from cache
-        keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
+        keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
 
         assertThat(keyRing)
                 .hasSize(2)
@@ -177,14 +177,14 @@ public class PGPKeysCacheTest {
         Files.createFile(keyDirPath.resolve("EFE8086F9E93774E.asc"));
 
         // call should retrieve key from server
-        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(PGPKeyId.from(0xEFE8086F9E93774EL));
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
 
         assertThat(keyRing)
                 .hasSize(2)
                 .anyMatch(key -> key.getKeyID() == 0xEFE8086F9E93774EL);
 
-        verify(keysServerClients.get(0)).getUriForGetKey(any(PGPKeyId.class));
-        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(PGPKeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
+        verify(keysServerClients.get(0)).getUriForGetKey(any(KeyId.class));
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(any(KeyIdLong.class), any(OutputStream.class), any(PGPKeysServerClient.OnRetryConsumer.class));
         verifyNoMoreInteractions(keysServerClients.get(0));
         clearInvocations(keysServerClients.get(0));
     }
@@ -196,7 +196,7 @@ public class PGPKeysCacheTest {
         pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
 
         // first call retrieve key from server
-        assertThatCode(() -> pgpKeysCache.getKeyRing(PGPKeyId.from(0x1234567890L)))
+        assertThatCode(() -> pgpKeysCache.getKeyRing(KeyId.from(0x1234567890L)))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessageStartingWith("Can't find public key 0x0000001234567890 in download file:");
     }

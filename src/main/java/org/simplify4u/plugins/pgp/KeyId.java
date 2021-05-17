@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.pgp;
 
 import static org.simplify4u.plugins.utils.HexUtils.fingerprintToString;
 
+import lombok.EqualsAndHashCode;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 
-public interface PGPKeyId {
+/**
+ * KeyId representation.
+ */
+public interface KeyId {
 
     String getHashPath();
 
@@ -30,11 +34,15 @@ public interface PGPKeyId {
 
     PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) throws PGPException;
 
-    class PGPKeyIdLong implements PGPKeyId {
+    /**
+     * Representation of a keyId with long as key.
+     */
+    @EqualsAndHashCode
+    class KeyIdLong implements KeyId {
 
         private final Long keyId;
 
-        PGPKeyIdLong(Long keyId) {
+        KeyIdLong(Long keyId) {
             this.keyId = keyId;
         }
 
@@ -60,11 +68,15 @@ public interface PGPKeyId {
         }
     }
 
-    class PGPKeyIdFingerprint implements PGPKeyId {
+    /**
+     * Representation of a keyId with fingerprint as key.
+     */
+    @EqualsAndHashCode
+    class KeyIdFingerprint implements KeyId {
 
         private final byte[] fingerprint;
 
-        PGPKeyIdFingerprint(byte[] fingerprint) {
+        KeyIdFingerprint(byte[] fingerprint) {
             this.fingerprint = fingerprint;
         }
 
@@ -97,11 +109,11 @@ public interface PGPKeyId {
 
     }
 
-    static PGPKeyId from(byte[] fingerprint) {
-        return new PGPKeyIdFingerprint(fingerprint);
+    static KeyId from(byte[] fingerprint) {
+        return new KeyIdFingerprint(fingerprint);
     }
 
-    static PGPKeyId from(Long keyId) {
-        return new PGPKeyIdLong(keyId);
+    static KeyId from(Long keyId) {
+        return new KeyIdLong(keyId);
     }
 }

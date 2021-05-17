@@ -43,11 +43,13 @@ import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
+import org.simplify4u.plugins.pgp.KeyFingerprint;
+import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.pgp.KeyInfo;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
-import org.simplify4u.plugins.utils.PGPSignatureUtils;
+import org.simplify4u.plugins.pgp.SignatureUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
@@ -62,7 +64,7 @@ public class PGPShowMojoTest {
     private PGPKeysCache pgpKeysCache;
 
     @Mock
-    private PGPSignatureUtils pgpSignatureUtils;
+    private SignatureUtils signatureUtils;
 
     @Mock
     private RepositorySystem repositorySystem;
@@ -115,7 +117,7 @@ public class PGPShowMojoTest {
                 .status(SignatureStatus.SIGNATURE_VALID)
                 .build();
 
-        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
+        when(signatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         mojo.execute();
@@ -125,12 +127,12 @@ public class PGPShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
-        verify(pgpSignatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
-        verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
+        verify(signatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
+        verify(signatureUtils).keyAlgorithmName(anyInt());
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
-        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
+        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
 
     @Test
@@ -157,11 +159,11 @@ public class PGPShowMojoTest {
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
-        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
+        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
 
     @Test
-    void shouldFailForNotResolvedArtifact() throws MojoExecutionException, IOException {
+    void shouldFailForNotResolvedArtifact() throws IOException {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().notResolved().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().packaging("jar.asc").build();
@@ -179,7 +181,7 @@ public class PGPShowMojoTest {
                 .status(SignatureStatus.ARTIFACT_NOT_RESOLVED)
                 .build();
 
-        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
+        when(signatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         assertThatThrownBy(() -> mojo.execute())
@@ -191,11 +193,11 @@ public class PGPShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
-        verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
+        verify(signatureUtils).keyAlgorithmName(anyInt());
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
-        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
+        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
 
     @Test
@@ -218,7 +220,7 @@ public class PGPShowMojoTest {
                 .status(SignatureStatus.SIGNATURE_NOT_RESOLVED)
                 .build();
 
-        when(pgpSignatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
+        when(signatureUtils.checkSignature(any(), any(), any())).thenReturn(signatureCheckResult);
 
         // when
         assertThatThrownBy(() -> mojo.execute())
@@ -230,11 +232,11 @@ public class PGPShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
-        verify(pgpSignatureUtils).keyAlgorithmName(anyInt());
+        verify(signatureUtils).keyAlgorithmName(anyInt());
 
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
-        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, pgpSignatureUtils, repositorySystem);
+        verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
 
     private SignatureCheckResult.SignatureCheckResultBuilder aPGPSignatureInfoBuilder() {
@@ -248,14 +250,14 @@ public class PGPShowMojoTest {
                         .build())
                 .signature(SignatureInfo.builder()
                         .version(4)
-                        .keyId("0x1234")
+                        .keyId(KeyId.from(0x1234L))
                         .hashAlgorithm(HashAlgorithmTags.MD5)
                         .keyAlgorithm(PublicKeyAlgorithmTags.RSA_GENERAL)
                         .build())
                 .key(KeyInfo.builder()
                         .version(4)
-                        .fingerprint("0x1234")
-                        .master("0x4321")
+                        .fingerprint(new KeyFingerprint("0x12345678901234567890"))
+                        .master(new KeyFingerprint("0x09876543210987654321"))
                         .algorithm(PublicKeyAlgorithmTags.RSA_GENERAL)
                         .uids(Collections.singleton("Test uid <uid@example.com>"))
                         .bits(2048)

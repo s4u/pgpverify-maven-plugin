@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
+ * Copyright 2020-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.utils;
+package org.simplify4u.plugins.pgp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 
 public class PublicKeyUtilsTest {
 
-    private static final PGPKeyId SUB_KEY_ID = PGPKeyId.from(0xEFE8086F9E93774EL);
+    private static final KeyId SUB_KEY_ID = KeyId.from(0xEFE8086F9E93774EL);
     private static final long MASTER_KEY_ID = 0x164BD2247B936711L;
 
     private PGPPublicKeyRing publicKeyRing;
@@ -111,7 +111,7 @@ public class PublicKeyUtilsTest {
     public void invalidUTF8InUserId() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0xB0F3710FA64900E7L));
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xB0F3710FA64900E7L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->
@@ -125,7 +125,7 @@ public class PublicKeyUtilsTest {
     public void validateSubKeyWithExternalSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0x3D8B00E198E21827L));
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x3D8B00E198E21827L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->
@@ -139,7 +139,7 @@ public class PublicKeyUtilsTest {
     public void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/411063A3A0FFD119.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, PGPKeyId.from(0x411063A3A0FFD119L));
+            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x411063A3A0FFD119L));
 
             assertThat(aPublicKeyRing)
                     .hasValueSatisfying(publicKeyRing ->

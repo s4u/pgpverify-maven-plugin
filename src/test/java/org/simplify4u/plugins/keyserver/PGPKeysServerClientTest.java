@@ -30,7 +30,7 @@ import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
-import org.simplify4u.plugins.utils.PGPKeyId;
+import org.simplify4u.plugins.pgp.KeyId;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Listeners;
@@ -103,7 +103,7 @@ public class PGPKeysServerClientTest {
             }
         };
 
-        assertThatThrownBy(() -> pgpKeysServerClient.copyKeyToOutputStream(PGPKeyId.from(0x0123456789ABCDEFL), null, null))
+        assertThatThrownBy(() -> pgpKeysServerClient.copyKeyToOutputStream(KeyId.from(0x0123456789ABCDEFL), null, null))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Not possible to download key: https://localhost/pks/lookup?op=get&options=mr&search=0x0123456789ABCDEF in offline mode.");
     }
