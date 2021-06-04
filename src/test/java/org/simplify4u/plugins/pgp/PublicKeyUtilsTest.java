@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -48,27 +49,31 @@ public class PublicKeyUtilsTest {
 
 
     @Test
-    public void fingerPrintForMasterWithSubKey() {
+    public void fingerPrintForMasterKey() {
 
-        PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
+        KeyInfo keyInfo = KeyInfo.builder()
+                .fingerprint(new KeyFingerprint("0x58E79B6ABC762159DC0B1591164BD2247B936711"))
+                .build();
 
-        assertThat(key.isMasterKey()).isFalse();
-        assertThat(PublicKeyUtils.fingerprintForMaster(key, publicKeyRing))
+        assertThat(keyInfo.getMaster()).isNull();
+        assertThat(PublicKeyUtils.fingerprintForMaster(keyInfo))
                 .isEqualTo("0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
-    public void fingerPrintForMasterWithMasterKey() throws IOException, PGPException {
+    public void fingerPrintForSubKey() {
+        KeyInfo keyInfo = KeyInfo.builder()
+                .fingerprint(new KeyFingerprint("0x1234567890123456789012345678901234567890"))
+                .master(new KeyFingerprint("0x58E79B6ABC762159DC0B1591164BD2247B936711"))
+                .build();
 
-        PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
-
-        assertThat(key.isMasterKey()).isTrue();
-        assertThat(PublicKeyUtils.fingerprintForMaster(key, publicKeyRing))
+        assertThat(keyInfo.getMaster()).isNotNull();
+        assertThat(PublicKeyUtils.fingerprintForMaster(keyInfo))
                 .isEqualTo("0x58E79B6ABC762159DC0B1591164BD2247B936711");
     }
 
     @Test
-    public void userIdsWithSubKey() throws IOException, PGPException {
+    public void userIdsWithSubKey() {
 
         PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
@@ -78,7 +83,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void userIdsWithMasterKey() throws IOException, PGPException {
+    public void userIdsWithMasterKey() {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
@@ -90,21 +95,20 @@ public class PublicKeyUtilsTest {
     @Test
     public void keyIdDescriptionForMasterKey() {
 
-        PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
+        KeyInfo keyInfo = aKeyInfo("0x1234567890123456789012345678901234567890");
 
-        assertThat(key.isMasterKey()).isTrue();
-        assertThat(PublicKeyUtils.keyIdDescription(key, publicKeyRing))
-                .isEqualTo("KeyId: 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(keyInfo.getMaster()).isNull();
+        assertThat(PublicKeyUtils.keyIdDescription(keyInfo))
+                .isEqualTo("KeyId: 0x1234567890123456789012345678901234567890");
     }
 
     @Test
     public void keyIdDescriptionForSubKey() {
+        KeyInfo keyInfo = aKeyInfo("0x0987654321098765432109876543210987654321", "0x1234567890123456789012345678901234567890");
 
-        PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
-
-        assertThat(key.isMasterKey()).isFalse();
-        assertThat(PublicKeyUtils.keyIdDescription(key, publicKeyRing))
-                .isEqualTo("SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711");
+        assertThat(keyInfo.getMaster()).isNotNull();
+        assertThat(PublicKeyUtils.keyIdDescription(keyInfo))
+                .isEqualTo("SubKeyId: 0x0987654321098765432109876543210987654321 of 0x1234567890123456789012345678901234567890");
     }
 
     @Test

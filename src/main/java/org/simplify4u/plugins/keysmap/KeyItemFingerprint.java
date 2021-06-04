@@ -20,9 +20,8 @@ import java.util.Optional;
 import static org.simplify4u.plugins.utils.HexUtils.stringToFingerprint;
 
 import lombok.EqualsAndHashCode;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.pgp.PublicKeyUtils;
+import org.simplify4u.plugins.pgp.KeyFingerprint;
+import org.simplify4u.plugins.pgp.KeyInfo;
 import org.simplify4u.plugins.utils.HexUtils;
 
 /**
@@ -38,20 +37,20 @@ class KeyItemFingerprint implements KeyItem {
     }
 
     @Override
-    public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
-
-        if (compareArrays(fingerPrint, pgpPublicKey.getFingerprint())) {
-            return true;
-        }
-
-        Optional<PGPPublicKey> masterKey = PublicKeyUtils.getMasterKey(pgpPublicKey, pgpPublicKeyRing);
-        return masterKey.filter(publicKey -> isKeyMatch(publicKey, pgpPublicKeyRing)).isPresent();
+    public boolean isKeyMatch(KeyInfo keyInfo) {
+        return compareWith(keyInfo.getMaster()) || compareWith(keyInfo.getFingerprint()) ;
     }
 
-    private static boolean compareArrays(byte[] keyBytes, byte[] fingerprint) {
+    private boolean compareWith(KeyFingerprint fingerprint) {
+        return Optional.ofNullable(fingerprint)
+                .map(KeyFingerprint::getFingerprint)
+                .map(this::compareWith)
+                .orElse(false);
+    }
 
-        for (int i = 1; i <= keyBytes.length && i <= fingerprint.length; i++) {
-            if (keyBytes[keyBytes.length - i] != fingerprint[fingerprint.length - i]) {
+    private boolean compareWith(byte[] keyBytes) {
+        for (int i = 1; i <= fingerPrint.length && i <= keyBytes.length; i++) {
+            if (fingerPrint[fingerPrint.length - i] != keyBytes[keyBytes.length - i]) {
                 return false;
             }
         }

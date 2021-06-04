@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
+import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
-import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.codehaus.plexus.resource.ResourceManager;
 import org.mockito.InjectMocks;
@@ -68,7 +68,7 @@ public class KeysMapTest {
                 .isExactlyInstanceOf(NullPointerException.class);
 
         verifyNoInteractions(resourceManager);
-        assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
+        assertThat(keysMap.isValidKey(testArtifact().build(), null)).isTrue();
     }
 
     @Test
@@ -76,7 +76,7 @@ public class KeysMapTest {
         keysMap.load(aKeysMapLocationConfig(""));
 
         verifyNoInteractions(resourceManager);
-        assertThat(keysMap.isValidKey(testArtifact().build(), null, null)).isTrue();
+        assertThat(keysMap.isValidKey(testArtifact().build(), null)).isTrue();
     }
 
     @Test
@@ -92,43 +92,43 @@ public class KeysMapTest {
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+                        aKeyInfo("0x123456789abcdef0"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.12").build(),
-                        getPGPgpPublicKey(0x123456789abcdeffL), null)
+                        aKeyInfo("0x123456789abcdeff"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("testlong").artifactId("fingerprint").version("x.x.x").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+                        aKeyInfo("0x123456789abcdef0"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test.test").artifactId("test").version("1.2.3").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+                        aKeyInfo("0x123456789abcdef0"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test").artifactId("test").version("1.0.0").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+                        aKeyInfo("0x123456789abcdef0"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
-                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null)
+                        aKeyInfo("0xA6ADFC93EF34893E"))
         ).isTrue();
 
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test2").artifactId("test-package").version("1.0.0").build(),
-                        getPGPgpPublicKey(0xA6ADFC93EF34893FL), null)
+                        aKeyInfo("0xA6ADFC93EF34893F"))
         ).isTrue();
 
         assertThat(
@@ -156,7 +156,7 @@ public class KeysMapTest {
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("junit").artifactId("junit").version("4.11").build(),
-                        getPGPgpPublicKey(0x123456789abcdef0L), null)
+                        aKeyInfo("0x123456789abcdef0"))
         ).isFalse();
     }
 
@@ -184,7 +184,7 @@ public class KeysMapTest {
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("noSig").artifactId("test3").build(),
-                        getPGPgpPublicKey(0x123456789ABCDEF0L), null)
+                        aKeyInfo("0x123456789ABCDEF0"))
         ).isTrue();
 
     }
@@ -284,7 +284,7 @@ public class KeysMapTest {
         assertThat(
                 keysMap.isValidKey(
                         testArtifact().groupId("test2").build(),
-                        getPGPgpPublicKey(0xA6ADFC93EF34893EL), null)
+                        aKeyInfo("0xA6ADFC93EF34893E"))
         ).isTrue();
     }
 

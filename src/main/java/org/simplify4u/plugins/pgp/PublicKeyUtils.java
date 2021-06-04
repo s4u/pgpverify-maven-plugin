@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
@@ -37,15 +38,12 @@ import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.utils.HexUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility for PGPPublicKey
  */
+@Slf4j
 public final class PublicKeyUtils {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublicKeyUtils.class);
 
     private PublicKeyUtils() {
         // No need to instantiate utility class.
@@ -54,61 +52,50 @@ public final class PublicKeyUtils {
     /**
      * Generate string version of key fingerprint
      *
-     * @param publicKey
-     *         given key
+     * @param publicKey given key
      *
      * @return fingerprint as string
      */
-    public static String fingerprint(PGPPublicKey publicKey) {
+    static String fingerprint(PGPPublicKey publicKey) {
         return HexUtils.fingerprintToString(publicKey.getFingerprint());
     }
 
     /**
      * Generate string version of master key fingerprint
      *
-     * @param publicKey
-     *         given key
-     * @param publicKeyRing
-     *         keys ring with master and sub keys
+     * @param keyInfo given key
      *
      * @return master key fingerprint as string
      */
-    public static String fingerprintForMaster(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
-        return fingerprint(getMasterKey(publicKey, publicKeyRing).orElse(publicKey));
+    public static String fingerprintForMaster(KeyInfo keyInfo) {
+        return Optional.ofNullable(keyInfo.getMaster()).orElse(keyInfo.getFingerprint()).toString();
     }
 
     /**
      * Generate string with key id description.
      *
-     * @param publicKey
-     *         given key
-     * @param publicKeyRing
-     *         keys ring with master and sub keys
+     * @param keyInfo a key
      *
      * @return string with key id description
      */
-    public static String keyIdDescription(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    public static String keyIdDescription(KeyInfo keyInfo) {
 
-        Optional<PGPPublicKey> masterKey = getMasterKey(publicKey, publicKeyRing);
-
-        if (masterKey.isPresent()) {
-            return String.format("SubKeyId: 0x%16X of %s", publicKey.getKeyID(), fingerprint(masterKey.get()));
+        if (keyInfo.getMaster() != null) {
+            return String.format("SubKeyId: %s of %s", keyInfo.getFingerprint(), keyInfo.getMaster());
         } else {
-            return "KeyId: " + fingerprint(publicKey);
+            return "KeyId: " + keyInfo.getFingerprint();
         }
     }
 
     /**
      * Return master key for given sub public key.
      *
-     * @param publicKey
-     *         given key
-     * @param publicKeyRing
-     *         keys ring with master and sub keys
+     * @param publicKey     given key
+     * @param publicKeyRing keys ring with master and sub keys
      *
      * @return master key of empty if not found or given key is master key
      */
-    public static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
 
         if (publicKey.isMasterKey()) {
             return Optional.empty();
@@ -123,7 +110,7 @@ public final class PublicKeyUtils {
         return Optional.empty();
     }
 
-    public static Collection<String> getUserIDs(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
+    static Collection<String> getUserIDs(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
         // use getRawUserIDs and standard java String to transform byte array to utf8
         // because BC generate exception if there is some problem in decoding utf8
         // https://github.com/s4u/pgpverify-maven-plugin/issues/61
@@ -142,17 +129,13 @@ public final class PublicKeyUtils {
     /**
      * Load Public Keys ring from stream for given keyId.
      *
-     * @param keyStream
-     *         input stream with public keys
-     * @param keyId
-     *         key ID for find proper key ring
+     * @param keyStream input stream with public keys
+     * @param keyId     key ID for find proper key ring
      *
      * @return key ring with given key id
      *
-     * @throws IOException
-     *         if problem with comunication
-     * @throws PGPException
-     *         if problem with PGP data
+     * @throws IOException  if problem with comunication
+     * @throws PGPException if problem with PGP data
      */
     public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, KeyId keyId)
             throws IOException, PGPException {
@@ -169,8 +152,7 @@ public final class PublicKeyUtils {
     /**
      * Validate signatures for subKeys in given key ring.
      *
-     * @param publicKeyRing
-     *         keys to verify
+     * @param publicKeyRing keys to verify
      */
     private static void verifyPublicKeyRing(PGPPublicKeyRing publicKeyRing) {
 
@@ -202,7 +184,7 @@ public final class PublicKeyUtils {
                     } else {
                         throw new PGPException(
                                 String.format("Signature type: %d Not found key 0x%016X for subKeyId: %s",
-                                sig.getSignatureType(), sig.getKeyID(), fingerprint(subKey)));
+                                        sig.getSignatureType(), sig.getKeyID(), fingerprint(subKey)));
                     }
                 }).get()
         );

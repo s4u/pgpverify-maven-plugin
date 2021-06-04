@@ -16,7 +16,9 @@
 package org.simplify4u.plugins.keysmap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 
+import org.simplify4u.plugins.pgp.KeyInfo;
 import org.testng.annotations.Test;
 
 public class KeyItemFingerprintTest {
@@ -25,7 +27,7 @@ public class KeyItemFingerprintTest {
     private static final String FINGERPRINT_2 = "0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC 0000";
 
     @Test
-    public void twoInstanceForTheSameKeyShouldBeEqual() {
+    void twoInstanceForTheSameKeyShouldBeEqual() {
         KeyItemFingerprint keyItemFingerprint1 = new KeyItemFingerprint(FINGERPRINT_1);
         KeyItemFingerprint keyItemFingerprint2 = new KeyItemFingerprint(FINGERPRINT_1);
 
@@ -36,7 +38,7 @@ public class KeyItemFingerprintTest {
     }
 
     @Test
-    public void twoInstanceForTheDifferentKeyShouldNotBeEqual() {
+    void twoInstanceForTheDifferentKeyShouldNotBeEqual() {
         KeyItemFingerprint keyItemFingerprint1 = new KeyItemFingerprint(FINGERPRINT_1);
         KeyItemFingerprint keyItemFingerprint2 = new KeyItemFingerprint(FINGERPRINT_2);
 
@@ -45,4 +47,55 @@ public class KeyItemFingerprintTest {
                 .isNotEqualTo(keyItemFingerprint2)
                 .doesNotHaveSameHashCodeAs(keyItemFingerprint2);
     }
+
+    @Test
+    void matchForMasterKey() {
+
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint(FINGERPRINT_1);
+
+        KeyInfo keyInfo = aKeyInfo(FINGERPRINT_1);
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+    }
+
+    @Test
+    void matchForSubKey() {
+
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint(FINGERPRINT_1);
+
+        KeyInfo keyInfo = aKeyInfo(FINGERPRINT_1, FINGERPRINT_2);
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+    }
+
+    @Test
+    void matchForSubKeyMasterInList() {
+
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint(FINGERPRINT_2);
+
+        KeyInfo keyInfo = aKeyInfo(FINGERPRINT_1, FINGERPRINT_2);
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+    }
+
+    @Test
+    void matchWithShortFingerprint() {
+
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint("0x1234 5678 9ABC DEF0");
+
+        KeyInfo keyInfo = aKeyInfo("0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0");
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+    }
+
+    @Test
+    void matchWithShortKeyInfo() {
+
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint("0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0");
+
+        KeyInfo keyInfo = aKeyInfo("0x1234 5678 9ABC DEF0");
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+    }
+
 }

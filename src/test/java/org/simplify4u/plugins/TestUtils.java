@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Slawomir Jaranowski
+ * Copyright 2017-2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,49 +15,30 @@
  */
 package org.simplify4u.plugins;
 
-import java.math.BigInteger;
-import java.util.Arrays;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.util.encoders.Hex;
-import org.mockito.Mockito;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
+import org.simplify4u.plugins.pgp.KeyFingerprint;
+import org.simplify4u.plugins.pgp.KeyInfo;
 
 /**
  * @author Slawomir Jaranowski.
  */
 public final class TestUtils {
 
-    public static PGPPublicKey getPGPgpPublicKey(long keyID) {
-
-        BigInteger bigInteger = BigInteger.valueOf(0xffff_ffffL & keyID);
-        BigInteger bigInteger2 = BigInteger.valueOf(keyID);
-
-        bigInteger = bigInteger.shiftLeft(64);
-        bigInteger = bigInteger.or(bigInteger2);
-
-        bigInteger = bigInteger.shiftLeft(64);
-        bigInteger = bigInteger.or(bigInteger2);
-
-        byte[] bytes = bigInteger.toByteArray();
-        if (bytes[0] == 0) {
-            // we can remove sign byte
-            bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
-        }
-
-        PGPPublicKey pgpKey = mock(PGPPublicKey.class, Mockito.withSettings().lenient().name(Hex.toHexString(bytes)));
-        when(pgpKey.getFingerprint()).thenReturn(bytes);
-        when(pgpKey.isMasterKey()).thenReturn(true);
-
-        return pgpKey;
-    }
-
     public static KeysMapLocationConfig aKeysMapLocationConfig(String location) {
         KeysMapLocationConfig config = new KeysMapLocationConfig();
         config.set(location);
         return config;
     }
+
+    public static KeyInfo aKeyInfo(String fingerprint) {
+        return KeyInfo.builder().fingerprint(new KeyFingerprint(fingerprint)).build();
+    }
+
+    public static KeyInfo aKeyInfo(String fingerprint, String masterFingerprint) {
+        return KeyInfo.builder()
+                .fingerprint(new KeyFingerprint(fingerprint))
+                .master(new KeyFingerprint(masterFingerprint))
+                .build();
+    }
+
 }

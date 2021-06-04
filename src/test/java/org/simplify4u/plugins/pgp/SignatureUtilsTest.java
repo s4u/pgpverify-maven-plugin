@@ -27,7 +27,6 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.vavr.control.Try;
@@ -96,20 +95,9 @@ public class SignatureUtilsTest {
         }
     }
 
-    @Test
-    void testCheckWeakHashAlgorithmNull() {
-
-        assertThatCode(() -> signatureUtils.checkWeakHashAlgorithm(null))
-                .isExactlyInstanceOf(NullPointerException.class);
-    }
-
     @Test(dataProvider = "provider-signature-hash-algorithms")
     void testCheckWeakHashAlgorithmAllAlgorithms(int algorithm, boolean strong) {
-
-        PGPSignature sig = mock(PGPSignature.class);
-        when(sig.getHashAlgorithm()).thenReturn(algorithm);
-
-        assertThat(signatureUtils.checkWeakHashAlgorithm(sig) == null).isEqualTo(strong);
+        assertThat(signatureUtils.checkWeakHashAlgorithm(algorithm) == null).isEqualTo(strong);
     }
 
     @DataProvider(name = "provider-signature-hash-algorithms")
@@ -132,10 +120,7 @@ public class SignatureUtilsTest {
     @Test
     void testCheckWeakHashAlgorithmsUnknownAlgorithm() {
 
-        PGPSignature sig = mock(PGPSignature.class);
-        when(sig.getHashAlgorithm()).thenReturn(999);
-
-        assertThatCode(() -> signatureUtils.checkWeakHashAlgorithm(sig))
+        assertThatCode(() -> signatureUtils.checkWeakHashAlgorithm(999))
                 .isExactlyInstanceOf(UnsupportedOperationException.class);
     }
 
@@ -320,7 +305,7 @@ public class SignatureUtilsTest {
     @DataProvider
     Object[] keyAlgorithms() {
         return Arrays.stream(PublicKeyAlgorithmTags.class.getDeclaredFields())
-                .map(filed -> Try.of(()->filed.getInt(null)).get())
+                .map(filed -> Try.of(() -> filed.getInt(null)).get())
                 .toArray();
     }
 
