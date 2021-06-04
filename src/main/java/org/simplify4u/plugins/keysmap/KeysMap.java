@@ -31,10 +31,9 @@ import javax.inject.Named;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.simplify4u.plugins.pgp.KeyInfo;
 
 /**
  * Store and manage information loaded from keysMap file.
@@ -137,7 +136,15 @@ public class KeysMap {
                 .anyMatch(entry -> !entry.getValue().isNoSignature());
     }
 
-    public boolean isValidKey(Artifact artifact, PGPPublicKey key, PGPPublicKeyRing keyRing) {
+    /**
+     * Test if given key is trust for artifact.
+     *
+     * @param artifact a artifact
+     * @param keyInfo  a key which is used to sign artifact
+     *
+     * @return a key trust status
+     */
+    public boolean isValidKey(Artifact artifact, KeyInfo keyInfo) {
 
         if (items.isEmpty()) {
             return true;
@@ -147,7 +154,7 @@ public class KeysMap {
 
         return items.entrySet().stream()
                 .filter(entry -> entry.getKey().isMatch(artifactData))
-                .anyMatch(entry -> entry.getValue().isKeyMatch(key, keyRing));
+                .anyMatch(entry -> entry.getValue().isKeyMatch(keyInfo));
     }
 
     private void loadKeysMap(final InputStream inputStream,

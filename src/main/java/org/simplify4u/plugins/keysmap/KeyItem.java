@@ -15,8 +15,7 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.pgp.KeyInfo;
 
 /**
  * Describe single key item in keysMap.
@@ -53,12 +52,11 @@ interface KeyItem {
     /**
      * Check if current key mach with given key.
      *
-     * @param pgpPublicKey     key to test
-     * @param pgpPublicKeyRing keys ring to find master key
+     * @param keyInfo key to test
      *
      * @return key matching status
      */
-    default boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
+    default boolean isKeyMatch(KeyInfo keyInfo) {
         return false;
     }
 }

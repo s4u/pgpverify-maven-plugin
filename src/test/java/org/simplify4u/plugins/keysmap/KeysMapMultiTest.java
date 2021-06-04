@@ -22,15 +22,15 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
-import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.apache.maven.artifact.Artifact;
-import org.bouncycastle.openpgp.PGPPublicKey;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
+import org.simplify4u.plugins.pgp.KeyFingerprint;
+import org.simplify4u.plugins.pgp.KeyInfo;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Listeners;
@@ -64,44 +64,47 @@ public class KeysMapMultiTest {
     public static Object[][] artifactWithKeyToTest() {
         return new Object[][]{
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x1111_1111_1111_1111L)},
+                        new KeyFingerprint("0x1111 1111 1111 1111")},
 
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x1111_1111_2222_2222L)},
+                        new KeyFingerprint("0x1111 1111 2222 2222")},
 
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x1111_1111_3333_3333L)},
+                        new KeyFingerprint("0x1111 1111 3333 3333")},
 
                 {testArtifact().artifactId("test1").build(),
-                        getPGPgpPublicKey(0x1111_1111_4444_4444L)},
+                        new KeyFingerprint("0x1111 1111 4444 4444")},
 
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x2222_2222_1111_1111L)},
+                        new KeyFingerprint("0x2222 2222 1111 1111")},
 
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x2222_2222_2222_2222L)},
+                        new KeyFingerprint("0x2222 2222 2222 2222")},
 
                 {testArtifact().build(),
-                        getPGPgpPublicKey(0x2222_2222_3333_3333L)},
+                        new KeyFingerprint("0x2222 2222 3333 3333")},
 
                 {testArtifact().groupId("test.group2").build(),
-                        getPGPgpPublicKey(0x2222_2222_4444_4444L)},
+                        new KeyFingerprint("0x2222 2222 4444 4444")},
 
                 {testArtifact().artifactId("bad-sig").build(),
-                        getPGPgpPublicKey(0x2222_2222_5555_5555L)},
+                        new KeyFingerprint("0x2222 2222 5555 5555")},
 
                 {testArtifact().groupId("test.group7").artifactId("test7").build(),
-                        getPGPgpPublicKey(0x7777_7777_7777_7777L)}
+                        new KeyFingerprint("0x7777 7777 7777 7777")}
         };
     }
 
     @Test(dataProvider = "artifactWithKeyToTest")
-    public void keyShouldBeValid(Artifact artifact, PGPPublicKey key) throws ResourceNotFoundException, IOException {
+    public void keyShouldBeValid(Artifact artifact, KeyFingerprint keyFingerprint)
+            throws ResourceNotFoundException, IOException {
+
+        KeyInfo key = KeyInfo.builder().fingerprint(keyFingerprint).build();
 
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
-        assertThat(keysMap.isValidKey(artifact, key, null)).isTrue();
+        assertThat(keysMap.isValidKey(artifact, key)).isTrue();
     }
 
     @DataProvider

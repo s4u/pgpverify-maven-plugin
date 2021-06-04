@@ -16,20 +16,16 @@
 package org.simplify4u.plugins.keysmap;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collections;
-import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.simplify4u.plugins.TestUtils.getPGPgpPublicKey;
 
 import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.simplify4u.plugins.pgp.KeyId;
-import org.simplify4u.plugins.pgp.PublicKeyUtils;
+import org.simplify4u.plugins.pgp.KeyFingerprint;
+import org.simplify4u.plugins.pgp.KeyInfo;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -41,29 +37,33 @@ public class KeyItemsTest {
     @DataProvider(name = "keys")
     public Object[][] keys() {
         return new Object[][]{
-                {"*", 0x123456789abcdef0L, true},
-                {"", 0x123456789abcdef0L, false},
-                {"any", 0x123456789abcdef0L, true},
-                {"Any", 0x123456789abcdef0L, true},
-                {"0x123456789abcdef0", 0x123456789abcdef0L, true},
-                {"noSig, 0x123456789abcdef0", 0x123456789abcdef0L, true},
-                {"noKey, 0x123456789abcdef0", 0x123456789abcdef0L, true},
-                {"badSig, 0x123456789abcdef0", 0x123456789abcdef0L, true},
-                {"0x123456789abcdef0,0x0fedcba987654321", 0x123456789abcdef0L, true},
-                {"0x123456789abcdef0, 0x0fedcba987654321", 0x123456789abcdef0L, true},
-                {"0x123456789abcdef0", 0x231456789abcdef0L, false},
-                {"0x12 34 56 78 9a bc de f0", 0x123456789abcdef0L, true},
-                {"0x123456789abcdef0, *", 0x231456789abcdef0L, true},
-                {"0x123456789abcdef0, 0x0fedcba987654321", 0x321456789abcdef0L, false},
-                {"0x0000000000000001", 0x1L, true}
+                {"*", "0x123456789abcdef0", true},
+                {"", "0x123456789abcdef0", false},
+                {"any", "0x123456789abcdef0", true},
+                {"Any", "0x123456789abcdef0", true},
+                {"0x123456789abcdef0", "0x123456789abcdef0", true},
+                {"noSig, 0x123456789abcdef0", "0x123456789abcdef0", true},
+                {"noKey, 0x123456789abcdef0", "0x123456789abcdef0", true},
+                {"badSig, 0x123456789abcdef0", "0x123456789abcdef0", true},
+                {"0x123456789abcdef0,0x0fedcba987654321", "0x123456789abcdef0", true},
+                {"0x123456789abcdef0, 0x0fedcba987654321", "0x123456789abcdef0", true},
+                {"0x123456789abcdef0", "0x231456789abcdef0", false},
+                {"0x12 34 56 78 9a bc de f0", "0x123456789abcdef0", true},
+                {"0x123456789abcdef0, *", "0x231456789abcdef0", true},
+                {"0x123456789abcdef0, 0x0fedcba987654321", "0x321456789abcdef0", false},
+                {"0x0000000000000001", "0x0000000000000001", true}
         };
     }
 
     @Test(dataProvider = "keys")
-    public void testIsKeyMatch(String strKeys, long key, boolean match) throws Exception {
+    public void testIsKeyMatch(String strKeys, String key, boolean match) throws Exception {
 
         KeyItems keyItems = new KeyItems().addKeys(strKeys, null);
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(key), null)).as("isKeyMatch").isEqualTo(match);
+        assertThat(keyItems.isKeyMatch(aKeyInfo(key))).as("isKeyMatch").isEqualTo(match);
+    }
+
+    private KeyInfo aKeyInfo(String fingerprint) {
+        return KeyInfo.builder().fingerprint(new KeyFingerprint(fingerprint)).build();
     }
 
     @Test
@@ -107,18 +107,15 @@ public class KeyItemsTest {
     @Test
     public void testSubKeyMach() throws IOException, PGPException {
 
-        try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xEFE8086F9E93774EL));
+        KeyInfo keyInfo = KeyInfo.builder()
+                .fingerprint(new KeyFingerprint("0x1234567890123456789012345678901234567890"))
+                .master(new KeyFingerprint("0x0987654321098765432109876543210987654321"))
+                .build();
 
-            assertThat(aPublicKeyRing)
-                    .hasValueSatisfying(publicKeyRing -> {
-                        // keyItems with master key fingerprint
-                        KeyItems keyItems = new KeyItems().addKeys(PublicKeyUtils.fingerprint(publicKeyRing.getPublicKey()), null);
+        // keyItems with master key fingerprint
+        KeyItems keyItems = new KeyItems().addKeys(keyInfo.getMaster().toString(), null);
 
-                        assertThat(keyItems.isKeyMatch(publicKeyRing.getPublicKey(0xEFE8086F9E93774EL), publicKeyRing))
-                                .isTrue();
-                    });
-        }
+        assertThat(keyItems.isKeyMatch(keyInfo)).isTrue();
     }
 
     @Test
@@ -151,14 +148,14 @@ public class KeyItemsTest {
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
 
         keyItems.includes(asList(KeyItemSpecialValue.NO_SIG.getKeyItem(), KeyItemSpecialValue.NO_KEY.getKeyItem()));
 
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isFalse();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isFalse();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isFalse();
     }
 
     @Test
@@ -169,14 +166,14 @@ public class KeyItemsTest {
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
 
         keyItems.includes(singletonList(KeyItemSpecialValue.ANY.getKeyItem()));
 
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
     }
 
     @Test
@@ -199,14 +196,14 @@ public class KeyItemsTest {
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
 
         keyItems.excludes(asList(KeyItemSpecialValue.NO_SIG.getKeyItem(), KeyItemSpecialValue.NO_KEY.getKeyItem()));
 
         assertThat(keyItems.isNoSignature()).isFalse();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isFalse();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
     }
 
     @Test
@@ -217,14 +214,14 @@ public class KeyItemsTest {
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
 
         keyItems.excludes(Collections.emptyList());
 
         assertThat(keyItems.isNoSignature()).isTrue();
         assertThat(keyItems.isBrokenSignature()).isTrue();
         assertThat(keyItems.isKeyMissing()).isTrue();
-        assertThat(keyItems.isKeyMatch(getPGPgpPublicKey(0x123456789abcdef0L), null)).isTrue();
+        assertThat(keyItems.isKeyMatch(aKeyInfo("0x123456789abcdef0"))).isTrue();
     }
 
 }

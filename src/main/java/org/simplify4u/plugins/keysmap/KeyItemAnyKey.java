@@ -16,8 +16,7 @@
 package org.simplify4u.plugins.keysmap;
 
 import lombok.EqualsAndHashCode;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.pgp.KeyInfo;
 
 /**
  * Special key value.
@@ -30,7 +29,7 @@ class KeyItemAnyKey implements KeyItem {
     public static final String DESC = "any";
 
     @Override
-    public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
+    public boolean isKeyMatch(KeyInfo keyInfo) {
         return true;
     }
 

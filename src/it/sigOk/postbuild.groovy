@@ -23,7 +23,7 @@ assert buildLog.contains('amonn McManus <eamonn@mcmanus.net>]')
 
 assert buildLog.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
 assert buildLog.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')
-assert buildLog.contains('SubKeyId: 0xEFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711 UserIds: [Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>]')
+assert buildLog.contains('SubKeyId: 0xD4C89EA4AAF455FD88B22087EFE8086F9E93774E of 0x58E79B6ABC762159DC0B1591164BD2247B936711 UserIds: [Marc Philipp (JUnit Development, 2014) <mail@marcphilipp.de>]')
 
 assert buildLog.contains('[INFO] org.hamcrest:hamcrest-core:pom:1.3 PGP Signature OK')
 assert buildLog.contains('[INFO] org.hamcrest:hamcrest-core:jar:1.3 PGP Signature OK')
@@ -31,6 +31,6 @@ assert buildLog.contains('KeyId: 0x4DB1A49729B053CAF015CEE9A6ADFC93EF34893E User
 
 assert buildLog.contains('[INFO] org.apache.xmlgraphics:fop:pom:0.95 PGP Signature OK')
 assert buildLog.contains('[INFO] org.apache.xmlgraphics:fop:jar:0.95 PGP Signature OK')
-assert buildLog.contains('SubKeyId: 0x8E1E35C66754351B of 0xAB6638CE472A499B3959ADA2F989A2E5C93C5700 UserIds: [Maximilian Berger, Maximilian Berger <max@berger.name>, Maximilian Berger <maxberger@apache.org>]')
+assert buildLog.contains('SubKeyId: 0x38D9DE3F3966A706C8C2C5CF8E1E35C66754351B of 0xAB6638CE472A499B3959ADA2F989A2E5C93C5700 UserIds: [Maximilian Berger, Maximilian Berger <max@berger.name>, Maximilian Berger <maxberger@apache.org>]')
 
 assert buildLog.contains('[INFO] BUILD SUCCESS')

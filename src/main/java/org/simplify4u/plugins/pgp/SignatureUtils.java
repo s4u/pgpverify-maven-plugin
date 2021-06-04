@@ -59,12 +59,12 @@ public class SignatureUtils {
     /**
      * Check PGP signature for bad algorithms.
      *
-     * @param signature PGP signature instance
+     * @param hashAlgorithm PGP signature hashAlgorithm
      *
      * @return Returns null if no bad algorithms used, or algorithm name if used.
      */
-    public String checkWeakHashAlgorithm(PGPSignature signature) {
-        switch (signature.getHashAlgorithm()) {
+    public String checkWeakHashAlgorithm(int hashAlgorithm) {
+        switch (hashAlgorithm) {
             case HashAlgorithmTags.MD5:
                 return "MD5";
             case HashAlgorithmTags.DOUBLE_SHA:
@@ -89,7 +89,7 @@ public class SignatureUtils {
                 return null;
             default:
                 throw new UnsupportedOperationException("Unknown hash algorithm value encountered: "
-                        + signature.getHashAlgorithm());
+                        + hashAlgorithm);
         }
     }
 
@@ -254,9 +254,9 @@ public class SignatureUtils {
      */
     public SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
 
-        SignatureCheckResult.SignatureCheckResultBuilder signatureInfoBuilder = SignatureCheckResult.builder();
+        SignatureCheckResult.SignatureCheckResultBuilder signatureCheckResultBuilder = SignatureCheckResult.builder();
 
-        signatureInfoBuilder.artifact(ArtifactInfo.builder()
+        signatureCheckResultBuilder.artifact(ArtifactInfo.builder()
                 .groupId(artifact.getGroupId())
                 .artifactId(artifact.getArtifactId())
                 .type(artifact.getType())
@@ -265,32 +265,32 @@ public class SignatureUtils {
                 .build());
 
         if (!artifact.isResolved()) {
-            return signatureInfoBuilder.status(SignatureStatus.ARTIFACT_NOT_RESOLVED).build();
+            return signatureCheckResultBuilder.status(SignatureStatus.ARTIFACT_NOT_RESOLVED).build();
         }
 
         if (artifactAsc == null || !artifactAsc.isResolved()) {
-            return signatureInfoBuilder.status(SignatureStatus.SIGNATURE_NOT_RESOLVED).build();
+            return signatureCheckResultBuilder.status(SignatureStatus.SIGNATURE_NOT_RESOLVED).build();
         }
 
         PGPSignature signature = Try.of(() -> loadSignature(artifactAsc.getFile()))
                 .onFailure(e ->
-                        signatureInfoBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
+                        signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
                 .getOrNull();
 
         if (signature == null) {
-            return signatureInfoBuilder.build();
+            return signatureCheckResultBuilder.build();
         }
 
         KeyId keyId = Try.of(() -> retrieveKeyId(signature))
                 .onFailure(e ->
-                        signatureInfoBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
+                        signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
                 .getOrNull();
 
         if (keyId == null) {
-            return signatureInfoBuilder.build();
+            return signatureCheckResultBuilder.build();
         }
 
-        signatureInfoBuilder.signature(
+        signatureCheckResultBuilder.signature(
                 SignatureInfo.builder()
                         .hashAlgorithm(signature.getHashAlgorithm())
                         .keyAlgorithm(signature.getKeyAlgorithm())
@@ -300,17 +300,19 @@ public class SignatureUtils {
                         .build());
 
         PGPPublicKeyRing publicKeys = Try.of(() -> cache.getKeyRing(keyId))
-                .onFailure(e -> signatureInfoBuilder.errorCause(e).status(SignatureStatus.ERROR))
-                .onFailure(PGPKeyNotFound.class, e -> signatureInfoBuilder.status(SignatureStatus.KEY_NOT_FOUND))
+                .onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
+                .onFailure(PGPKeyNotFound.class, e -> signatureCheckResultBuilder.status(SignatureStatus.KEY_NOT_FOUND))
                 .getOrNull();
 
+        signatureCheckResultBuilder.keyShowUrl(cache.getUrlForShowKey(keyId));
+
         if (publicKeys == null) {
-            return signatureInfoBuilder.build();
+            return signatureCheckResultBuilder.build();
         }
 
         PGPPublicKey publicKey = keyId.getKeyFromRing(publicKeys);
 
-        signatureInfoBuilder.key(KeyInfo.builder()
+        signatureCheckResultBuilder.key(KeyInfo.builder()
                 .fingerprint(new KeyFingerprint(publicKey.getFingerprint()))
                 .master(PublicKeyUtils.getMasterKey(publicKey, publicKeys)
                         .map(PGPPublicKey::getFingerprint)
@@ -327,14 +329,14 @@ public class SignatureUtils {
             signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
             readFileContentInto(signature, artifact.getFile());
             return signature.verify();
-        }).onFailure(e -> signatureInfoBuilder.errorCause(e).status(SignatureStatus.ERROR))
+        }).onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
                 .getOrNull();
 
         if (verifyStatus == null) {
-            return signatureInfoBuilder.build();
+            return signatureCheckResultBuilder.build();
         }
 
-        return signatureInfoBuilder
+        return signatureCheckResultBuilder
                 .status(Boolean.TRUE.equals(verifyStatus)
                         ? SignatureStatus.SIGNATURE_VALID : SignatureStatus.SIGNATURE_INVALID)
                 .build();

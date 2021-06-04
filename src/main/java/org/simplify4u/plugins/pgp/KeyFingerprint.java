@@ -29,7 +29,7 @@ public class KeyFingerprint {
     byte[] fingerprint;
 
     /**
-     * Costruct a key fingerprint from string representation.
+     * Construct a key fingerprint from string representation.
      * @param strFingerprint a key fingerprint as string
      */
     public KeyFingerprint(String strFingerprint) {

@@ -19,8 +19,6 @@
 package org.simplify4u.plugins;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -38,18 +36,11 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.openpgp.PGPSignature;
-import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
-import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
-import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.pgp.PublicKeyUtils;
-import org.simplify4u.plugins.pgp.SignatureException;
+import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
 import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
@@ -380,72 +371,74 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     }
 
     private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact) throws MojoFailureException {
-        if (ascArtifact == null || !ascArtifact.isResolved()) {
-            return verifySignatureUnavailable(artifact);
-        }
-        final File artifactFile = artifact.getFile();
-        final File signatureFile = ascArtifact.getFile();
 
-        LOGGER.debug("Artifact file: {}", artifactFile);
-        LOGGER.debug("Artifact sign: {}", signatureFile);
+        SignatureCheckResult signatureCheckResult = signatureUtils.checkSignature(artifact, ascArtifact, pgpKeysCache);
+        switch (signatureCheckResult.getStatus()) {
+            case ARTIFACT_NOT_RESOLVED:
+                throw new PGPMojoException("Artifact not resolved: %s", artifact.getId());
+            case ERROR:
+                throw new PGPMojoException("Failed to process signature for artifact %s",
+                        artifact.getId(), signatureCheckResult.getErrorCause());
+            case SIGNATURE_ERROR:
+                if (keysMap.isBrokenSignature(artifact)) {
+                    logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
+                    return true;
+                }
 
-        KeyId sigKeyID = null;
-        try {
-            final PGPSignature pgpSignature;
-            try (FileInputStream input = new FileInputStream(signatureFile)) {
-                pgpSignature = signatureUtils.loadSignature(input);
-            }
-
-            verifyWeakSignature(pgpSignature);
-            sigKeyID = signatureUtils.retrieveKeyId(pgpSignature);
-
-            PGPPublicKeyRing publicKeyRing = pgpKeysCache.getKeyRing(sigKeyID);
-            PGPPublicKey publicKey = sigKeyID.getKeyFromRing(publicKeyRing);
-
-            if (!keysMap.isValidKey(artifact, publicKey, publicKeyRing)) {
-                String msg = String.format("%s = %s", ArtifactUtils.key(artifact),
-                        PublicKeyUtils.fingerprintForMaster(publicKey, publicKeyRing));
-                String keyUrl = pgpKeysCache.getUrlForShowKey(sigKeyID);
-                LOGGER.error("Not allowed artifact {} and keyID:\n\t{}\n\t{}",
-                        artifact.getId(), msg, keyUrl);
+                LOGGER.error("Failed to process signature for artifact {} - {}",
+                        artifact.getId(), signatureCheckResult.getErrorMessage());
                 return false;
-            }
+            case SIGNATURE_NOT_RESOLVED:
+                return verifySignatureUnavailable(artifact);
+            case SIGNATURE_VALID:
+                verifyWeakSignature(signatureCheckResult.getSignature().getHashAlgorithm());
 
-            pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-            signatureUtils.readFileContentInto(pgpSignature, artifactFile);
+                if (!keysMap.isValidKey(artifact, signatureCheckResult.getKey())) {
+                    String msg = String.format("%s = %s", ArtifactUtils.key(artifact),
+                            PublicKeyUtils.fingerprintForMaster(signatureCheckResult.getKey()));
+                    LOGGER.error("Not allowed artifact {} and keyID:\n\t{}\n\t{}",
+                            artifact.getId(), msg, signatureCheckResult.getKeyShowUrl());
+                    return false;
+                }
 
-            LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
-                    pgpSignature.getKeyAlgorithm(), pgpSignature.getHashAlgorithm());
+                LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
+                        signatureCheckResult.getKey().getAlgorithm(),
+                        signatureCheckResult.getSignature().getHashAlgorithm());
 
-            return verifySignatureStatus(pgpSignature.verify(), artifact, publicKey, publicKeyRing);
-        } catch (PGPKeyNotFound e) {
-            if (keysMap.isKeyMissing(artifact)) {
-                logWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
-                        artifact::getId);
+                logWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
+                        () -> PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
+                        () -> signatureCheckResult.getKey().getUids());
+
                 return true;
-            }
+            case SIGNATURE_INVALID:
+                if (keysMap.isBrokenSignature(artifact)) {
+                    logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
+                    return true;
+                }
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
+                            "INVALID", PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
+                            signatureCheckResult.getKey().getUids());
+                }
+                return false;
+            case KEY_NOT_FOUND:
+                if (keysMap.isKeyMissing(artifact)) {
+                    logWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
+                            artifact::getId);
+                    return true;
+                }
 
-            LOGGER.error("PGP key {} not found on keyserver for artifact {}",
-                    pgpKeysCache.getUrlForShowKey(sigKeyID), artifact.getId());
-            return false;
-        } catch (SignatureException e) {
-            if (keysMap.isBrokenSignature(artifact)) {
-                logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
-                return true;
-            }
+                LOGGER.error("PGP key {} not found on keyserver for artifact {}",
+                        signatureCheckResult.getKeyShowUrl(), artifact.getId());
+                return false;
 
-            LOGGER.error("Failed to process signature '{}' for artifact {} - {}",
-                    signatureFile, artifact.getId(), e.getMessage());
-            return false;
-
-        } catch (IOException | PGPException e) {
-            throw new MojoFailureException("Failed to process signature '" + signatureFile + "' for artifact "
-                    + artifact.getId(), e);
+            default:
+                return false;
         }
     }
 
-    private void verifyWeakSignature(PGPSignature pgpSignature) throws MojoFailureException {
-        final String weakHashAlgorithm = signatureUtils.checkWeakHashAlgorithm(pgpSignature);
+    private void verifyWeakSignature(int hashAlgorithm) throws MojoFailureException {
+        final String weakHashAlgorithm = signatureUtils.checkWeakHashAlgorithm(hashAlgorithm);
         if (weakHashAlgorithm == null) {
             return;
         }
@@ -479,26 +472,6 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
             LOGGER.error("Unsigned artifact is listed with key in keys map: {}", artifact.getId());
         } else {
             LOGGER.error("Unsigned artifact not listed in keys map: {}", artifact.getId());
-        }
-        return false;
-    }
-
-    private boolean verifySignatureStatus(boolean signatureStatus, Artifact artifact,
-            PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
-
-        if (signatureStatus) {
-            logWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
-                    () -> PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                    () -> PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
-            return true;
-        } else if (keysMap.isBrokenSignature(artifact)) {
-            logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
-            return true;
-        }
-        if (LOGGER.isErrorEnabled()) {
-            LOGGER.error(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
-                    "INVALID", PublicKeyUtils.keyIdDescription(publicKey, publicKeyRing),
-                    PublicKeyUtils.getUserIDs(publicKey, publicKeyRing));
         }
         return false;
     }

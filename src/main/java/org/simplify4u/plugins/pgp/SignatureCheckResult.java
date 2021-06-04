@@ -32,6 +32,11 @@ public class SignatureCheckResult {
     ArtifactInfo artifact;
 
     KeyInfo key;
+    /**
+     * Last address for key search.
+     */
+    String keyShowUrl;
+
     SignatureInfo signature;
 
     @NonNull

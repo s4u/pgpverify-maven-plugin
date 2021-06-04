@@ -20,8 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.simplify4u.plugins.pgp.KeyInfo;
 
 /**
  * Store list of fingerprints and special key value for given artifact pattern in keysMap.
@@ -101,8 +100,8 @@ class KeyItems {
         }
     }
 
-    public boolean isKeyMatch(PGPPublicKey pgpPublicKey, PGPPublicKeyRing pgpPublicKeyRing) {
-        return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatch(pgpPublicKey, pgpPublicKeyRing));
+    public boolean isKeyMatch(KeyInfo keyInfo) {
+        return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatch(keyInfo));
     }
 
     public boolean isNoSignature() {
