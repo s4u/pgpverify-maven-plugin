@@ -55,7 +55,7 @@ import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 @Listeners(MockitoTestNGListener.class)
-public class PGPShowMojoTest {
+public class ShowMojoTest {
 
     @Mock
     private ArtifactResolver artifactResolver;
@@ -73,12 +73,12 @@ public class PGPShowMojoTest {
     private MavenSession session;
 
     @InjectMocks
-    private PGPShowMojo mojo;
+    private ShowMojo mojo;
 
 
     @Test
     void shouldReturnMojoName() {
-        assertThat(mojo.getMojoName()).isEqualTo(PGPShowMojo.MOJO_NAME);
+        assertThat(mojo.getMojoName()).isEqualTo(ShowMojo.MOJO_NAME);
     }
 
     @DataProvider
