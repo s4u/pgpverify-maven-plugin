@@ -133,6 +133,24 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.simplify4u.plugins</groupId>
+                <artifactId>pgpverify-maven-plugin</artifactId>
+                <version>@project.version@</version>
+                <!-- only execute in this build, not in child -->
+                <inherited>false</inherited>
+                <configuration>
+                    <verifyPluginDependencies>true</verifyPluginDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>go-offline</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
 
     </build>

@@ -248,11 +248,13 @@ public class SignatureUtils {
      *
      * @param artifact    The artifact to check signature
      * @param artifactAsc The artifact contains signature
+     * @param onlyResolve Only resolve signature and keys
      * @param cache       PGP cache for access public key
      *
      * @return check verification result
      */
-    public SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
+    private SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc,
+            boolean onlyResolve, PGPKeysCache cache) {
 
         SignatureCheckResult.SignatureCheckResultBuilder signatureCheckResultBuilder = SignatureCheckResult.builder();
 
@@ -325,6 +327,10 @@ public class SignatureUtils {
                 .date(publicKey.getCreationTime())
                 .build());
 
+        if (onlyResolve) {
+            return signatureCheckResultBuilder.status(SignatureStatus.RESOLVED).build();
+        }
+
         Boolean verifyStatus = Try.of(() -> {
             signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
             readFileContentInto(signature, artifact.getFile());
@@ -343,14 +349,42 @@ public class SignatureUtils {
     }
 
     /**
-     * Map Public-Key algorithms id to name
+     * Create {@link SignatureCheckResult} contains data about artifact, signature, public key used to verify and
+     * verification status.
      *
-     * @param keyAlgorithm key algorithm id
+     * @param artifact    The artifact to check signature
+     * @param artifactAsc The artifact contains signature
+     * @param cache       PGP cache for access public key
      *
-     * @return key algorithm name
-     *
-     * @throws UnsupportedOperationException if algorithm is is not known
+     * @return check verification result
      */
+    public SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
+        return checkSignature(artifact, artifactAsc, false, cache);
+    }
+
+    /**
+     * Only resolve signatures and keys - no validation.
+     * Create {@link SignatureCheckResult} contains data about artifact, signature, public key used to verify.
+     *
+     * @param artifact    The artifact to check signature
+     * @param artifactAsc The artifact contains signature
+     * @param cache       PGP cache for access public key
+     *
+     * @return check verification result
+     */
+    public SignatureCheckResult resolveSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
+        return checkSignature(artifact, artifactAsc, true, cache);
+    }
+
+    /**
+         * Map Public-Key algorithms id to name
+         *
+         * @param keyAlgorithm key algorithm id
+         *
+         * @return key algorithm name
+         *
+         * @throws UnsupportedOperationException if algorithm is is not known
+         */
     public String keyAlgorithmName(int keyAlgorithm) {
         switch (keyAlgorithm) {
             case PublicKeyAlgorithmTags.RSA_GENERAL:

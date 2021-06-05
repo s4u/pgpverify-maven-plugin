@@ -19,48 +19,35 @@
 package org.simplify4u.plugins;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
 import org.simplify4u.plugins.pgp.PublicKeyUtils;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
-import org.simplify4u.plugins.skipfilters.CompositeSkipper;
-import org.simplify4u.plugins.skipfilters.ProvidedDependencySkipper;
-import org.simplify4u.plugins.skipfilters.ReactorDependencySkipper;
-import org.simplify4u.plugins.skipfilters.ScopeSkipper;
-import org.simplify4u.plugins.skipfilters.SkipFilter;
-import org.simplify4u.plugins.skipfilters.SnapshotDependencySkipper;
-import org.simplify4u.plugins.skipfilters.SystemDependencySkipper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Check PGP signature of dependency.
+ * Check OpenPGP signature of all project and plugins dependencies.
  *
  * @author Slawomir Jaranowski.
  */
-@Mojo(name = PGPVerifyMojo.MOJO_NAME, requiresProject = true, requiresDependencyResolution = ResolutionScope.TEST,
+@Slf4j
+@Mojo(name = CheckMojo.MOJO_NAME, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
-public class PGPVerifyMojo extends AbstractPGPMojo {
+public class CheckMojo extends AbstractVerifyMojo<Boolean> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PGPVerifyMojo.class);
 
     public static final String MOJO_NAME = "check";
 
@@ -68,17 +55,6 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
 
     @Inject
     protected KeysMap keysMap;
-
-    /**
-     * Scope used to build dependency list.
-     * <p>
-     * This scope indicates up to which scope artifacts will be included. For example, the 'test' scope will include
-     * <code>provided</code>, <code>compile</code>, <code>runtime</code>, and <code>system</code> scoped dependencies.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "pgpverify.scope", defaultValue = "test")
-    private String scope;
 
     /**
      * Fail the build if any dependency doesn't have a signature.
@@ -108,88 +84,6 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
     @Parameter(property = "pgpgverify.failWeakSignature", defaultValue = "false")
     private boolean failWeakSignature;
 
-    /**
-     * Verify pom files also.
-     *
-     * @since 1.1.0
-     */
-    @Parameter(property = "pgpverify.verifyPomFiles", defaultValue = "true")
-    private boolean verifyPomFiles;
-
-    /**
-     * Verify dependencies at a SNAPSHOT version, instead of only verifying full release version dependencies.
-     *
-     * @since 1.2.0
-     */
-    @Parameter(property = "pgpverify.verifySnapshots", defaultValue = "false")
-    private boolean verifySnapshots;
-
-    /**
-     * Verify Maven build plug-ins.
-     *
-     * @since 1.5.0
-     */
-    @Parameter(property = "pgpverify.verifyPlugins", defaultValue = "false")
-    private boolean verifyPlugins;
-
-    /**
-     * Verify transitive dependencies of build plug-ins.
-     *
-     * <p>When enabled, configuration parameter <code>verifyPlugins</code> is enabled implicitly.</p>
-     *
-     * @since 1.8.0
-     */
-    @Parameter(property = "pgpverify.verifyPluginDependencies", defaultValue = "false")
-    private boolean verifyPluginDependencies;
-
-    /**
-     * Verify dependency artifact in atypical locations:
-     * <ul>
-     *     <li>annotation processors in org.apache.maven.plugins:maven-compiler-plugin configuration.</li>
-     * </ul>
-     * <p>
-     * In addition, it will detect when maven-surefire-plugin version 3 is used, as this will dynamically
-     * resolve and load additional artifacts. However, these artifacts are not validated.
-     *
-     * @since 1.6.0
-     */
-    @Parameter(property = "pgpverify.verifyAtypical", defaultValue = "false")
-    private boolean verifyAtypical;
-
-    /**
-     * Verify "provided" dependencies, which the JDK or a container provide at runtime.
-     *
-     * @since 1.2.0
-     */
-    @Parameter(property = "pgpverify.verifyProvidedDependencies", defaultValue = "false")
-    private boolean verifyProvidedDependencies;
-
-    /**
-     * Verify "system" dependencies, which are artifacts that have an explicit path specified in the POM, are always
-     * available, and are not looked up in a repository.
-     *
-     * @since 1.2.0
-     */
-    @Parameter(property = "pgpverify.verifySystemDependencies", defaultValue = "false")
-    private boolean verifySystemDependencies;
-
-    /**
-     * Verify dependencies that are part of the current build (what Maven calls the "reactor").
-     *
-     * <p>This setting only affects multi-module builds that have inter-dependencies between
-     * modules. It has no effect on single-module projects nor on multi-module projects that do not have dependencies
-     * among the modules.
-     *
-     * <p>In affected builds, if this setting is {@code true}, and the current build is not applying
-     * GPG signatures, then the output artifacts of some of the modules in the build will not be signed. Consequently,
-     * other modules within the build that depend on those output artifacts will not pass the GPG signature check
-     * because they are unsigned. When this setting is {@code false}, GPG signatures are not checked on output artifacts
-     * of modules in the current build, to avoid this issue.
-     *
-     * @since 1.3.0
-     */
-    @Parameter(property = "pgpverify.verifyReactorDependencies", defaultValue = "false")
-    private boolean verifyReactorDependencies;
 
     /**
      * Disable the use of a checksum to check whether the collection of artifacts was validated in a previous run. If
@@ -234,59 +128,13 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         return MOJO_NAME;
     }
 
-    @Override
-    public void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException {
-
-        initKeysMap();
-
-        checkDeprecated();
-
-        final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
-        final SkipFilter dependencyFilter = prepareDependencyFilters();
-        final SkipFilter pluginFilter = preparePluginFilters();
-
-        final long artifactResolutionStart = System.nanoTime();
-        final Configuration config = new Configuration(dependencyFilter, pluginFilter, this.verifyPomFiles,
-                this.verifyPlugins, this.verifyPluginDependencies, this.verifyAtypical);
-        final Set<Artifact> artifacts = artifactResolver.resolveProjectArtifacts(session.getCurrentProject(), config);
-
-        LOGGER.info("Resolved {} artifact(s) in {}", artifacts.size(),
-                Duration.ofNanos(System.nanoTime() - artifactResolutionStart));
-
-        final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
-                .artifacts(artifacts).disabled(this.disableChecksum).build();
-        if (validationChecksum.checkValidation()) {
-            logWithQuiet("Artifacts were already validated in a previous run. "
-                    + "Execution finished early as the checksum for the collection of artifacts "
-                    + "has not changed.");
-            return;
-        }
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Discovered project artifacts: {}", artifacts);
-        }
-
-        final long signatureResolutionStart = System.nanoTime();
-        final Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifacts);
-
-        LOGGER.info("Resolved {} signature(s) in {}", artifactMap.size(),
-                Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
-
-        final long artifactValidationStart = System.nanoTime();
-        try {
-            verifyArtifactSignatures(artifactMap);
-        } finally {
-            LOGGER.info("Finished {} artifact(s) validation in {}", artifactMap.size(),
-                    Duration.ofNanos(System.nanoTime() - artifactValidationStart));
-        }
-
-        validationChecksum.saveChecksum();
-    }
-
     /**
      * check and warn if any of the deprecated options are used.
      */
-    private void checkDeprecated() {
+    @Override
+    protected void checkDeprecated() {
+        super.checkDeprecated();
+
         if (strictNoSignature != null) {
             LOGGER.warn("strictNoSignature is deprecated - this requirement can be expressed through the keysMap");
         }
@@ -304,8 +152,9 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         }
     }
 
-    private void initKeysMap() {
-
+    @Override
+    protected void setupMojo() throws MojoFailureException {
+        super.setupMojo();
         LOGGER.debug("keysMapLocation={}", keysMapLocation);
 
         keysMapLocation.forEach(location ->
@@ -319,58 +168,25 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         }
     }
 
-    private SkipFilter prepareDependencyFilters() {
-        final List<SkipFilter> filters = new LinkedList<>();
+    @Override
+    protected void shouldProcess(Set<Artifact> artifacts, Runnable runnable) {
 
-        filters.add(new ScopeSkipper(this.scope));
+        final File mavenBuildDir = new File(session.getCurrentProject().getBuild().getDirectory());
+        final ValidationChecksum validationChecksum = new ValidationChecksum.Builder().destination(mavenBuildDir)
+                .artifacts(artifacts).disabled(this.disableChecksum).build();
 
-        if (!this.verifySnapshots) {
-            filters.add(new SnapshotDependencySkipper());
-        }
-
-        if (!this.verifyProvidedDependencies) {
-            filters.add(new ProvidedDependencySkipper());
-        }
-
-        if (!this.verifySystemDependencies) {
-            filters.add(new SystemDependencySkipper());
-        }
-
-        if (!this.verifyReactorDependencies) {
-            filters.add(new ReactorDependencySkipper(this.session));
-        }
-
-        return new CompositeSkipper(filters);
-    }
-
-    private SkipFilter preparePluginFilters() {
-        final List<SkipFilter> filters = new LinkedList<>();
-
-        if (!this.verifySnapshots) {
-            filters.add(new SnapshotDependencySkipper());
-        }
-
-        return new CompositeSkipper(filters);
-    }
-
-    private void verifyArtifactSignatures(Map<Artifact, Artifact> artifactToAsc)
-            throws MojoFailureException, MojoExecutionException {
-        boolean isAllSigOk = true;
-
-        for (Map.Entry<Artifact, Artifact> artifactEntry : artifactToAsc.entrySet()) {
-            final Artifact artifact = artifactEntry.getKey();
-            final Artifact ascArtifact = artifactEntry.getValue();
-            final boolean isLastOk = verifyPGPSignature(artifact, ascArtifact);
-
-            isAllSigOk = isAllSigOk && isLastOk;
-        }
-
-        if (!isAllSigOk) {
-            throw new MojoExecutionException("PGP signature error");
+        if (validationChecksum.checkValidation()) {
+            logInfoWithQuiet("Artifacts were already validated in a previous run. "
+                    + "Execution finished early as the checksum for the collection of artifacts "
+                    + "has not changed.");
+        } else {
+            runnable.run();
+            validationChecksum.saveChecksum();
         }
     }
 
-    private boolean verifyPGPSignature(Artifact artifact, Artifact ascArtifact) throws MojoFailureException {
+    @Override
+    protected Boolean processArtifactSignature(Artifact artifact, Artifact ascArtifact) {
 
         SignatureCheckResult signatureCheckResult = signatureUtils.checkSignature(artifact, ascArtifact, pgpKeysCache);
         switch (signatureCheckResult.getStatus()) {
@@ -381,7 +197,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
                         artifact.getId(), signatureCheckResult.getErrorCause());
             case SIGNATURE_ERROR:
                 if (keysMap.isBrokenSignature(artifact)) {
-                    logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
+                    logInfoWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
                     return true;
                 }
 
@@ -405,14 +221,14 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
                         signatureCheckResult.getKey().getAlgorithm(),
                         signatureCheckResult.getSignature().getHashAlgorithm());
 
-                logWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
+                logInfoWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
                         () -> PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
                         () -> signatureCheckResult.getKey().getUids());
 
                 return true;
             case SIGNATURE_INVALID:
                 if (keysMap.isBrokenSignature(artifact)) {
-                    logWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
+                    logInfoWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
                     return true;
                 }
                 if (LOGGER.isErrorEnabled()) {
@@ -423,7 +239,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
                 return false;
             case KEY_NOT_FOUND:
                 if (keysMap.isKeyMissing(artifact)) {
-                    logWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
+                    logInfoWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
                             artifact::getId);
                     return true;
                 }
@@ -437,7 +253,15 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         }
     }
 
-    private void verifyWeakSignature(int hashAlgorithm) throws MojoFailureException {
+    @Override
+    protected void processVerificationResult(Set<Boolean> verificationResult) {
+        if (verificationResult.stream().anyMatch(result -> !result)) {
+            throw new PGPMojoException("Signature errors");
+        }
+    }
+
+
+    private void verifyWeakSignature(int hashAlgorithm) {
         final String weakHashAlgorithm = signatureUtils.checkWeakHashAlgorithm(hashAlgorithm);
         if (weakHashAlgorithm == null) {
             return;
@@ -445,7 +269,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
         final String logMessage = "Weak signature algorithm used: " + weakHashAlgorithm;
         if (failWeakSignature) {
             LOGGER.error(logMessage);
-            throw new MojoFailureException(logMessage);
+            throw new PGPMojoException(logMessage);
         } else {
             LOGGER.warn(logMessage);
         }
@@ -465,7 +289,7 @@ public class PGPVerifyMojo extends AbstractPGPMojo {
             return true;
         }
         if (keysMap.isNoSignature(artifact)) {
-            logWithQuiet("{} PGP Signature unavailable, consistent with keys map.", artifact::getId);
+            logInfoWithQuiet("{} PGP Signature unavailable, consistent with keys map.", artifact::getId);
             return true;
         }
         if (keysMap.isWithKey(artifact)) {

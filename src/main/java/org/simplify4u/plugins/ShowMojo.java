@@ -26,7 +26,6 @@ import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.repository.RepositorySystem;
@@ -46,8 +45,8 @@ import org.simplify4u.plugins.pgp.SignatureStatus;
  * @since 1.10.0
  */
 @Slf4j
-@Mojo(name = PGPShowMojo.MOJO_NAME, requiresDirectInvocation = true, requiresOnline = true, requiresProject = false)
-public class PGPShowMojo extends AbstractPGPMojo {
+@Mojo(name = ShowMojo.MOJO_NAME, requiresDirectInvocation = true, requiresOnline = true, requiresProject = false)
+public class ShowMojo extends AbstractPGPMojo {
 
     public static final String MOJO_NAME = "show";
 
@@ -78,7 +77,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
     }
 
     @Override
-    protected void executeConfiguredMojo() throws MojoExecutionException {
+    protected void executeConfiguredMojo() {
 
         Set<Artifact> artifactsToCheck = new HashSet<>();
         Artifact artifactToCheck = prepareArtifactToCheck();
@@ -100,7 +99,7 @@ public class PGPShowMojo extends AbstractPGPMojo {
         }
     }
 
-    private boolean processArtifact(Map.Entry<Artifact,Artifact> artifactEntry) {
+    private boolean processArtifact(Map.Entry<Artifact, Artifact> artifactEntry) {
 
         Artifact artifactToCheck = artifactEntry.getKey();
         Artifact sig = artifactEntry.getValue();

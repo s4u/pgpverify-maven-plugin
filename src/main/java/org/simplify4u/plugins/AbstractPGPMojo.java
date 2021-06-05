@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 
-import io.vavr.control.Try;
 import lombok.AccessLevel;
 import lombok.Setter;
 import org.apache.maven.execution.MavenSession;
@@ -124,14 +123,25 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
 
     protected abstract void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException;
 
-    private void initPgpKeysCache() throws IOException {
+    /**
+     * check and warn if any of the deprecated options are used.
+     */
+    protected void checkDeprecated() {
+    }
+
+    protected void setupMojo() throws MojoFailureException {
 
         KeyServerClientSettings clientSettings = KeyServerClientSettings.builder()
                 .mavenSession(session)
                 .proxyName(proxyName)
                 .build();
 
-        pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, clientSettings);
+
+        try {
+            pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, clientSettings);
+        } catch (IOException e) {
+            throw new MojoFailureException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -142,13 +152,12 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
             return;
         }
 
-        Try.run(this::initPgpKeysCache)
-                .getOrElseThrow(e -> new MojoFailureException(e.getMessage(), e));
-
+        setupMojo();
+        checkDeprecated();
         executeConfiguredMojo();
     }
 
-    protected void logWithQuiet(String message) {
+    protected void logInfoWithQuiet(String message) {
         if (quiet) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(message);
@@ -158,13 +167,23 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
         }
     }
 
-    protected void logWithQuiet(String message, Supplier<?>... args) {
+    protected void logInfoWithQuiet(String message, Supplier<?>... args) {
         if (quiet) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(message, Arrays.stream(args).map(Supplier::get).toArray());
             }
         } else {
             LOGGER.info(message, Arrays.stream(args).map(Supplier::get).toArray());
+        }
+    }
+
+    protected void logWarnWithQuiet(String message, Supplier<?>... args) {
+        if (quiet) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(message, Arrays.stream(args).map(Supplier::get).toArray());
+            }
+        } else {
+            LOGGER.warn(message, Arrays.stream(args).map(Supplier::get).toArray());
         }
     }
 

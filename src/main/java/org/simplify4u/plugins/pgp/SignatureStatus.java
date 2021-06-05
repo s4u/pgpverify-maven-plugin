@@ -25,5 +25,6 @@ public enum SignatureStatus {
     ERROR,
     SIGNATURE_ERROR,
     SIGNATURE_VALID,
-    SIGNATURE_INVALID
+    SIGNATURE_INVALID,
+    RESOLVED
 }
