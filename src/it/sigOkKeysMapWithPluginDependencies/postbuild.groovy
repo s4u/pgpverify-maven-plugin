@@ -40,3 +40,7 @@ assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.httpcomponents:httpcore:j
 assert buildLog.matches('(?ms).*^\\[INFO\\] com.vladsch.flexmark:flexmark-all:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] commons-validator:commons-validator:jar:.* PGP Signature OK$.*')
 assert buildLog.contains('[INFO] BUILD SUCCESS')
+
+def reportFile = new File(basedir, "target/pgpverify-report.json")
+assert reportFile.exists()
+assert reportFile.length() > 0

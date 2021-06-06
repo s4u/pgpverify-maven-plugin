@@ -15,6 +15,7 @@
  */
 package org.simplify4u.plugins;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -62,7 +63,7 @@ public class GoOfflineMojo extends AbstractVerifyMojo<Void> {
     }
 
     @Override
-    protected void processVerificationResult(Set<Void> verificationResult) {
+    protected void processVerificationResult(Collection<Void> verificationResult) {
         // not used
     }
 }

@@ -29,25 +29,19 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.simplify4u.plugins.TestUtils.aSignatureCheckResultBuilder;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.repository.RepositorySystem;
-import org.bouncycastle.bcpg.HashAlgorithmTags;
-import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.openpgp.PGPException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
-import org.simplify4u.plugins.pgp.ArtifactInfo;
-import org.simplify4u.plugins.pgp.KeyFingerprint;
-import org.simplify4u.plugins.pgp.KeyId;
-import org.simplify4u.plugins.pgp.KeyInfo;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
-import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 import org.simplify4u.plugins.pgp.SignatureUtils;
 import org.testng.annotations.DataProvider;
@@ -113,7 +107,7 @@ public class ShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection())).thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
 
-        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aSignatureCheckResultBuilder()
                 .status(SignatureStatus.SIGNATURE_VALID)
                 .build();
 
@@ -177,7 +171,7 @@ public class ShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
-        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aSignatureCheckResultBuilder()
                 .status(SignatureStatus.ARTIFACT_NOT_RESOLVED)
                 .build();
 
@@ -215,7 +209,7 @@ public class ShowMojoTest {
         when(artifactResolver.resolveSignatures(anyCollection()))
                 .thenReturn(Collections.singletonMap(artifact, artifactAsc));
 
-        SignatureCheckResult signatureCheckResult = aPGPSignatureInfoBuilder()
+        SignatureCheckResult signatureCheckResult = aSignatureCheckResultBuilder()
                 .signature(null)
                 .status(SignatureStatus.SIGNATURE_NOT_RESOLVED)
                 .build();
@@ -237,31 +231,6 @@ public class ShowMojoTest {
         verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
-    }
-
-    private SignatureCheckResult.SignatureCheckResultBuilder aPGPSignatureInfoBuilder() {
-        return SignatureCheckResult.builder()
-                .artifact(ArtifactInfo.builder()
-                        .groupId("groupId")
-                        .artifactId("artifactId")
-                        .type("jar")
-                        .classifier("classifier")
-                        .version("1.0")
-                        .build())
-                .signature(SignatureInfo.builder()
-                        .version(4)
-                        .keyId(KeyId.from(0x1234L))
-                        .hashAlgorithm(HashAlgorithmTags.MD5)
-                        .keyAlgorithm(PublicKeyAlgorithmTags.RSA_GENERAL)
-                        .build())
-                .key(KeyInfo.builder()
-                        .version(4)
-                        .fingerprint(new KeyFingerprint("0x12345678901234567890"))
-                        .master(new KeyFingerprint("0x09876543210987654321"))
-                        .algorithm(PublicKeyAlgorithmTags.RSA_GENERAL)
-                        .uids(Collections.singleton("Test uid <uid@example.com>"))
-                        .bits(2048)
-                        .build());
     }
 
 }

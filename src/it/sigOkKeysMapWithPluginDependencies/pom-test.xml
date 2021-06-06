@@ -49,6 +49,7 @@
                     <verifyPluginDependencies>true</verifyPluginDependencies>
                     <verifyAtypical>true</verifyAtypical>
                     <verifySnapshots>true</verifySnapshots>
+                    <reportWrite>true</reportWrite>
                 </configuration>
                 <executions>
                     <execution>

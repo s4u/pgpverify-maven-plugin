@@ -23,6 +23,7 @@
             <item name="Introduction" href="index.html"/>
             <item name="Goals" href="plugin-info.html"/>
             <item name="KeysMap file format" href="keysmap-format.html"/>
+            <item name="Report file format" href="report-format.html"/>
             <item name="Multiple KeysMap configuration" href="keysmap-multiple.html"/>
             <item name="Examples of usage" href="examples.html"/>
         </menu>

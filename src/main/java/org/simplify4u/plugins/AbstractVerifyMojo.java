@@ -19,7 +19,7 @@
 package org.simplify4u.plugins;
 
 import java.time.Duration;
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +170,7 @@ public abstract class AbstractVerifyMojo<V> extends AbstractPGPMojo {
             LOGGER.info("Resolved {} signature(s) in {}", artifactMap.size(),
                     Duration.ofNanos(System.nanoTime() - signatureResolutionStart));
 
-            Set<V> verificationResult;
+            Collection<V> verificationResult;
             final long artifactValidationStart = System.nanoTime();
             try {
                 verificationResult = processArtifactsSignatures(artifactMap);
@@ -206,7 +206,7 @@ public abstract class AbstractVerifyMojo<V> extends AbstractPGPMojo {
      *
      * @param verificationResult a verification result
      */
-    protected abstract void processVerificationResult(Set<V> verificationResult);
+    protected abstract void processVerificationResult(Collection<V> verificationResult);
 
     private SkipFilter prepareDependencyFilters() {
         final List<SkipFilter> filters = new LinkedList<>();
@@ -242,10 +242,10 @@ public abstract class AbstractVerifyMojo<V> extends AbstractPGPMojo {
         return new CompositeSkipper(filters);
     }
 
-    private Set<V> processArtifactsSignatures(Map<Artifact, Artifact> artifactToAsc) {
+    private Collection<V> processArtifactsSignatures(Map<Artifact, Artifact> artifactToAsc) {
         return artifactToAsc.entrySet().stream()
                 .map(entry -> processArtifactSignature(entry.getKey(), entry.getValue()))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toList());
     }
 }

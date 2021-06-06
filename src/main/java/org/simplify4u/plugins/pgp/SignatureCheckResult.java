@@ -17,6 +17,7 @@ package org.simplify4u.plugins.pgp;
 
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -42,6 +43,7 @@ public class SignatureCheckResult {
     @NonNull
     SignatureStatus status;
 
+    @JsonIgnore
     Throwable errorCause;
 
     public String getErrorMessage() {
