@@ -15,6 +15,7 @@
  */
 package org.simplify4u.plugins.pgp;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.simplify4u.plugins.utils.HexUtils;
@@ -36,6 +37,7 @@ public class KeyFingerprint {
         fingerprint = HexUtils.stringToFingerprint(strFingerprint);
     }
 
+    @JsonValue
     public String toString() {
         return HexUtils.fingerprintToString(fingerprint);
     }

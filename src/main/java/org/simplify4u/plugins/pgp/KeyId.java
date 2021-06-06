@@ -17,6 +17,7 @@ package org.simplify4u.plugins.pgp;
 
 import static org.simplify4u.plugins.utils.HexUtils.fingerprintToString;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
@@ -63,6 +64,7 @@ public interface KeyId {
         }
 
         @Override
+        @JsonValue
         public String toString() {
             return String.format("0x%016X", keyId);
         }
@@ -103,6 +105,8 @@ public interface KeyId {
             return pgpRingCollection.getPublicKeyRing(fingerprint);
         }
 
+        @Override
+        @JsonValue
         public String toString() {
             return fingerprintToString(fingerprint);
         }

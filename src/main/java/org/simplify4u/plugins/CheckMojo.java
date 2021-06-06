@@ -20,11 +20,14 @@ package org.simplify4u.plugins;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import io.vavr.control.Try;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.ArtifactUtils;
@@ -36,6 +39,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.simplify4u.plugins.keysmap.KeysMap;
 import org.simplify4u.plugins.keysmap.KeysMapLocationConfig;
 import org.simplify4u.plugins.pgp.PublicKeyUtils;
+import org.simplify4u.plugins.pgp.ReportsUtils;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
 
 /**
@@ -46,15 +50,26 @@ import org.simplify4u.plugins.pgp.SignatureCheckResult;
 @Slf4j
 @Mojo(name = CheckMojo.MOJO_NAME, requiresDependencyResolution = ResolutionScope.TEST,
         defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
-public class CheckMojo extends AbstractVerifyMojo<Boolean> {
+public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> {
 
+    /**
+     * Verification result item.
+     */
+    @Builder
+    public static class VerificationResult {
+        boolean error;
+        SignatureCheckResult result;
+    }
 
     public static final String MOJO_NAME = "check";
 
     private static final String PGP_VERIFICATION_RESULT_FORMAT = "{} PGP Signature {}\n       {} UserIds: {}";
 
     @Inject
-    protected KeysMap keysMap;
+    private KeysMap keysMap;
+
+    @Inject
+    private ReportsUtils reportsUtils;
 
     /**
      * Fail the build if any dependency doesn't have a signature.
@@ -123,6 +138,35 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
     @Parameter(property = "pgpverify.keysMapLocation", alias = "keysMapLocations")
     private List<KeysMapLocationConfig> keysMapLocation = new ArrayList<>();
 
+    /**
+     * <p>
+     * Path to report file of verification result.
+     * </p>
+     *
+     * <p>
+     * <a href="report-format.html">Report file format</a>
+     * </p>
+     *
+     * @since 1.13.0
+     */
+    @Parameter(property = "pgpverify.reportFile",
+            defaultValue = "${project.build.directory}/pgpverify-report.json")
+    private File reportFile;
+
+    /**
+     * <p>
+     * Indicate if verification report should be generated.
+     * </p>
+     *
+     * <p>
+     * <a href="report-format.html">Report file format</a>
+     * </p>
+     *
+     * @since 1.13.0
+     */
+    @Parameter(property = "pgpverify.reportWrite", defaultValue = "false")
+    private boolean reportWrite;
+
     @Override
     protected String getMojoName() {
         return MOJO_NAME;
@@ -186,9 +230,13 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
     }
 
     @Override
-    protected Boolean processArtifactSignature(Artifact artifact, Artifact ascArtifact) {
+    protected VerificationResult processArtifactSignature(Artifact artifact, Artifact ascArtifact) {
 
         SignatureCheckResult signatureCheckResult = signatureUtils.checkSignature(artifact, ascArtifact, pgpKeysCache);
+
+        VerificationResult.VerificationResultBuilder verificationResultBuilder = VerificationResult.builder()
+                .result(signatureCheckResult);
+
         switch (signatureCheckResult.getStatus()) {
             case ARTIFACT_NOT_RESOLVED:
                 throw new PGPMojoException("Artifact not resolved: %s", artifact.getId());
@@ -198,14 +246,17 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
             case SIGNATURE_ERROR:
                 if (keysMap.isBrokenSignature(artifact)) {
                     logInfoWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
-                    return true;
+                    verificationResultBuilder.error(false);
+                    break;
                 }
 
                 LOGGER.error("Failed to process signature for artifact {} - {}",
                         artifact.getId(), signatureCheckResult.getErrorMessage());
-                return false;
+                verificationResultBuilder.error(true);
+                break;
             case SIGNATURE_NOT_RESOLVED:
-                return verifySignatureUnavailable(artifact);
+                verificationResultBuilder.error(!verifySignatureUnavailable(artifact));
+                break;
             case SIGNATURE_VALID:
                 verifyWeakSignature(signatureCheckResult.getSignature().getHashAlgorithm());
 
@@ -214,7 +265,8 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
                             PublicKeyUtils.fingerprintForMaster(signatureCheckResult.getKey()));
                     LOGGER.error("Not allowed artifact {} and keyID:\n\t{}\n\t{}",
                             artifact.getId(), msg, signatureCheckResult.getKeyShowUrl());
-                    return false;
+                    verificationResultBuilder.error(true);
+                    break;
                 }
 
                 LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
@@ -225,37 +277,51 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
                         () -> PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
                         () -> signatureCheckResult.getKey().getUids());
 
-                return true;
+                verificationResultBuilder.error(false);
+                break;
             case SIGNATURE_INVALID:
                 if (keysMap.isBrokenSignature(artifact)) {
                     logInfoWithQuiet("{} PGP Signature is broken, consistent with keys map.", artifact::getId);
-                    return true;
+                    verificationResultBuilder.error(false);
+                    break;
                 }
                 if (LOGGER.isErrorEnabled()) {
                     LOGGER.error(PGP_VERIFICATION_RESULT_FORMAT, artifact.getId(),
                             "INVALID", PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
                             signatureCheckResult.getKey().getUids());
                 }
-                return false;
+                verificationResultBuilder.error(true);
+                break;
             case KEY_NOT_FOUND:
                 if (keysMap.isKeyMissing(artifact)) {
                     logInfoWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
                             artifact::getId);
-                    return true;
+                    verificationResultBuilder.error(false);
+                    break;
                 }
 
                 LOGGER.error("PGP key {} not found on keyserver for artifact {}",
                         signatureCheckResult.getKeyShowUrl(), artifact.getId());
-                return false;
-
+                verificationResultBuilder.error(true);
+                break;
             default:
-                return false;
+                verificationResultBuilder.error(true);
+                break;
         }
+
+        return verificationResultBuilder.build();
     }
 
     @Override
-    protected void processVerificationResult(Set<Boolean> verificationResult) {
-        if (verificationResult.stream().anyMatch(result -> !result)) {
+    protected void processVerificationResult(Collection<VerificationResult> verificationResult) {
+
+        if (reportWrite) {
+            Try.run(() -> reportsUtils.writeReportAsJson(reportFile,
+                    verificationResult.stream().map(v -> v.result).collect(Collectors.toList())))
+                    .getOrElseThrow(e -> new PGPMojoException(e.getMessage(), e));
+        }
+
+        if (verificationResult.stream().anyMatch(result -> result.error)) {
             throw new PGPMojoException("Signature errors");
         }
     }
@@ -299,4 +365,5 @@ public class CheckMojo extends AbstractVerifyMojo<Boolean> {
         }
         return false;
     }
+
 }
