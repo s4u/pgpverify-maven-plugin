@@ -15,12 +15,12 @@
  */
 def buildLog = new File( basedir, 'build.log' )
 
-assert buildLog.text.contains('[INFO] Key server(s) - fallback list: [{http://wrong.address.example.com}, {https://hkps.pool.sks-keyservers.net}]')
+assert buildLog.text.contains('[INFO] Key server(s) - fallback list: [{http://wrong.address.example.com}, {https://keyserver.ubuntu.com}]')
 assert buildLog.text.contains('[WARNING] {http://wrong.address.example.com} throw exception: UnknownHostException: wrong.address.example.com for: http://wrong.address.example.com/pks/lookup?op=get&options=mr&search=0xEFE8086F9E93774E - fallback try next client')
-assert buildLog.text.contains('[INFO] Receive key: https://hkps.pool.sks-keyservers.net/pks/lookup?op=get&options=mr&search=0xEFE8086F9E93774E')
+assert buildLog.text.contains('[INFO] Receive key: https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0xEFE8086F9E93774E')
 
 assert buildLog.text.contains('[WARNING] {http://wrong.address.example.com} throw exception: UnknownHostException: wrong.address.example.com for: http://wrong.address.example.com/pks/lookup?op=get&options=mr&search=0xA6ADFC93EF34893E - fallback try next client')
-assert buildLog.text.contains('[INFO] Receive key: https://hkps.pool.sks-keyservers.net/pks/lookup?op=get&options=mr&search=0xA6ADFC93EF34893E')
+assert buildLog.text.contains('[INFO] Receive key: https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0xA6ADFC93EF34893E')
 
 assert buildLog.text.contains('[INFO] junit:junit:pom:4.12 PGP Signature OK')
 assert buildLog.text.contains('[INFO] junit:junit:jar:4.12 PGP Signature OK')

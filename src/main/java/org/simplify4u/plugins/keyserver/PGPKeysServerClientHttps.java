@@ -15,62 +15,17 @@
  */
 package org.simplify4u.plugins.keyserver;
 
-import java.io.IOException;
 import java.net.URI;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.util.Locale;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 
 import io.vavr.control.Try;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKPS/HTTPS.
  */
 class PGPKeysServerClientHttps extends PGPKeysServerClient {
-    private final SSLConnectionSocketFactory sslSocketFactory;
 
-    protected PGPKeysServerClientHttps(URI uri, KeyServerClientSettings keyServerClientSettings)
-            throws IOException {
-
+    protected PGPKeysServerClientHttps(URI uri, KeyServerClientSettings keyServerClientSettings) {
         super(prepareKeyServerURI(uri), keyServerClientSettings);
-
-        try {
-            if (uri.getHost().toLowerCase(Locale.ROOT).endsWith("sks-keyservers.net")) {
-                final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                final Certificate ca = cf.generateCertificate(
-                        Thread.currentThread().getContextClassLoader().getResourceAsStream("sks-keyservers.netCA.pem"));
-
-                final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-
-                keyStore.load(null, null);
-                keyStore.setCertificateEntry("ca", ca);
-
-                final TrustManagerFactory tmf
-                        = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(keyStore);
-
-                final SSLContext context = SSLContext.getInstance("TLS");
-                context.init(null, tmf.getTrustManagers(), null);
-
-                this.sslSocketFactory
-                        = new SSLConnectionSocketFactory(
-                        context, SSLConnectionSocketFactory.getDefaultHostnameVerifier());
-            } else {
-                this.sslSocketFactory = SSLConnectionSocketFactory.getSystemSocketFactory();
-            }
-        } catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
-            throw new IOException(e);
-        }
     }
 
     private static URI prepareKeyServerURI(URI keyserver) {
@@ -78,10 +33,5 @@ class PGPKeysServerClientHttps extends PGPKeysServerClient {
         return Try.of(() ->
                 new URI("https", keyserver.getUserInfo(), keyserver.getHost(), keyserver.getPort(),
                         null, null, null)).get();
-    }
-
-    @Override
-    protected HttpClientBuilder createClientBuilder() {
-        return setupProxy(HttpClients.custom().setSSLSocketFactory(this.sslSocketFactory));
     }
 }

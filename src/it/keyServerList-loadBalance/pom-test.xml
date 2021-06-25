@@ -52,7 +52,8 @@
                 </executions>
                 <configuration>
                     <pgpKeysCachePath>${project.build.directory}/pgpkeys-cache</pgpKeysCachePath>
-                    <pgpKeyServer>https://hkps.pool.sks-keyservers.net; https://keyserver.ubuntu.com</pgpKeyServer>
+                    <pgpKeyServer>https://keyserver.ubuntu.com,https://keys.openpgp.org</pgpKeyServer>
+                    <pgpKeyServerLoadBalance>true</pgpKeyServerLoadBalance>
                 </configuration>
             </plugin>
         </plugins>

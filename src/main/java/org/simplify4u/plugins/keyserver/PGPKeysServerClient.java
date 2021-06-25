@@ -59,7 +59,7 @@ import org.simplify4u.plugins.utils.ExceptionUtils;
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
  */
-abstract class PGPKeysServerClient {
+class PGPKeysServerClient {
 
     private static final List<Class<? extends Throwable>> IGNORE_EXCEPTION_FOR_RETRY =
             Arrays.asList(PGPKeyNotFound.class, UnknownHostException.class);
@@ -256,7 +256,9 @@ abstract class PGPKeysServerClient {
         }
     }
 
-    protected abstract HttpClientBuilder createClientBuilder();
+    protected HttpClientBuilder createClientBuilder() {
+        return setupProxy(HttpClientBuilder.create());
+    }
 
     // abstract methods to implemented in child class.
 
