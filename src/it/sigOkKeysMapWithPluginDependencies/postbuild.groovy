@@ -31,7 +31,6 @@ assert buildLog.matches('(?ms).*^\\[INFO\\] commons-digester:commons-digester:ja
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.velocity:velocity-tools:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.codehaus.plexus:plexus-io:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.iq80.snappy:snappy:jar:.* PGP Signature OK$.*')
-assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.maven:maven-compat:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.maven.shared:maven-dependency-tree:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.sonatype.plexus:plexus-sec-dispatcher:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.codehaus.mojo:animal-sniffer-annotations:jar:.* PGP Signature OK$.*')

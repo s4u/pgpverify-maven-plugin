@@ -577,6 +577,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <!-- workaround for https://issues.apache.org/jira/browse/MDEP-753 use old version -->
+                <version>3.1.2</version>
                 <executions>
                     <execution>
                         <goals>
