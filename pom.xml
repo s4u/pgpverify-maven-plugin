@@ -80,7 +80,7 @@
         <slf4j.version>1.7.30</slf4j.version>
         <jackson.version>2.12.3</jackson.version>
         <bouncycastle.version>1.69</bouncycastle.version>
-        <resilience4j.version>1.7.0</resilience4j.version>
+        <resilience4j.version>1.7.1</resilience4j.version>
         <mockserver.version>5.11.2</mockserver.version>
         <project.build.outputTimestamp>2021-06-06T11:54:09Z</project.build.outputTimestamp>
 
