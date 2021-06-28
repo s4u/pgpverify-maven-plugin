@@ -20,7 +20,6 @@ import java.net.URI;
 import java.util.function.Function;
 
 import io.vavr.control.Try;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 /**
  * Implementation of a client for requesting keys from PGP key servers over HKP/HTTP.
@@ -48,10 +47,5 @@ class PGPKeysServerClientHttp extends PGPKeysServerClient {
 
         return Try.of(() -> new URI("http", keyServer.getUserInfo(), keyServer.getHost(), port, null, null, null))
                 .getOrElseThrow((Function<Throwable, IOException>) IOException::new);
-    }
-
-    @Override
-    protected HttpClientBuilder createClientBuilder() {
-        return setupProxy(HttpClientBuilder.create());
     }
 }

@@ -55,7 +55,7 @@
                     <pgpKeyServerLoadBalance>false</pgpKeyServerLoadBalance>
                     <pgpKeyServer>
                         http://wrong.address.example.com
-                        https://hkps.pool.sks-keyservers.net
+                        hkps://keyserver.ubuntu.com
                     </pgpKeyServer>
                 </configuration>
             </plugin>

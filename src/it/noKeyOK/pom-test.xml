@@ -46,6 +46,7 @@
                 <version>@project.version@</version>
                 <configuration>
                     <keysMapLocation>${project.basedir}/keysmap.list</keysMapLocation>
+                    <pgpKeyServer>hkps://keyserver.ubuntu.com</pgpKeyServer>
                 </configuration>
                 <executions>
                     <execution>

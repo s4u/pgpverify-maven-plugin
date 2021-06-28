@@ -54,11 +54,8 @@ public class PGPKeysServerClientIT {
     @DataProvider(name = "goodServerUrls")
     Object[][] goodServerUrls() {
         return new Object[][]{
-                {"hkp://pool.sks-keyservers.net"},
-                {"hkp://p80.pool.sks-keyservers.net:80"},
-                {"http://p80.pool.sks-keyservers.net"},
+                {"hkp://keyserver.ubuntu.com/"},
                 {"hkps://keyserver.ubuntu.com/"},
-                {"hkps://hkps.pool.sks-keyservers.net"}
         };
     }
 
@@ -114,7 +111,6 @@ public class PGPKeysServerClientIT {
 
         mavenSession = mock(MavenSession.class);
         when(mavenSession.getSettings()).thenReturn(mock(Settings.class));
-
     }
 
     @AfterClass(alwaysRun = true)

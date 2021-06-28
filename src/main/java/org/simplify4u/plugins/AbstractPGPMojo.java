@@ -72,7 +72,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keyserver", required = true,
-            defaultValue = "hkps://hkps.pool.sks-keyservers.net,hkps://keyserver.ubuntu.com")
+            defaultValue = "hkps://keyserver.ubuntu.com")
     private String pgpKeyServer;
 
     /**
@@ -100,7 +100,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      *
      * @since 1.7.0
      */
-    @Parameter(property = "pgpverify.keyserversLoadBalance", defaultValue = "true")
+    @Parameter(property = "pgpverify.keyserversLoadBalance", defaultValue = "false")
     private boolean pgpKeyServerLoadBalance;
 
     /**
