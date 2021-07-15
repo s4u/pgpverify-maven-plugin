@@ -333,11 +333,11 @@ public class PGPKeysCacheTest {
     }
 
     @DataProvider(name = "keyServerListWithFallBack")
-    public Object[] keyServerListWithFallBack() {
+    public Object[][] keyServerListWithFallBack() {
 
-        return new Object[]{
-                new KeyServerListFallback(),
-                new KeyServerListLoadBalance()
+        return new Object[][]{
+                {new KeyServerListFallback()},
+                {new KeyServerListLoadBalance()}
         };
     }
 
@@ -406,13 +406,43 @@ public class PGPKeysCacheTest {
     }
 
     @Test(dataProvider = "keyServerListWithFallBack")
-    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnAnyServer(KeyServerList keyServerList) throws IOException {
+    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnLastServer(KeyServerList keyServerList) throws IOException {
+
+        PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
+        PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
+
+        doThrow(new IOException()).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
+        doThrow(new PGPKeyNotFound()).when(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
+
+        keyServerList.withClients(Arrays.asList(client1, client2));
+
+        assertThatCode(() ->
+                keyServerList.execute(client -> {
+                    client.copyKeyToOutputStream(KEY_ID_1, null, null);
+                    return null;
+                })
+        ).isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
+        verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
+        verify(keysCacheLogger).error("All servers from list was failed");
+        verifyNoMoreInteractions(keysCacheLogger);
+
+        verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verifyNoMoreInteractions(client1);
+
+        verify(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
+        verifyNoMoreInteractions(client2);
+    }
+
+    @Test(dataProvider = "keyServerListWithFallBack")
+    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnFirstServer(KeyServerList keyServerList) throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
 
         doThrow(new PGPKeyNotFound()).when(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
-        doThrow(new PGPKeyNotFound()).when(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
+        doThrow(new IOException()).when(client2).copyKeyToOutputStream(KEY_ID_1, null, null);
 
         keyServerList.withClients(Arrays.asList(client1, client2));
 
