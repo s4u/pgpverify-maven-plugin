@@ -31,9 +31,9 @@ import org.apache.maven.settings.Proxy;
 @Getter
 public class KeyServerClientSettings {
 
-    private static final int DEFAULT_CONNECT_TIMEOUT = 5000;
-    private static final int DEFAULT_READ_TIMEOUT = 20000;
-    public static final int DEFAULT_MAX_RETRIES = 10;
+    private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
+    private static final int DEFAULT_READ_TIMEOUT = 5000;
+    public static final int DEFAULT_MAX_RETRIES = 5;
 
     @NonNull
     MavenSession mavenSession;
