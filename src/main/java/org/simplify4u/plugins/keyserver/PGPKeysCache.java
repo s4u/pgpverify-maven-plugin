@@ -42,22 +42,21 @@ import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterrup
 import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.pgp.PublicKeyUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manage PGP keys local cache.
  *
  * @author Slawomir Jaranowski.
  */
+@Slf4j
 @Named
 public class PGPKeysCache {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PGPKeysCache.class);
     private static final String NL = System.lineSeparator();
     private static final Object LOCK = new Object();
 
@@ -71,10 +70,12 @@ public class PGPKeysCache {
 
     /**
      * Init Keys cache.
-     * @param cachePath a path where cache will be stored
-     * @param keyServers a list of key servers addresses
-     * @param loadBalance if use key servers list in balance mode
+     *
+     * @param cachePath      a path where cache will be stored
+     * @param keyServers     a list of key servers addresses
+     * @param loadBalance    if use key servers list in balance mode
      * @param clientSettings a kay server client settings
+     *
      * @throws IOException in case of problems
      */
     public void init(File cachePath, String keyServers, boolean loadBalance, KeyServerClientSettings clientSettings)
@@ -153,7 +154,9 @@ public class PGPKeysCache {
      * Return Public Key Ring from local cache or from key server.
      *
      * @param keyID a keyId for lookup
+     *
      * @return Public Key Ring for given key
+     *
      * @throws IOException in case of problems
      */
     public PGPPublicKeyRing getKeyRing(KeyId keyID) throws IOException {
@@ -291,7 +294,10 @@ public class PGPKeysCache {
                 lastClient = client;
                 return ret;
             } catch (IOException e) {
-                lastException = e;
+                if (!(lastException instanceof PGPKeyNotFound)) {
+                    // if key was not found on one server - don't override
+                    lastException = e;
+                }
                 LOGGER.warn("{} throw exception: {} - {} try next client", client, getMessage(e), getName());
             }
             return Optional.empty();
