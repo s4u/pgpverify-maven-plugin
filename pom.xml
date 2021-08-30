@@ -78,7 +78,7 @@
     <properties>
         <maven.version>3.5.0</maven.version>
         <slf4j.version>1.7.32</slf4j.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.5</jackson.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <resilience4j.version>1.7.1</resilience4j.version>
         <mockserver.version>5.11.2</mockserver.version>
