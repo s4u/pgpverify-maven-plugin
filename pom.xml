@@ -136,7 +136,7 @@
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-resources</artifactId>
-                <version>1.1.0</version>
+                <version>1.2.0</version>
                 <exclusions>
                     <!-- duplicate classes from different artifacts -->
                     <!-- https://github.com/codehaus-plexus/plexus-resources/issues/2 -->
