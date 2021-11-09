@@ -48,6 +48,7 @@
     </licenses>
 
     <developers>
+        <!-- Join a team if you want to support, maintain project -->
         <developer>
             <id>sjaranowski</id>
             <name>Slawomir Jaranowski</name>
@@ -56,6 +57,10 @@
             <timezone>Europe/Warsaw</timezone>
         </developer>
     </developers>
+
+    <contributors>
+        <!-- Add yourself to list after contributions - if wish -->
+    </contributors>
 
     <prerequisites>
         <maven>${maven.version}</maven>
