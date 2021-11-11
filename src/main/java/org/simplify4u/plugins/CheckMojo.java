@@ -294,14 +294,14 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
                 break;
             case KEY_NOT_FOUND:
                 if (keysMap.isKeyMissing(artifact)) {
-                    logInfoWithQuiet("{} PGP key not found on keyserver, consistent with keys map.",
-                            artifact::getId);
+                    logInfoWithQuiet("{} PGP key {} not found on keyserver, consistent with keys map.",
+                            artifact::getId, signatureCheckResult.getSignature()::getKeyId);
                     verificationResultBuilder.error(false);
                     break;
                 }
 
-                LOGGER.error("PGP key {} not found on keyserver for artifact {}",
-                        signatureCheckResult.getKeyShowUrl(), artifact.getId());
+                LOGGER.error("{} PGP key {} not found on keyserver",
+                        artifact.getId(), signatureCheckResult.getSignature().getKeyId());
                 verificationResultBuilder.error(true);
                 break;
             default:
