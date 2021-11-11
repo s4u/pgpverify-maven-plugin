@@ -69,6 +69,9 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      * <p>
      * From version <b>1.7.0</b> you can provide many kay servers separated by comma, semicolon or whitespace.
      *
+     * <p>
+     * From version <b>1.15.0</b> hkp/http protocols are deprecated - please use hkps/https for key servers.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "pgpverify.keyserver", required = true,
