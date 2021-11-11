@@ -35,6 +35,7 @@ import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.event.RetryEvent;
 import io.vavr.CheckedRunnable;
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
@@ -59,6 +60,7 @@ import org.simplify4u.plugins.utils.ExceptionUtils;
 /**
  * Abstract base client for requesting keys from PGP key servers over HKP/HTTP and HKPS/HTTPS.
  */
+@Slf4j
 class PGPKeysServerClient {
 
     private static final List<Class<? extends Throwable>> IGNORE_EXCEPTION_FOR_RETRY =
@@ -117,6 +119,7 @@ class PGPKeysServerClient {
         switch (protocol) {
             case "hkp":
             case "http":
+                LOGGER.warn("hkp/http protocol are deprecated - please use hkps/https for key server");
                 return new PGPKeysServerClientHttp(uri, keyServerClientSettings);
 
             case "hkps":
