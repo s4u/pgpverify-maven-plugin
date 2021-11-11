@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.google.common.io.ByteStreams;
 import io.github.resilience4j.core.IntervalFunction;
@@ -68,11 +69,16 @@ class PGPKeysServerClient {
 
     private final KeyServerClientSettings keyServerClientSettings;
 
+    private final URI keyserver;
+
+    private final Supplier<HttpClientBuilder> httpClientBuilderSupplier;
+
     /**
      * OnRetry hook interface.
      */
     @FunctionalInterface
     public interface OnRetryConsumer {
+
         /**
          * Call when retry operation occurs on a key server client.
          *
@@ -82,28 +88,33 @@ class PGPKeysServerClient {
          * @param lastThrowable         problem that cause to retry
          */
         void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval, Throwable lastThrowable);
-
     }
-
-    private final URI keyserver;
 
     /**
      * Protected constructor for {@code PGPKeysServerClient}.
      *
-     * @param keyserver               The URI of the target key server.
-     * @param keyServerClientSettings The client configuration.
+     * @param keyserver                 The URI of the target key server.
+     * @param keyServerClientSettings   The client configuration.
+     * @param httpClientBuilderSupplier The http client builder.
      *
      * @see #getClient(String, KeyServerClientSettings)
      */
-    protected PGPKeysServerClient(URI keyserver, KeyServerClientSettings keyServerClientSettings) {
+    protected PGPKeysServerClient(URI keyserver, KeyServerClientSettings keyServerClientSettings,
+            Supplier<HttpClientBuilder> httpClientBuilderSupplier) {
         this.keyserver = keyserver;
         this.keyServerClientSettings = keyServerClientSettings;
+        this.httpClientBuilderSupplier = httpClientBuilderSupplier;
+    }
+
+    protected PGPKeysServerClient(URI keyserver, KeyServerClientSettings keyServerClientSettings) {
+        this(keyserver, keyServerClientSettings, HttpClientBuilder::create);
     }
 
     /**
      * Create a PGP key server for a given URL.
      *
-     * @param keyServer The key server address / URL.
+     * @param keyServer               The key server address / URL.
+     * @param keyServerClientSettings The http client settings.
      *
      * @return The right PGP client for the given address.
      *
@@ -205,7 +216,7 @@ class PGPKeysServerClient {
                 .onError(event -> processOnRetry(event, Duration.ZERO, planer, onRetryConsumer));
 
         CheckedRunnable checkedRunnable = Retry.decorateCheckedRunnable(retry, () -> {
-            try (final CloseableHttpClient client = this.buildClient(planer);
+            try (final CloseableHttpClient client = buildClient(planer);
                  final CloseableHttpResponse response = client.execute(request)) {
                 processKeyResponse(response, outputStream);
             }
@@ -259,10 +270,6 @@ class PGPKeysServerClient {
         }
     }
 
-    protected HttpClientBuilder createClientBuilder() {
-        return setupProxy(HttpClientBuilder.create());
-    }
-
     // abstract methods to implemented in child class.
 
 
@@ -308,15 +315,37 @@ class PGPKeysServerClient {
      *
      * @return The new HTTP client instance.
      */
-    private CloseableHttpClient buildClient(HttpRoutePlanner planer) {
+    CloseableHttpClient buildClient(HttpRoutePlanner planer) {
 
 
-        final HttpClientBuilder clientBuilder = this.createClientBuilder();
+        final HttpClientBuilder clientBuilder = httpClientBuilderSupplier.get();
 
-        this.applyTimeouts(clientBuilder);
-        clientBuilder.setRoutePlanner(planer);
-
+        setupProxy(clientBuilder);
+        applyTimeouts(clientBuilder);
+        if (planer != null) {
+            clientBuilder.setRoutePlanner(planer);
+        }
         return clientBuilder.build();
+    }
+
+    private void setupProxy(HttpClientBuilder clientBuilder) {
+
+        Optional<Proxy> optProxy = keyServerClientSettings.getProxy();
+        optProxy.ifPresent(proxy -> {
+            if (proxy.getUsername() != null && !proxy.getUsername().isEmpty() &&
+                    proxy.getPassword() != null && !proxy.getPassword().isEmpty()) {
+
+                AuthScope proxyAuthScope = new AuthScope(proxy.getHost(), proxy.getPort());
+                UsernamePasswordCredentials proxyAuthentication =
+                        new UsernamePasswordCredentials(proxy.getUsername(), proxy.getPassword());
+
+                BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
+                basicCredentialsProvider.setCredentials(proxyAuthScope, proxyAuthentication);
+
+                clientBuilder.setProxyAuthenticationStrategy(ProxyAuthenticationStrategy.INSTANCE);
+                clientBuilder.setDefaultCredentialsProvider(basicCredentialsProvider);
+            }
+        });
     }
 
     /**
@@ -334,28 +363,6 @@ class PGPKeysServerClient {
                         .build();
 
         builder.setDefaultRequestConfig(requestConfig);
-    }
-
-    protected HttpClientBuilder setupProxy(HttpClientBuilder clientBuilder) {
-
-        Optional<Proxy> optProxy = keyServerClientSettings.getProxy();
-        if (!optProxy.isPresent()) {
-            return clientBuilder;
-        }
-
-        Proxy proxy = optProxy.get();
-
-        if (proxy.getUsername() != null && !proxy.getUsername().isEmpty() &&
-                proxy.getPassword() != null && !proxy.getPassword().isEmpty()) {
-            clientBuilder.setProxyAuthenticationStrategy(ProxyAuthenticationStrategy.INSTANCE);
-            BasicCredentialsProvider basicCredentialsProvider = new BasicCredentialsProvider();
-            AuthScope proxyAuthScope = new AuthScope(proxy.getHost(), proxy.getPort());
-            UsernamePasswordCredentials proxyAuthentication =
-                    new UsernamePasswordCredentials(proxy.getUsername(), proxy.getPassword());
-            basicCredentialsProvider.setCredentials(proxyAuthScope, proxyAuthentication);
-            clientBuilder.setDefaultCredentialsProvider(basicCredentialsProvider);
-        }
-        return clientBuilder;
     }
 
     @Override
