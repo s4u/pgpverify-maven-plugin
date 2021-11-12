@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Slawomir Jaranowski
- * Portions copyright 2020 Danny van Heumen
+ * Copyright 2021 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-def buildLog = new File( basedir, 'build.log' ).text
+package org.simplify4u.plugins.keyserver;
 
-assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:jar:1.0 PGP key 0x466583F9480EBE2462C46B309F1A263E15FD0AC9 not found on keyserver, consistent with keys map.')
-assert buildLog.contains('[INFO] nl.dannyvanheumen:helloworld:pom:1.0 PGP key 0x466583F9480EBE2462C46B309F1A263E15FD0AC9 not found on keyserver, consistent with keys map.')
-assert buildLog.contains('[INFO] BUILD SUCCESS')
+import java.io.File;
+
+import lombok.Builder;
+import lombok.Value;
+
+/**
+ * Provide settings for key cache.
+ */
+@Builder
+@Value
+public class KeyCacheSettings {
+
+    File cachePath;
+
+    String keyServers;
+
+    boolean loadBalance;
+
+    int notFoundRefreshHours;
+}

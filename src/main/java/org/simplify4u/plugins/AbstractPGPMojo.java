@@ -29,6 +29,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.simplify4u.plugins.keyserver.KeyCacheSettings;
 import org.simplify4u.plugins.keyserver.KeyServerClientSettings;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.SignatureUtils;
@@ -62,6 +63,16 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     @Parameter(property = "pgpverify.keycache", required = true,
             defaultValue = "${settings.localRepository}/pgpkeys-cache")
     private File pgpKeysCachePath;
+
+    /**
+     * When key not exist on keys servers such information will be store in cache.
+     * <p>
+     * Next checking for key existence will be done after specific hours remain.
+     *
+     * @since 1.15.0
+     */
+    @Parameter(defaultValue = "24")
+    private int keyNotFoundRefreshHour;
 
     /**
      * PGP public key servers address.
@@ -139,9 +150,15 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
                 .proxyName(proxyName)
                 .build();
 
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(pgpKeysCachePath)
+                .keyServers(pgpKeyServer)
+                .loadBalance(pgpKeyServerLoadBalance)
+                .notFoundRefreshHours(keyNotFoundRefreshHour)
+                .build();
 
         try {
-            pgpKeysCache.init(pgpKeysCachePath, pgpKeyServer, pgpKeyServerLoadBalance, clientSettings);
+            pgpKeysCache.init(cacheSettings, clientSettings);
         } catch (IOException e) {
             throw new MojoFailureException(e.getMessage(), e);
         }

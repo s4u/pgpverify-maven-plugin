@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 
 import io.vavr.control.Try;
@@ -63,6 +64,7 @@ public class PGPKeysCache {
     private static final Pattern KEY_SERVERS_SPLIT_PATTERN = Pattern.compile("[;,\\s]");
 
     private File cachePath;
+    private int notFoundRefreshHours;
     private KeyServerList keyServerList;
 
     PGPKeysCache() {
@@ -71,23 +73,22 @@ public class PGPKeysCache {
     /**
      * Init Keys cache.
      *
-     * @param cachePath      a path where cache will be stored
-     * @param keyServers     a list of key servers addresses
-     * @param loadBalance    if use key servers list in balance mode
+     * @param cacheSettings  a key cache settings
      * @param clientSettings a kay server client settings
      *
      * @throws IOException in case of problems
      */
-    public void init(File cachePath, String keyServers, boolean loadBalance, KeyServerClientSettings clientSettings)
+    public void init(KeyCacheSettings cacheSettings, KeyServerClientSettings clientSettings)
             throws IOException {
-        init(cachePath, prepareClients(keyServers, clientSettings), loadBalance);
+        init(cacheSettings, prepareClients(cacheSettings.getKeyServers(), clientSettings));
     }
 
     // used by test
-    void init(File cachePath, List<PGPKeysServerClient> pgpKeysServerClients, boolean loadBalance) throws IOException {
+    void init(KeyCacheSettings cacheSettings, List<PGPKeysServerClient> pgpKeysServerClients) throws IOException {
 
-        this.cachePath = cachePath;
-        this.keyServerList = createKeyServerList(pgpKeysServerClients, loadBalance);
+        this.cachePath = cacheSettings.getCachePath();
+        this.notFoundRefreshHours = cacheSettings.getNotFoundRefreshHours();
+        this.keyServerList = createKeyServerList(pgpKeysServerClients, cacheSettings.isLoadBalance());
 
         LOGGER.info("Key server(s) - {}", keyServerList);
 
@@ -166,6 +167,8 @@ public class PGPKeysCache {
 
         synchronized (LOCK) {
 
+            checkNotFoundCache(path);
+
             if (keyFile.exists()) {
                 // load from cache
                 Optional<PGPPublicKeyRing> keyRing = loadKeyFromFile(keyFile, keyID);
@@ -175,7 +178,48 @@ public class PGPKeysCache {
             }
 
             // key not exists in cache or something wrong with cache, so receive from servers
-            return keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient));
+            return Try.of(() -> keyServerList.execute(keysServerClient -> receiveKey(keyFile, keyID, keysServerClient)))
+                    .onFailure(PGPKeyNotFound.class, e -> writeNotFoundCache(path))
+                    .get();
+        }
+    }
+
+    private void writeNotFoundCache(String keyFilePath) {
+
+        File file = new File(cachePath, keyFilePath + ".404");
+
+        try {
+            Files.write(file.toPath(), String.valueOf(System.currentTimeMillis()).getBytes(US_ASCII));
+        } catch (IOException e) {
+            LOGGER.warn("Write file: {} exception: {}", file, getMessage(e));
+            deleteFile(file);
+        }
+    }
+
+    private void checkNotFoundCache(String keyFilePath) throws PGPKeyNotFound {
+
+        File file = new File(cachePath, keyFilePath + ".404");
+
+        if (file.isFile()) {
+
+            long markTime = Try.of(() -> {
+                        byte[] cacheContent = Files.readAllBytes(file.toPath());
+                        return Long.parseLong(new String(cacheContent, US_ASCII));
+                    })
+                    .onFailure(e -> LOGGER.warn("Read cache file: {}", file, e))
+                    .getOrElse(0L);
+
+            Duration elapsedTime = Duration.ofMillis(System.currentTimeMillis() - markTime);
+
+            if (elapsedTime.toHours() > notFoundRefreshHours) {
+                LOGGER.debug("KeyNotFound remove cache {} - mark time: {} elapsed: {}",
+                        file, markTime, elapsedTime);
+                deleteFile(file);
+            } else {
+                LOGGER.debug("KeyNotFound from cache {} - mark time: {} elapsed: {}",
+                        file, markTime, elapsedTime);
+                throw new PGPKeyNotFound();
+            }
         }
     }
 

@@ -19,8 +19,6 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -95,7 +93,7 @@ public class AbstractPGPMojoTest {
 
         // then
         verify(mojo).executeConfiguredMojo();
-        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
+        verify(pgpKeysCache).init(any(), any());
         verifyNoInteractions(logger);
     }
 }

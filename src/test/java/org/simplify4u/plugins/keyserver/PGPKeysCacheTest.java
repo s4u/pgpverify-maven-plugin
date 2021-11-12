@@ -82,7 +82,7 @@ public class PGPKeysCacheTest {
     @InjectMocks
     private PGPKeysCache pgpKeysCache;
 
-    public List<PGPKeysServerClient> prepareKeyServerClient() throws IOException {
+    private List<PGPKeysServerClient> prepareKeyServerClient() throws IOException {
 
         doAnswer(i -> new URI(String.format("https://key.get.example.com/?keyId=%s", (KeyId) i.getArgument(0))))
                 .when(keysServerClient).getUriForGetKey(any(KeyId.class));
@@ -94,6 +94,15 @@ public class PGPKeysCacheTest {
             return null;
         }).when(keysServerClient).copyKeyToOutputStream(any(KeyId.class), any(OutputStream.class),
                 any(PGPKeysServerClient.OnRetryConsumer.class));
+
+        return Collections.singletonList(keysServerClient);
+    }
+
+    private List<PGPKeysServerClient> prepareKeyServerClientWithNotFound() throws IOException {
+
+        doThrow(new PGPKeyNotFound())
+                .when(keysServerClient).copyKeyToOutputStream(any(KeyId.class), any(OutputStream.class),
+                        any(PGPKeysServerClient.OnRetryConsumer.class));
 
         return Collections.singletonList(keysServerClient);
     }
@@ -113,9 +122,13 @@ public class PGPKeysCacheTest {
 
         File emptyCachePath = new File(cachePath.toFile(), "empty");
 
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(emptyCachePath)
+                .build();
+
         assertThat(emptyCachePath).doesNotExist();
 
-        pgpKeysCache.init(emptyCachePath, Collections.singletonList(keysServerClient), true);
+        pgpKeysCache.init(cacheSettings, Collections.singletonList(keysServerClient));
 
         assertThat(emptyCachePath)
                 .exists()
@@ -128,11 +141,15 @@ public class PGPKeysCacheTest {
         File fileAsCachePath = new File(cachePath.toFile(), "file.tmp");
         MoreFiles.touch(fileAsCachePath.toPath());
 
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(fileAsCachePath)
+                .build();
+
         assertThat(fileAsCachePath)
                 .exists()
                 .isFile();
 
-        assertThatCode(() -> pgpKeysCache.init(fileAsCachePath, Collections.singletonList(keysServerClient), true))
+        assertThatCode(() -> pgpKeysCache.init(cacheSettings, Collections.singletonList(keysServerClient)))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessageStartingWith("PGP keys cache path exist but is not a directory:");
     }
@@ -141,7 +158,12 @@ public class PGPKeysCacheTest {
     public void getKeyFromCache() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
-        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .build();
+
+        pgpKeysCache.init(cacheSettings, keysServerClients);
 
         // first call retrieve key from server
         PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
@@ -166,10 +188,117 @@ public class PGPKeysCacheTest {
     }
 
     @Test
+    public void notFoundKeyFromCache() throws IOException {
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .build();
+
+        pgpKeysCache.init(cacheSettings, keysServerClients);
+
+        KeyId keyId = KeyId.from(0x1234567890L);
+
+        // first call create file with 404 extension in cache
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        File notFoundCache = new File(cachePath.toFile(), keyId.getHashPath() + ".404");
+
+        assertThat(notFoundCache)
+                .content()
+                .containsOnlyDigits();
+
+        // second call should use cache
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        // client was call only once
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(eq(keyId), any(), any());
+    }
+
+    @Test
+    public void notFoundKeyCacheShouldBeEvicted() throws IOException {
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .notFoundRefreshHours(1)
+                .build();
+
+        pgpKeysCache.init(cacheSettings, keysServerClients);
+
+        KeyId keyId = KeyId.from(0x1234567890L);
+
+        // first call create file with 404 extension in cache
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        File notFoundCache = new File(cachePath.toFile(), keyId.getHashPath() + ".404");
+
+        assertThat(notFoundCache)
+                .content()
+                .containsOnlyDigits();
+
+        // last check 2 hour ago
+        String lastHitTime = String.valueOf(System.currentTimeMillis() - (120 * 60 * 1000));
+        Files.write(notFoundCache.toPath(), lastHitTime.getBytes());
+
+        // second call should call client
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        // cache file was changed
+        assertThat(notFoundCache).content()
+                .containsOnlyDigits()
+                .isNotEqualTo(lastHitTime);
+
+        // client was call twice
+        verify(keysServerClients.get(0), times(2)).copyKeyToOutputStream(eq(keyId), any(), any());
+    }
+
+    @Test
+    public void notFoundCacheEmptyFileShouldNotBreakProcessing() throws IOException {
+
+        List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .build();
+
+        pgpKeysCache.init(cacheSettings, keysServerClients);
+
+        KeyId keyId = KeyId.from(0x1234567890L);
+
+        // create empty cache file
+        File notFoundCache = new File(cachePath.toFile(), keyId.getHashPath() + ".404");
+        notFoundCache.getParentFile().mkdirs();
+        notFoundCache.createNewFile();
+
+        assertThat(notFoundCache).isEmpty();
+
+        // call create file with 404 extension in cache
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(PGPKeyNotFound.class);
+
+        // empty file should be replaced by one with correct data
+        assertThat(notFoundCache)
+                .content()
+                .containsOnlyDigits();
+
+        // client was call
+        verify(keysServerClients.get(0)).copyKeyToOutputStream(eq(keyId), any(), any());
+    }
+
+    @Test
     public void brokenKeyInCache() throws IOException {
 
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .build();
+
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
-        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
+        pgpKeysCache.init(cacheSettings, keysServerClients);
 
         // create empty file for key in cache
         Path keyDirPath = cachePath.resolve("EF").resolve("E8");
@@ -193,7 +322,12 @@ public class PGPKeysCacheTest {
     public void nonExistingKeyInRingThrowException() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
-        pgpKeysCache.init(cachePath.toFile(), keysServerClients, true);
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .build();
+
+        pgpKeysCache.init(cacheSettings, keysServerClients);
 
         // first call retrieve key from server
         assertThatCode(() -> pgpKeysCache.getKeyRing(KeyId.from(0x1234567890L)))

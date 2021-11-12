@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -124,7 +123,7 @@ public class ShowMojoTest {
         verify(signatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
         verify(signatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
+        verify(pgpKeysCache).init(any(), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
@@ -151,7 +150,7 @@ public class ShowMojoTest {
         verify(artifactResolver).resolveSignatures(anyCollection());
 
 
-        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
+        verify(pgpKeysCache).init(any(), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
@@ -189,7 +188,7 @@ public class ShowMojoTest {
 
         verify(signatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
+        verify(pgpKeysCache).init(any(), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
@@ -228,7 +227,7 @@ public class ShowMojoTest {
 
         verify(signatureUtils).keyAlgorithmName(anyInt());
 
-        verify(pgpKeysCache).init(isNull(), isNull(), eq(false), any());
+        verify(pgpKeysCache).init(any(), any());
 
         verifyNoMoreInteractions(artifactResolver, pgpKeysCache, signatureUtils, repositorySystem);
     }
