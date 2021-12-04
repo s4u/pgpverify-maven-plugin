@@ -11,7 +11,7 @@ Where
 - `groupId`           - groupId of Maven artifact, this field is required, but can be `*` for match any   
 - `artifactId`        - artifactId of Maven artifact - optional
 - `packaging`         - packaging of Maven artifact, eg. `pom`, `jar` - optional 
-- `version`           - version of Maven artifact, this filed support Maven version range syntax - optional
+- `version`           - version of Maven artifact, this field supports Maven version range syntax or regular expressions - optional
 - `pgpKeyFingerprint` - PGP key fingerprints in hex format which are allowed to sign artifact,
                  multiple keys can be supplied separated by comma  
 
@@ -46,6 +46,18 @@ Multiline
 If line is ending with ` \ ` (backslash), break of line will be removed and next line will be joined.
 
 Whitespace and comments are allowed after ` \ `.
+
+Version Regular Expressions
+---------
+
+When the version field begins with ` ~ ` (tilde), everything following the tilde is a case-insensitive regular
+expression matched against artifact version.
+
+When the version field begins with ` !~ ` (not-tilde), everything following the not-tilde is a case-insensitive regular
+expression with a negated match against artifact version.
+
+This may be used, for example, to have separate PGP signing keys for continuous integration snapshot builds,
+while releases are signed by more protected PGP keys unavailable to the continuous integration platform.
 
 Examples
 --------
@@ -83,6 +95,26 @@ match a specific artifact with packaging and version range
 match a specific artifact with the version and any packaging
 
     test.groupId:artifactId:1.0.0 = 0x1234567890123456789012345678901234567890  
+---
+
+match any artifact from group with any packaging and a SNAPSHOT version by regular expression
+
+    test.groupId:*:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+---
+
+match any artifact from group with any packaging and a non-SNAPSHOT version by negated regular expression
+
+    test.groupId:*:!~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+---
+
+match a specific artifact with any packaging and a SNAPSHOT version by regular expression
+
+    test.groupId:artifactId:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+---
+
+match a specific artifact with specific packaging and a SNAPSHOT version by regular expression
+
+    test.groupId:artifactId:jar:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
 ---
 
 match a specific artifact with any version and packaging and many keys

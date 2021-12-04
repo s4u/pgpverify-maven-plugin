@@ -38,6 +38,9 @@ class ArtifactPattern {
     private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
     private static final Pattern PACKAGING = Pattern.compile("^[a-zA-Z]+$");
 
+    private static final String VERSION_REGEX_PREFIX = "~";
+    private static final String NOT_VERSION_REGEX_PREFIX = "!~";
+
     /**
      * Original pattern from keysMap. Used to compare if object is equal to another.
      */
@@ -111,6 +114,18 @@ class ArtifactPattern {
             return version -> true;
         }
 
+        if (versionSpec.startsWith(VERSION_REGEX_PREFIX)) {
+            // check version against regular expression
+            Pattern versionRegex = Pattern.compile(versionSpec.substring(VERSION_REGEX_PREFIX.length()));
+            return version -> versionRegex.matcher(version).matches();
+        }
+
+        if (versionSpec.startsWith(NOT_VERSION_REGEX_PREFIX)) {
+            // check version against negated regular expression
+            Pattern versionRegex = Pattern.compile(versionSpec.substring(NOT_VERSION_REGEX_PREFIX.length()));
+            return version -> !versionRegex.matcher(version).matches();
+        }
+
         VersionRange versionRange = VersionRange.createFromVersionSpec(versionSpec);
         if (versionRange.hasRestrictions()) {
             // check version in range
@@ -131,7 +146,9 @@ class ArtifactPattern {
             return null;
         }
 
-        if (versionSpec.contains("*")) {
+        if (versionSpec.contains("*")
+                && !versionSpec.startsWith(VERSION_REGEX_PREFIX)
+                && !versionSpec.startsWith(NOT_VERSION_REGEX_PREFIX)) {
             throw new InvalidVersionSpecificationException("Invalid maven version range: " + versionSpec);
         }
 
