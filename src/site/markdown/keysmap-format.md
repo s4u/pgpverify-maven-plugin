@@ -97,24 +97,24 @@ match a specific artifact with the version and any packaging
     test.groupId:artifactId:1.0.0 = 0x1234567890123456789012345678901234567890  
 ---
 
-match any artifact from group with any packaging and a SNAPSHOT version by regular expression
+match any artifact from group with any packaging and a SNAPSHOT/timestamped version by regular expression
 
-    test.groupId:*:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+    test.groupId:*:~.*-(SNAPSHOT|\d{8,}\.\d{6}-\d+) = 0x1234567890123456789012345678901234567890
 ---
 
-match any artifact from group with any packaging and a non-SNAPSHOT version by negated regular expression
+match any artifact from group with any packaging and a non-SNAPSHOT/timestamped version by negated regular expression
 
-    test.groupId:*:!~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+    test.groupId:*:!~.*-(SNAPSHOT|\d{8,}\.\d{6}-\d+) = 0x1234567890123456789012345678901234567890
 ---
 
-match a specific artifact with any packaging and a SNAPSHOT version by regular expression
+match a specific artifact with any packaging and a SNAPSHOT/timestamped version by regular expression
 
-    test.groupId:artifactId:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+    test.groupId:artifactId:~.*-(SNAPSHOT|\d{8,}\.\d{6}-\d+) = 0x1234567890123456789012345678901234567890
 ---
 
-match a specific artifact with specific packaging and a SNAPSHOT version by regular expression
+match a specific artifact with specific packaging and a SNAPSHOT/timestamped version by regular expression
 
-    test.groupId:artifactId:jar:~.*-SNAPSHOT$ = 0x1234567890123456789012345678901234567890
+    test.groupId:artifactId:jar:~.*-(SNAPSHOT|\d{8,}\.\d{6}-\d+) = 0x1234567890123456789012345678901234567890
 ---
 
 match a specific artifact with any version and packaging and many keys
