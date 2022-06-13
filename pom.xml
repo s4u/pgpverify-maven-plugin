@@ -272,7 +272,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-testng</artifactId>
-                <version>0.4.23</version>
+                <version>0.4.26</version>
             </dependency>
             <dependency>
                 <groupId>org.simplify4u</groupId>
