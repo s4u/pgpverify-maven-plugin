@@ -99,6 +99,12 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
     @Parameter(property = "pgpgverify.failWeakSignature", defaultValue = "false")
     private boolean failWeakSignature;
 
+    /**
+     * Suppress Signature OK
+     */
+     @Parameter(property = "pgpverify.suppressSignatureOkLogging", defaultValue = "false")
+     private boolean suppressSignatureOkLogging;
+
 
     /**
      * Disable the use of a checksum to check whether the collection of artifacts was validated in a previous run. If
@@ -272,10 +278,13 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
                 LOGGER.debug("signature.KeyAlgorithm: {} signature.hashAlgorithm: {}",
                         signatureCheckResult.getKey().getAlgorithm(),
                         signatureCheckResult.getSignature().getHashAlgorithm());
+                
+                if (!suppressSignatureOkLogging) {
+                    logInfoWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
+                            () -> PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
+                            () -> signatureCheckResult.getKey().getUids());
+                }
 
-                logInfoWithQuiet(PGP_VERIFICATION_RESULT_FORMAT, artifact::getId, () -> "OK",
-                        () -> PublicKeyUtils.keyIdDescription(signatureCheckResult.getKey()),
-                        () -> signatureCheckResult.getKey().getUids());
 
                 verificationResultBuilder.error(false);
                 break;
