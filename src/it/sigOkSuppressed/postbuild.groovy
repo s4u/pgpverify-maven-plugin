@@ -15,8 +15,8 @@
  */
 def buildLog = new File( basedir, 'build.log' ).text
 
-assertFalse buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:pom:1.6.3 PGP Signature OK')
-assertFalse buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:jar:1.6.3 PGP Signature OK')
+assert !buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:pom:1.6.3 PGP Signature OK')
+assert !buildLog.contains('[INFO] com.google.auto.value:auto-value-annotations:jar:1.6.3 PGP Signature OK')
 // split key infskip search for special char - this assertion cause problem on windows system
 assert !buildLog.contains('KeyId: 0xC7BE5BCC9FEC15518CFDA882B0F3710FA64900E7 UserIds:')
 assert !buildLog.contains('amonn McManus <eamonn@mcmanus.net>]')
