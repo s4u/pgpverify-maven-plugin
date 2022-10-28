@@ -101,9 +101,11 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
 
     /**
      * Suppress Signature OK
+     *
+     * @since 1.17.0
      */
-     @Parameter(property = "pgpverify.suppressSignatureOkLogging", defaultValue = "false")
-     private boolean suppressSignatureOkLogging;
+    @Parameter(property = "pgpverify.suppressSignatureOkLogging", defaultValue = "false")
+    private boolean suppressSignatureOkLogging;
 
 
     /**
