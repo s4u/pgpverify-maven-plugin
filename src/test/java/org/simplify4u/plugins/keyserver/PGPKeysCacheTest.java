@@ -529,7 +529,7 @@ public class PGPKeysCacheTest {
 
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), eq("Fallback test1"), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), eq("Fallback test2"), anyString());
-        verify(keysCacheLogger).error("All servers from list was failed");
+        verify(keysCacheLogger).error("All servers from list failed");
         verifyNoMoreInteractions(keysCacheLogger);
 
         verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
@@ -559,7 +559,7 @@ public class PGPKeysCacheTest {
 
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
-        verify(keysCacheLogger).error("All servers from list was failed");
+        verify(keysCacheLogger).error("All servers from list failed");
         verifyNoMoreInteractions(keysCacheLogger);
 
         verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);
@@ -589,7 +589,7 @@ public class PGPKeysCacheTest {
 
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client1), isNull(), anyString());
         verify(keysCacheLogger).warn(eq("{} throw exception: {} - {} try next client"), eq(client2), isNull(), anyString());
-        verify(keysCacheLogger).error("All servers from list was failed");
+        verify(keysCacheLogger).error("All servers from list failed");
         verifyNoMoreInteractions(keysCacheLogger);
 
         verify(client1).copyKeyToOutputStream(KEY_ID_1, null, null);

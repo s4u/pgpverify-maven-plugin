@@ -398,7 +398,7 @@ public class PGPKeysCache {
                 }
             }
 
-            LOGGER.error("All servers from list was failed");
+            LOGGER.error("All servers from list failed");
             throw lastException;
         }
     }
@@ -428,7 +428,7 @@ public class PGPKeysCache {
                 }
             }
 
-            LOGGER.error("All servers from list was failed");
+            LOGGER.error("All servers from list failed");
             throw lastException;
         }
     }
