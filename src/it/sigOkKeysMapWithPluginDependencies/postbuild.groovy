@@ -34,7 +34,7 @@ assert buildLog.matches('(?ms).*^\\[INFO\\] org.iq80.snappy:snappy:jar:.* PGP Si
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.maven.shared:maven-dependency-tree:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.sonatype.plexus:plexus-sec-dispatcher:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.codehaus.mojo:animal-sniffer-annotations:jar:.* PGP Signature OK$.*')
-assert buildLog.matches('(?ms).*^\\[INFO\\] org.bouncycastle:bcpg-jdk15on:jar:.* PGP Signature OK$.*')
+assert buildLog.matches('(?ms).*^\\[INFO\\] org.bouncycastle:bcpg-jdk18on:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] org.apache.httpcomponents:httpcore:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] com.vladsch.flexmark:flexmark-all:jar:.* PGP Signature OK$.*')
 assert buildLog.matches('(?ms).*^\\[INFO\\] commons-validator:commons-validator:jar:.* PGP Signature OK$.*')
