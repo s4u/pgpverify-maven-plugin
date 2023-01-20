@@ -36,11 +36,14 @@ com.fasterxml.jackson.core:jackson-annotations:2.10.1 = 0x6214760097DC5CFAD0175A
 com.fasterxml.jackson.core:jackson-core:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
 com.fasterxml.jackson.core:jackson-databind:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
 com.github.fge = 0xE231245C9E2D09F6F8A4259A37246FA6B97F0377
+
 com.github.java-json-tools:jackson-coreutils:1.9 = 0x36BB1C8A910CC6B5A6A7344626ED90A14377DCC4
 com.github.java-json-tools:json-schema-core:1.2.10 = 0x36BB1C8A910CC6B5A6A7344626ED90A14377DCC4
 com.github.java-json-tools:json-schema-validator:2.2.11 = 0x3C9A036491949AF8FE42A640F4C0FE6A926F14D8
 com.github.kevinstern:software-and-algorithms:1.0 = 0xA4FD709CC4B0515F2E6AF04E218FA0F6A941A037
+com.github.luben  = 0x9AC5712CABE9635B65663AB0711C0A9A896FE336
 com.github.stephenc.jcip:jcip-annotations:1.0-1 = 0x042B29E928995B9DB963C636C7CA19B7B620D787
+
 com.google.auto:auto-common:0.10 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
 com.google.auto:auto-common:0.9 = 0x6F7E5ACBCD02DB60DFD232E45E1F79A7C298661E
 com.google.auto.factory:auto-factory:1.0-beta5 = 0x3288B8BE8512D6C0CA185268C51E6CBC7FF46F0B
@@ -129,10 +132,13 @@ io.github.resilience4j = 0x8756C4F765C9AC3CB6B85D62379CE192D401AB61, 0x94FAC9D5B
 io.netty = 0x7E22D50A7EBD9D2CD269B2D4056ACA74D46000BF
 io.reactivex.rxjava2:rxjava:2.1.2 = 0x1D9AA7F9E1E2824728B8CD1794B291AEF984A085
 io.vavr = 0x1D339B6A68AE2E8DAEDA65D5276962CA56E73C81, 0x2E732921F44FD0DB434DB5CC55A58E21609DEC6E
+
 javax.activation:activation:1.1 = noSig
-javax.activation:javax.activation-api:1.2.0 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
 javax.annotation:jsr250-api:1.0 = noSig
+javax.annotation             = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
 javax.enterprise:cdi-api:1.0 = 0xB1FC0E1FA329669191F8306F5BCEE695141E6086
+javax.enterprise:cdi-api:1.2 = 0xF2F5A9AFBD6C3FAE324194DCB00369BF54A1AC32
+
 javax.inject:javax.inject:1 = noSig
 javax.servlet:javax.servlet-api:3.1.0 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
 javax.servlet:javax.servlet-api:4.0.1 = 0x4F7E32D440EF90A83011A8FC6425559C47CC79C4
@@ -205,28 +211,24 @@ org.apache.maven.doxia:doxia-skin-model:1.8.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579
 org.apache.maven.doxia:doxia-skin-model:1.9.1 = 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688
 org.apache.maven.doxia:doxia-skin-model:1.9.2 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
 
-org.apache.maven = \
+org.apache.maven.* = \
                                 0x042B29E928995B9DB963C636C7CA19B7B620D787, \
-                                0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \
-                                0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
-                                0xBA926F64CA647B6D853A38672E2010F8A7FF4A41, \
-                                0xB920D295BF0E61CB4CF0896C33CD6733AF5EC452, \
-                                0xF254B35617DC255D9344BCFA873A8E86B4372146, \
-                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A, \
-                                0xFB11D4BB7B244678337AAD8BC7BF26D0BB617866
-
-org.apache.maven.plugins = \
+                                0x29BEA2A645F2D6CED7FB12E02B172E3E156466E8, \
                                 0x6A814B1F869C2BBEAB7CB7271A2A1C94BDE89688, \
                                 0x84789D24DF77A32433CE1F079EB80E92EB2135B1, \
                                 0xAE9E53FC28FF2AB1012273D0BF1518E0160788A2, \
+                                0xB920D295BF0E61CB4CF0896C33CD6733AF5EC452, \
+                                0xBA926F64CA647B6D853A38672E2010F8A7FF4A41, \
                                 0xC870735180244047DA600FDEC171A58398EEC284, \
                                 0xF254B35617DC255D9344BCFA873A8E86B4372146, \
-                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+                                0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A, \
+                                0xFB11D4BB7B244678337AAD8BC7BF26D0BB617866
 
 org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.0-alpha-1 = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
 org.apache.maven.plugin-testing:maven-plugin-testing-harness:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
 org.apache.maven.plugin-testing:maven-plugin-testing-tools:2.1 = 0x47063E8BA7A6450E4A52E7AE466CAED6E0747D50
 org.apache.maven.plugin-tools:maven-plugin-annotations:3.5.1 = 0xFA77DCFEF2EE6EB2DEBEDD2C012579464D01C06A
+
 
 org.apache.maven.reporting = \
                                 0x190D5A957FF22273E601F7A7C92C5FEC70161C62, \
@@ -348,9 +350,10 @@ org.slf4j:slf4j-nop = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
 org.slf4j:slf4j-simple:1.5.3 = noSig
 org.slf4j:slf4j-simple = 0x475F3B8E59E6E63AA78067482C7B12F2A511E325
 org.sonatype.aether = 0xBA926F64CA647B6D853A38672E2010F8A7FF4A41
-org.sonatype.plexus:plexus-cipher:1.4 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
-org.sonatype.plexus:plexus-sec-dispatcher:1.3 = 0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
-org.sonatype.plexus:plexus-sec-dispatcher:1.4 = 0x2BCBDD0F23EA1CAFCC11D4860374CF2E8DD1BDFD
+
+org.sonatype.plexus =   \
+                        0x2BCBDD0F23EA1CAFCC11D4860374CF2E8DD1BDFD, \
+                        0x9FFED7A118D45A44E4A1E47130E6F80434A72A7F
 
 org.sonatype.sisu =        0xBA926F64CA647B6D853A38672E2010F8A7FF4A41,\
                            0xE78AA45938D10249E08CC1C752E6585E0102B84D
