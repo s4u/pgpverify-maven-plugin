@@ -16,6 +16,7 @@
 package org.simplify4u.plugins;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -25,7 +26,6 @@ import io.vavr.control.Try;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.pqc.math.linearalgebra.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +152,7 @@ final class ValidationChecksum {
             }
             digest.doFinal(result, 0);
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Checksum of resolved artifacts: {}", ByteUtils.toHexString(result, "0x", ""));
+                LOG.debug("Checksum of resolved artifacts: {}", new BigInteger(result).toString(16));
             }
             return result;
         }

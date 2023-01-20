@@ -81,7 +81,7 @@
     </distributionManagement>
 
     <properties>
-        <bouncycastle.version>1.70</bouncycastle.version>
+        <bouncycastle.version>1.72</bouncycastle.version>
         <jackson.version>2.14.1</jackson.version>
         <maven.version>3.5.0</maven.version>
         <mockito.version>4.11.0</mockito.version>
@@ -163,12 +163,12 @@
             <!-- bouncycastle -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcpg-jdk15on</artifactId>
+                <artifactId>bcpg-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15on</artifactId>
+                <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <!-- /bouncycastle -->
@@ -353,11 +353,11 @@
         <!-- bouncycastle -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpg-jdk15on</artifactId>
+            <artifactId>bcpg-jdk18on</artifactId>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
+            <artifactId>bcprov-jdk18on</artifactId>
         </dependency>
         <!-- /bouncycastle -->
 
