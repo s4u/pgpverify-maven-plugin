@@ -32,9 +32,11 @@ classworlds:classworlds:1.1 = noSig
 classworlds:classworlds:1.1-alpha-2 = noSig
 com.beust:jcommander:1.72 = 0x67497E9D680CE8E95BD6B8F85AD66315FC018797
 com.facebook.infer.annotation:infer-annotation:0.11.0 = 0xA40F78DC866DEDC8C25C747A6B36BCFBED910BD2
-com.fasterxml.jackson.core:jackson-annotations:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
-com.fasterxml.jackson.core:jackson-core:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
-com.fasterxml.jackson.core:jackson-databind:2.10.1 = 0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
+
+com.fasterxml.jackson.core = \
+                                0x28118C070CB22A0175A2E8D43D12CA2AC19F3181, \
+                                0x6214760097DC5CFAD0175AC2C9FBAA83A8753994
+
 com.github.fge = 0xE231245C9E2D09F6F8A4259A37246FA6B97F0377
 
 com.github.java-json-tools:jackson-coreutils:1.9 = 0x36BB1C8A910CC6B5A6A7344626ED90A14377DCC4
