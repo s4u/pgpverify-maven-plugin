@@ -84,7 +84,7 @@
         <bouncycastle.version>1.70</bouncycastle.version>
         <jackson.version>2.14.1</jackson.version>
         <maven.version>3.5.0</maven.version>
-        <mockito.version>4.6.1</mockito.version>
+        <mockito.version>4.11.0</mockito.version>
         <resilience4j.version>1.7.1</resilience4j.version>
         <slf4j.version>1.7.36</slf4j.version>
 
@@ -250,6 +250,11 @@
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>org.eclipse.sisu.inject</artifactId>
                 <version>0.3.5</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>1.12.22</version>
             </dependency>
             <!-- /dependency coverage -->
 
