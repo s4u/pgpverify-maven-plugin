@@ -17,13 +17,16 @@ package org.simplify4u.plugins;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Objects.requireNonNull;
 
 import io.vavr.control.Try;
-import org.apache.commons.io.FileUtils;
 import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.slf4j.Logger;
@@ -58,7 +61,7 @@ final class ValidationChecksum {
             return false;
         }
 
-        return Try.of(() -> FileUtils.readFileToByteArray(file))
+        return Try.of(() -> Files.readAllBytes(file.toPath()))
                 .map(checksumPriorValidation -> Arrays.equals(this.checksum, checksumPriorValidation))
                 .onFailure(e ->
                         LOG.debug("Validation of artifacts against prior validation run failed with: {}",
@@ -74,7 +77,7 @@ final class ValidationChecksum {
             return;
         }
 
-        Try.run(() -> FileUtils.writeByteArrayToFile(file, checksum))
+        Try.run(() -> Files.write(file.toPath(), checksum, CREATE, TRUNCATE_EXISTING, WRITE))
                 .onFailure(e -> LOG.debug("Failed to save checksum after successful artifact validation.", e));
     }
 

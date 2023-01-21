@@ -15,9 +15,10 @@
  */
 package org.simplify4u.plugins.utils;
 
-import org.apache.commons.lang3.StringUtils;
 
 /**
+ * A utils for executions.
+ *
  * @author Slawomir Jaranowski
  */
 public final class ExceptionUtils {
@@ -38,7 +39,7 @@ public final class ExceptionUtils {
         String message = throwable.getMessage();
         Throwable cause = throwable.getCause();
 
-        while (StringUtils.isBlank(message) && cause != null) {
+        while ((message == null || message.trim().isEmpty()) && cause != null) {
             message = cause.getMessage();
             if (cause.getCause() != cause) {
                 cause = cause.getCause();
