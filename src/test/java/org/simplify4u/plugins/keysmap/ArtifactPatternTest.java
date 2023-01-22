@@ -21,16 +21,16 @@ import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Slawomir Jaranowski.
  */
 public class ArtifactPatternTest {
 
-    @DataProvider(name = "lists")
-    public Object[][] artifactsList() {
+    public static Object[][] lists() {
         return new Object[][]{
                 {"Test.Group:tesT:*", testArtifact().build(), true},
                 {"test.group:test:*", testArtifact().version("1.0.0.M5").build(), true},
@@ -108,15 +108,16 @@ public class ArtifactPatternTest {
         };
     }
 
-    @Test(dataProvider = "lists")
-    public void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
+    @ParameterizedTest
+    @MethodSource("lists")
+    void testMatchArtifact(String pattern, Artifact artifact, boolean match) {
 
         ArtifactPattern artifactPattern = new ArtifactPattern(pattern);
         assertThat(artifactPattern.isMatch(new ArtifactData(artifact))).isEqualTo(match);
     }
 
     @Test
-    public void asteriskInVersionThrowException() {
+    void asteriskInVersionThrowException() {
 
         assertThatCode(() -> new ArtifactPattern("test.group:test:1.0.*"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
@@ -126,7 +127,7 @@ public class ArtifactPatternTest {
     }
 
     @Test
-    public void wrongVersionThrowException() {
+    void wrongVersionThrowException() {
 
         assertThatCode(() -> new ArtifactPattern("test.group:test:[1.0.0"))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
@@ -136,7 +137,7 @@ public class ArtifactPatternTest {
     }
 
     @Test
-    public void twoInstanceWithTheSamePatternShouldBeEqual() {
+    void twoInstanceWithTheSamePatternShouldBeEqual() {
         ArtifactPattern artifactPattern1 = new ArtifactPattern("test.group.*:test*");
         ArtifactPattern artifactPattern2 = new ArtifactPattern("test.group.*:test*");
 

@@ -46,10 +46,15 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerList;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListFallback;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
@@ -57,14 +62,10 @@ import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
 import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.pgp.KeyId.KeyIdLong;
 import org.slf4j.Logger;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class PGPKeysCacheTest {
+@ExtendWith(MockitoExtension.class)
+class PGPKeysCacheTest {
 
     public static final KeyId KEY_ID_1 = KeyId.from(1L);
 
@@ -107,18 +108,18 @@ public class PGPKeysCacheTest {
         return Collections.singletonList(keysServerClient);
     }
 
-    @BeforeMethod
+    @BeforeEach
     void setup() throws IOException {
         cachePath = Files.createTempDirectory("cache-path-test");
     }
 
-    @AfterMethod
+    @AfterEach
     void cleanup() throws IOException {
         MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
     @Test
-    public void emptyCacheDirShouldBeCreated() throws IOException {
+    void emptyCacheDirShouldBeCreated() throws IOException {
 
         File emptyCachePath = new File(cachePath.toFile(), "empty");
 
@@ -136,7 +137,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void fileAsCacheDirThrowException() throws IOException {
+    void fileAsCacheDirThrowException() throws IOException {
 
         File fileAsCachePath = new File(cachePath.toFile(), "file.tmp");
         MoreFiles.touch(fileAsCachePath.toPath());
@@ -155,7 +156,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void getKeyFromCache() throws IOException {
+    void getKeyFromCache() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
 
@@ -188,7 +189,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void notFoundKeyFromCache() throws IOException {
+    void notFoundKeyFromCache() throws IOException {
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
 
         KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
@@ -218,7 +219,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void notFoundKeyCacheShouldBeEvicted() throws IOException {
+    void notFoundKeyCacheShouldBeEvicted() throws IOException {
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
 
         KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
@@ -258,7 +259,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void notFoundCacheEmptyFileShouldNotBreakProcessing() throws IOException {
+    void notFoundCacheEmptyFileShouldNotBreakProcessing() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClientWithNotFound();
 
@@ -291,7 +292,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void brokenKeyInCache() throws IOException {
+    void brokenKeyInCache() throws IOException {
 
         KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
                 .cachePath(cachePath.toFile())
@@ -319,7 +320,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void nonExistingKeyInRingThrowException() throws IOException {
+    void nonExistingKeyInRingThrowException() throws IOException {
 
         List<PGPKeysServerClient> keysServerClients = prepareKeyServerClient();
 
@@ -335,8 +336,7 @@ public class PGPKeysCacheTest {
                 .hasMessageStartingWith("Can't find public key 0x0000001234567890 in download file:");
     }
 
-    @DataProvider(name = "serverListTestData")
-    public Object[][] serverListTestData() {
+    public static Object[][] serverListTestData() {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -349,8 +349,9 @@ public class PGPKeysCacheTest {
         };
     }
 
-    @Test(dataProvider = "serverListTestData")
-    public void createKeyServerListReturnCorrectImplementation(
+    @ParameterizedTest
+    @MethodSource("serverListTestData")
+    void createKeyServerListReturnCorrectImplementation(
             List<PGPKeysServerClient> serverList, boolean loadBalance, Class<? extends KeyServerList> aClass) {
 
         KeyServerList keyServerList = PGPKeysCache.createKeyServerList(serverList, loadBalance);
@@ -359,7 +360,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void listOneUseFirstServerForCorrectExecute() throws IOException {
+    void listOneUseFirstServerForCorrectExecute() throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -386,7 +387,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void listOneThrowsExceptionForFailedExecute() throws IOException {
+    void listOneThrowsExceptionForFailedExecute() throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -409,7 +410,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void fallbackOnlyUseFirstServerForCorrectExecute() throws IOException {
+    void fallbackOnlyUseFirstServerForCorrectExecute() throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -436,7 +437,7 @@ public class PGPKeysCacheTest {
     }
 
     @Test
-    public void loadBalanceIterateByAllServer() throws IOException {
+    void loadBalanceIterateByAllServer() throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -466,8 +467,7 @@ public class PGPKeysCacheTest {
         verifyNoMoreInteractions(client1);
     }
 
-    @DataProvider(name = "keyServerListWithFallBack")
-    public Object[][] keyServerListWithFallBack() {
+    public static Object[][] keyServerListWithFallBack() {
 
         return new Object[][]{
                 {new KeyServerListFallback()},
@@ -475,8 +475,9 @@ public class PGPKeysCacheTest {
         };
     }
 
-    @Test(dataProvider = "keyServerListWithFallBack")
-    public void useSecondServerForFailedExecute(KeyServerList keyServerList) throws IOException {
+    @ParameterizedTest
+    @MethodSource("keyServerListWithFallBack")
+    void useSecondServerForFailedExecute(KeyServerList keyServerList) throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -508,8 +509,9 @@ public class PGPKeysCacheTest {
         verifyNoMoreInteractions(client2);
     }
 
-    @Test(dataProvider = "keyServerListWithFallBack")
-    public void throwsExceptionForAllFailedExecute(KeyServerList keyServerList) throws IOException {
+    @ParameterizedTest
+    @MethodSource("keyServerListWithFallBack")
+    void throwsExceptionForAllFailedExecute(KeyServerList keyServerList) throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -539,8 +541,9 @@ public class PGPKeysCacheTest {
         verifyNoMoreInteractions(client2);
     }
 
-    @Test(dataProvider = "keyServerListWithFallBack")
-    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnLastServer(KeyServerList keyServerList) throws IOException {
+    @ParameterizedTest
+    @MethodSource("keyServerListWithFallBack")
+    void throwsPGPKeyNotFoundWhenKeyNotFoundOnLastServer(KeyServerList keyServerList) throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);
@@ -569,8 +572,9 @@ public class PGPKeysCacheTest {
         verifyNoMoreInteractions(client2);
     }
 
-    @Test(dataProvider = "keyServerListWithFallBack")
-    public void throwsPGPKeyNotFoundWhenKeyNotFoundOnFirstServer(KeyServerList keyServerList) throws IOException {
+    @ParameterizedTest
+    @MethodSource("keyServerListWithFallBack")
+    void throwsPGPKeyNotFoundWhenKeyNotFoundOnFirstServer(KeyServerList keyServerList) throws IOException {
 
         PGPKeysServerClient client1 = mock(PGPKeysServerClient.class);
         PGPKeysServerClient client2 = mock(PGPKeysServerClient.class);

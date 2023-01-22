@@ -37,13 +37,14 @@ import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.simplify4u.plugins.TestArtifactBuilder;
 import org.simplify4u.plugins.keyserver.PGPKeyNotFound;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.utils.HexUtils;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class SignatureUtilsTest {
 
@@ -95,13 +96,13 @@ public class SignatureUtilsTest {
         }
     }
 
-    @Test(dataProvider = "provider-signature-hash-algorithms")
+    @ParameterizedTest
+    @MethodSource("providerSignatureHashAlgorithms")
     void testCheckWeakHashAlgorithmAllAlgorithms(int algorithm, boolean strong) {
         assertThat(signatureUtils.checkWeakHashAlgorithm(algorithm) == null).isEqualTo(strong);
     }
 
-    @DataProvider(name = "provider-signature-hash-algorithms")
-    Object[][] providerSignatureHashAlgorithms() {
+    public static Object[][] providerSignatureHashAlgorithms() {
         return new Object[][]{
                 {HashAlgorithmTags.MD5, false},
                 {HashAlgorithmTags.SHA1, true},
@@ -302,14 +303,15 @@ public class SignatureUtilsTest {
                 .build());
     }
 
-    @DataProvider
-    Object[] keyAlgorithms() {
+
+    public static Object[] keyAlgorithms() {
         return Arrays.stream(PublicKeyAlgorithmTags.class.getDeclaredFields())
                 .map(filed -> Try.of(() -> filed.getInt(null)).get())
                 .toArray();
     }
 
-    @Test(dataProvider = "keyAlgorithms")
+    @ParameterizedTest
+    @MethodSource("keyAlgorithms")
     void keyAlgorithmNameShouldBeResolved(int keyAlgorithm) {
         assertThat(signatureUtils.keyAlgorithmName(keyAlgorithm)).isNotBlank();
     }

@@ -29,16 +29,16 @@ import static org.simplify4u.plugins.utils.ProxyUtil.makeMavenProxy;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * test on methods in the mojo itself
  */
-@Listeners(MockitoTestNGListener.class)
-public class KeyServerClientSettingsTest {
+@ExtendWith(MockitoExtension.class)
+class KeyServerClientSettingsTest {
 
     @Mock
     private MavenSession mavenSession;
@@ -51,7 +51,7 @@ public class KeyServerClientSettingsTest {
      *
      */
     @Test
-    public void testIfProxyDeterminationWorksUsingIDs() {
+    void testIfProxyDeterminationWorksUsingIDs() {
 
         List<Proxy> proxies = Arrays.asList(
                 makeMavenProxy(null, null, "p1", true),
@@ -79,7 +79,7 @@ public class KeyServerClientSettingsTest {
      *
      */
     @Test
-    public void testIfProxyDeterminationWorksUsinFirstActive() {
+    void testIfProxyDeterminationWorksUsinFirstActive() {
 
         when(mavenSession.getSettings()).thenReturn(settings);
         when(settings.getActiveProxy()).thenReturn(makeMavenProxy("p5"));

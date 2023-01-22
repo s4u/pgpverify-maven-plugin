@@ -46,18 +46,19 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.assertj.core.api.Condition;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
-import org.mockito.testng.MockitoTestNGListener;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class ArtifactResolverTest {
+@ExtendWith(MockitoExtension.class)
+class ArtifactResolverTest {
 
     private static final Condition<Artifact> IS_JAR_TYPE = new Condition<>(a -> "jar".equals(a.getType()), "is jar type");
     private static final Condition<Artifact> IS_POM_TYPE = new Condition<>(a -> "pom".equals(a.getType()), "is pom type");
@@ -76,7 +77,7 @@ public class ArtifactResolverTest {
 
     private ArtifactResolver resolver;
 
-    @BeforeMethod
+    @BeforeEach
     void setup() {
         when(session.getLocalRepository()).thenReturn(localRepository);
         when(session.getCurrentProject()).thenReturn(project);
@@ -86,7 +87,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testConstructArtifactResolverWithNull() {
+    void testConstructArtifactResolverWithNull() {
 
         reset(session, project);
 
@@ -107,7 +108,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveProjectArtifactsEmpty() throws MojoExecutionException {
+    void testResolveProjectArtifactsEmpty() throws MojoExecutionException {
 
         // given
         Configuration config = new Configuration(new CompositeSkipper(emptyList()),
@@ -121,7 +122,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveProjectArtifactsWithoutPoms() throws MojoExecutionException {
+    void testResolveProjectArtifactsWithoutPoms() throws MojoExecutionException {
 
         // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
@@ -147,7 +148,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveProjectArtifactsWithPoms() throws MojoExecutionException {
+    void testResolveProjectArtifactsWithPoms() throws MojoExecutionException {
 
         // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
@@ -179,7 +180,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveSignaturesEmpty() throws MojoExecutionException {
+    void testResolveSignaturesEmpty() throws MojoExecutionException {
 
         // when
         Map<Artifact, Artifact> resolved = resolver.resolveSignatures(emptyList());
@@ -189,7 +190,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveSignaturesResolved() throws MojoExecutionException {
+    void testResolveSignaturesResolved() throws MojoExecutionException {
 
         // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
@@ -223,7 +224,7 @@ public class ArtifactResolverTest {
     }
 
     @Test
-    public void testResolveSignaturesUnresolvedNone() throws MojoExecutionException {
+    void testResolveSignaturesUnresolvedNone() throws MojoExecutionException {
         // given
         when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
             Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
@@ -247,8 +248,9 @@ public class ArtifactResolverTest {
         assertThat(resolved).hasSize(1);
     }
 
-    @Test(dataProvider = "verify-plugin-dependencies-combos")
-    public void testEnablingValidatingPluginDependenciesEnablesPlugins(boolean verifyPlugins,
+    @ParameterizedTest
+    @MethodSource("providerVerifyPluginDependenciesCombos")
+    void testEnablingValidatingPluginDependenciesEnablesPlugins(boolean verifyPlugins,
             boolean verifyPluginDependencies, boolean pluginsEnabled, boolean pluginDependenciesEnabled) {
 
         Configuration config = new Configuration(new CompositeSkipper(), new CompositeSkipper(),
@@ -258,8 +260,7 @@ public class ArtifactResolverTest {
         assertThat(config.verifyPlugins).isEqualTo(pluginsEnabled);
     }
 
-    @DataProvider(name = "verify-plugin-dependencies-combos")
-    public Object[][] providerVerifyPluginDependenciesCombos() {
+    public static Object[][] providerVerifyPluginDependenciesCombos() {
         return new Object[][]{
                 {false, false, false, false},
                 {false, true, true, true},

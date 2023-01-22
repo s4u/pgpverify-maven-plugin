@@ -25,18 +25,20 @@ import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
-public class PublicKeyUtilsTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class PublicKeyUtilsTest {
 
     private static final KeyId SUB_KEY_ID = KeyId.from(0xEFE8086F9E93774EL);
     private static final long MASTER_KEY_ID = 0x164BD2247B936711L;
 
     private PGPPublicKeyRing publicKeyRing;
 
-    @BeforeClass
-    public void loadKeyRing() throws IOException, PGPException {
+    @BeforeAll
+    void loadKeyRing() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
             Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, SUB_KEY_ID);
@@ -49,7 +51,7 @@ public class PublicKeyUtilsTest {
 
 
     @Test
-    public void fingerPrintForMasterKey() {
+    void fingerPrintForMasterKey() {
 
         KeyInfo keyInfo = KeyInfo.builder()
                 .fingerprint(new KeyFingerprint("0x58E79B6ABC762159DC0B1591164BD2247B936711"))
@@ -61,7 +63,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void fingerPrintForSubKey() {
+    void fingerPrintForSubKey() {
         KeyInfo keyInfo = KeyInfo.builder()
                 .fingerprint(new KeyFingerprint("0x1234567890123456789012345678901234567890"))
                 .master(new KeyFingerprint("0x58E79B6ABC762159DC0B1591164BD2247B936711"))
@@ -73,7 +75,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void userIdsWithSubKey() {
+    void userIdsWithSubKey() {
 
         PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
@@ -83,7 +85,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void userIdsWithMasterKey() {
+    void userIdsWithMasterKey() {
 
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
@@ -93,7 +95,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void keyIdDescriptionForMasterKey() {
+    void keyIdDescriptionForMasterKey() {
 
         KeyInfo keyInfo = aKeyInfo("0x1234567890123456789012345678901234567890");
 
@@ -103,7 +105,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void keyIdDescriptionForSubKey() {
+    void keyIdDescriptionForSubKey() {
         KeyInfo keyInfo = aKeyInfo("0x0987654321098765432109876543210987654321", "0x1234567890123456789012345678901234567890");
 
         assertThat(keyInfo.getMaster()).isNotNull();
@@ -112,7 +114,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void invalidUTF8InUserId() throws IOException, PGPException {
+    void invalidUTF8InUserId() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
             Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xB0F3710FA64900E7L));
@@ -126,7 +128,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void validateSubKeyWithExternalSignature() throws IOException, PGPException {
+    void validateSubKeyWithExternalSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
             Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x3D8B00E198E21827L));
@@ -140,7 +142,7 @@ public class PublicKeyUtilsTest {
     }
 
     @Test
-    public void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
+    void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/411063A3A0FFD119.asc")) {
             Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x411063A3A0FFD119L));

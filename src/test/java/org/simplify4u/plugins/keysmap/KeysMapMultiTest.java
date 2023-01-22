@@ -26,18 +26,19 @@ import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
 import org.apache.maven.artifact.Artifact;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.codehaus.plexus.resource.loader.ResourceNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplify4u.plugins.pgp.KeyFingerprint;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class KeysMapMultiTest {
+@ExtendWith(MockitoExtension.class)
+class KeysMapMultiTest {
 
     @Mock
     private ResourceManager resourceManager;
@@ -45,14 +46,14 @@ public class KeysMapMultiTest {
     @InjectMocks
     private KeysMap keysMap;
 
-    @BeforeMethod
-    public void setup() throws ResourceNotFoundException {
+    @BeforeEach
+    void setup() throws ResourceNotFoundException {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
     }
 
     @Test
-    public void loadMultipleKeysMapShouldContainsAllItems() throws ResourceNotFoundException, IOException {
+    void loadMultipleKeysMapShouldContainsAllItems() throws ResourceNotFoundException, IOException {
 
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
@@ -60,7 +61,6 @@ public class KeysMapMultiTest {
         assertThat(keysMap.size()).isEqualTo(9);
     }
 
-    @DataProvider
     public static Object[][] artifactWithKeyToTest() {
         return new Object[][]{
                 {testArtifact().build(),
@@ -95,8 +95,9 @@ public class KeysMapMultiTest {
         };
     }
 
-    @Test(dataProvider = "artifactWithKeyToTest")
-    public void keyShouldBeValid(Artifact artifact, KeyFingerprint keyFingerprint)
+    @ParameterizedTest
+    @MethodSource("artifactWithKeyToTest")
+    void keyShouldBeValid(Artifact artifact, KeyFingerprint keyFingerprint)
             throws ResourceNotFoundException, IOException {
 
         KeyInfo key = KeyInfo.builder().fingerprint(keyFingerprint).build();
@@ -107,7 +108,6 @@ public class KeysMapMultiTest {
         assertThat(keysMap.isValidKey(artifact, key)).isTrue();
     }
 
-    @DataProvider
     public static Object[][] artifactWithNoSig() {
         return new Object[][]{
                 {testArtifact().groupId("test.group-no-sig").artifactId("no-sig").build()},
@@ -117,8 +117,9 @@ public class KeysMapMultiTest {
     }
 
 
-    @Test(dataProvider = "artifactWithNoSig")
-    public void noSigShouldBeFound(Artifact artifact) throws ResourceNotFoundException, IOException {
+    @ParameterizedTest
+    @MethodSource("artifactWithNoSig")
+    void noSigShouldBeFound(Artifact artifact) throws ResourceNotFoundException, IOException {
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));
 
@@ -126,7 +127,7 @@ public class KeysMapMultiTest {
     }
 
     @Test
-    public void badSigShouldBeFound() throws ResourceNotFoundException, IOException {
+    void badSigShouldBeFound() throws ResourceNotFoundException, IOException {
 
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti1.list"));
         keysMap.load(aKeysMapLocationConfig("/keysMapMulti2.list"));

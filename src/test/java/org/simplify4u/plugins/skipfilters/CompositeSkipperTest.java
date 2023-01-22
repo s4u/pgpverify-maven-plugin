@@ -17,30 +17,30 @@
 package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.DefaultArtifact;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.testng.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CompositeSkipperTest {
+class CompositeSkipperTest {
 
     @Test
-    public void testNullFilters() {
+    void testNullFilters() {
         assertThrows(NullPointerException.class, () -> new CompositeSkipper((Iterable<SkipFilter>) null));
         assertThrows(NullPointerException.class, () -> new CompositeSkipper((SkipFilter[]) null));
         assertThrows(IllegalArgumentException.class, () -> new CompositeSkipper((SkipFilter) null));
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testEmptyFiltersList() {
+    @Test
+    void testEmptyFiltersList() {
         final CompositeSkipper filter = new CompositeSkipper(emptyList());
-        filter.shouldSkipArtifact(null);
+        assertThrows(NullPointerException.class, () -> filter.shouldSkipArtifact(null));
     }
 
     @Test
-    public void testActualArtifactEmptyFiltersList() {
+    void testActualArtifactEmptyFiltersList() {
         final DefaultArtifact artifact = new DefaultArtifact("abc", "def", "1.2.0", "compile",
                 "jar", "some-classifier", null);
         final CompositeSkipper filter = new CompositeSkipper(emptyList());
@@ -48,7 +48,7 @@ public class CompositeSkipperTest {
     }
 
     @Test
-    public void testCompileScopedArtifactProvidedScopeFilter() {
+    void testCompileScopedArtifactProvidedScopeFilter() {
         final DefaultArtifact artifact = new DefaultArtifact("abc", "def", "1.2.0", "compile",
                 "jar", "some-classifier", null);
         final CompositeSkipper filter = new CompositeSkipper(singletonList(new ProvidedDependencySkipper()));
@@ -56,7 +56,7 @@ public class CompositeSkipperTest {
     }
 
     @Test
-    public void testProvidedScopedArtifactProvidedScopeFilter() {
+    void testProvidedScopedArtifactProvidedScopeFilter() {
         final DefaultArtifact artifact = new DefaultArtifact("abc", "def", "1.2.0", "provided",
                 "jar", "some-classifier", null);
         final CompositeSkipper filter = new CompositeSkipper(singletonList(new ProvidedDependencySkipper()));
@@ -64,7 +64,7 @@ public class CompositeSkipperTest {
     }
 
     @Test
-    public void testProvidedScopedArtifactMultipleFilters() {
+    void testProvidedScopedArtifactMultipleFilters() {
         final CompositeSkipper filter = new CompositeSkipper(asList(
                 new ProvidedDependencySkipper(), new SnapshotDependencySkipper()));
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("abc", "def", "1.2.0", "provided",

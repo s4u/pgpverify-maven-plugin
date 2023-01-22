@@ -26,22 +26,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.simplify4u.plugins.TestUtils.aSignatureCheckResultBuilder;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ReportsUtilsTest {
+class ReportsUtilsTest {
 
-    private ReportsUtils reportsUtils = new ReportsUtils();
+    private final ReportsUtils reportsUtils = new ReportsUtils();
     private File reportFile;
 
-    @BeforeMethod
+    @BeforeEach
     void setup() throws IOException {
         reportFile = File.createTempFile("report-test", ".json");
         reportFile.deleteOnExit();
     }
 
-    @AfterMethod
+    @AfterEach
     void cleanup() {
         reportFile.delete();
     }

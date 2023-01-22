@@ -16,12 +16,12 @@
 package org.simplify4u.plugins.keysmap;
 
 import org.assertj.core.api.Assertions;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-public class KeyItemNoKeyTest {
+class KeyItemNoKeyTest {
 
     @Test
-    public void twoInstanceShouldBeEqual() {
+    void twoInstanceShouldBeEqual() {
         KeyItemNoKey keyItemNoKey1 = new KeyItemNoKey();
         KeyItemNoKey keyItemNoKey2 = new KeyItemNoKey();
 

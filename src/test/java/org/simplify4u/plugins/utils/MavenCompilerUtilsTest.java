@@ -19,26 +19,23 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.repository.RepositorySystem;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static java.util.Collections.emptySet;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.simplify4u.plugins.utils.MavenCompilerUtils.checkCompilerPlugin;
 import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
 
 @SuppressWarnings({"ConstantConditions", "SameParameterValue"})
-public final class MavenCompilerUtilsTest {
+final class MavenCompilerUtilsTest {
 
     @Test
-    public void testCheckCompilerPlugin() {
+    void testCheckCompilerPlugin() {
         assertThrows(NullPointerException.class, () -> checkCompilerPlugin(null));
         final Plugin compilerPlugin = mock(Plugin.class);
         when(compilerPlugin.getGroupId()).thenReturn("org.apache.maven.plugins");
@@ -53,7 +50,7 @@ public final class MavenCompilerUtilsTest {
     }
 
     @Test
-    public void testExtractAnnotationProcessorsIllegalInputs() {
+    void testExtractAnnotationProcessorsIllegalInputs() {
         assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(null, null));
         final Plugin badPlugin = mock(Plugin.class);
         when(badPlugin.getGroupId()).thenReturn("org.my-bad-plugin");
@@ -66,17 +63,17 @@ public final class MavenCompilerUtilsTest {
     }
 
     @Test
-    public void testExtractAnnotationProcessorsNoConfiguration() {
+    void testExtractAnnotationProcessorsNoConfiguration() {
         final RepositorySystem repository = mock(RepositorySystem.class);
         final Plugin plugin = mock(Plugin.class);
         when(plugin.getGroupId()).thenReturn("org.apache.maven.plugins");
         when(plugin.getArtifactId()).thenReturn("maven-compiler-plugin");
         when(plugin.getVersion()).thenReturn("3.8.1");
-        assertEquals(extractAnnotationProcessors(repository, plugin), emptySet());
+        assertEquals(emptySet(), extractAnnotationProcessors(repository, plugin));
     }
 
     @Test
-    public void testExtractAnnotationProcessorsUnsupportedConfigurationType() {
+    void testExtractAnnotationProcessorsUnsupportedConfigurationType() {
         final RepositorySystem repository = mock(RepositorySystem.class);
         final Plugin plugin = mock(Plugin.class);
         when(plugin.getGroupId()).thenReturn("org.apache.maven.plugins");
@@ -87,7 +84,7 @@ public final class MavenCompilerUtilsTest {
     }
 
     @Test
-    public void testExtractAnnotationProcessors() {
+    void testExtractAnnotationProcessors() {
         final RepositorySystem repository = mock(RepositorySystem.class);
         final Plugin plugin = mock(Plugin.class);
         when(plugin.getGroupId()).thenReturn("org.apache.maven.plugins");
@@ -102,11 +99,11 @@ public final class MavenCompilerUtilsTest {
             return artifact;
         });
         final Set<Artifact> result = extractAnnotationProcessors(repository, plugin);
-        assertEquals(result.size(), 1);
+        assertEquals(1, result.size());
         final Artifact resultElement = result.iterator().next();
-        assertEquals(resultElement.getGroupId(), "myGroupId");
-        assertEquals(resultElement.getArtifactId(), "myArtifactId");
-        assertEquals(resultElement.getVersion(), "1.2.3");
+        assertEquals("myGroupId", resultElement.getGroupId());
+        assertEquals("myArtifactId", resultElement.getArtifactId());
+        assertEquals("1.2.3", resultElement.getVersion());
     }
 
     private static Xpp3Dom createConfiguration() {

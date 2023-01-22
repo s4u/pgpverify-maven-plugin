@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-public class KeyItemFingerprintTest {
+class KeyItemFingerprintTest {
 
     private static final String FINGERPRINT_1 = "0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0";
     private static final String FINGERPRINT_2 = "0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC 0000";

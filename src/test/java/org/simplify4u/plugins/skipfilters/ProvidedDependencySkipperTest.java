@@ -17,29 +17,28 @@
 package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.DefaultArtifact;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("ConstantConditions")
-public class ProvidedDependencySkipperTest {
+class ProvidedDependencySkipperTest {
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testNullArtifact() {
+    @Test
+    void testNullArtifact() {
         final ProvidedDependencySkipper filter = new ProvidedDependencySkipper();
-        filter.shouldSkipArtifact(null);
+        assertThrows(NullPointerException.class, () -> filter.shouldSkipArtifact(null));
     }
 
     @Test
-    public void testCompileArtifact() {
+    void testCompileArtifact() {
         final ProvidedDependencySkipper filter = new ProvidedDependencySkipper();
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("abc", "def", "1.0.0", "compile",
                 "jar", "classifier", null)));
     }
 
     @Test
-    public void testProvidedArtifact() {
+    void testProvidedArtifact() {
         final ProvidedDependencySkipper filter = new ProvidedDependencySkipper();
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("abc", "def", "1.0.0", "provided",
                 "jar", "classifier", null)));
