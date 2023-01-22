@@ -17,12 +17,11 @@ package org.simplify4u.plugins.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public class ExceptionUtilsTest {
+class ExceptionUtilsTest {
 
-    @DataProvider
     public static Object[][] examplesMessages() {
         return new Object[][] {
                 {new Exception(), null},
@@ -33,8 +32,9 @@ public class ExceptionUtilsTest {
     }
 
 
-    @Test(dataProvider = "examplesMessages")
-    public void testGetMessage(Throwable trThrowable, String expectedMessage) {
+    @ParameterizedTest
+    @MethodSource("examplesMessages")
+    void testGetMessage(Throwable trThrowable, String expectedMessage) {
 
         assertThat(ExceptionUtils.getMessage(trThrowable)).isEqualTo(expectedMessage);
     }

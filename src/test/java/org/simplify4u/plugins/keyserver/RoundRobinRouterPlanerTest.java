@@ -29,15 +29,15 @@ import io.vavr.control.Try;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.conn.routing.HttpRoute;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class RoundRobinRouterPlanerTest {
+@ExtendWith(MockitoExtension.class)
+class RoundRobinRouterPlanerTest {
 
     private static final InetAddress[] EXPECTED_ADDRESSES = Try.of(() -> new InetAddress[]{
             InetAddress.getByName("127.0.0.1"),
@@ -53,13 +53,13 @@ public class RoundRobinRouterPlanerTest {
     @InjectMocks
     private RoundRobinRouterPlaner routerPlaner;
 
-    @BeforeMethod
+    @BeforeEach
     void setup() throws Throwable {
         when(resolver.apply(anyString())).thenReturn(EXPECTED_ADDRESSES);
     }
 
     @Test
-    public void shouldReturnTheSameAddressForSequentialCall() throws HttpException {
+    void shouldReturnTheSameAddressForSequentialCall() throws HttpException {
 
         HttpHost httpHost = new HttpHost(TEST_HOST);
 
@@ -74,7 +74,7 @@ public class RoundRobinRouterPlanerTest {
     }
 
     @Test
-    public void shouldReturnNextAddressAfterError() throws UnknownHostException, HttpException {
+    void shouldReturnNextAddressAfterError() throws UnknownHostException, HttpException {
 
         HttpHost httpHost = new HttpHost(TEST_HOST);
 

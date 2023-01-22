@@ -24,26 +24,26 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.apache.maven.artifact.Artifact;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.simplify4u.plugins.ValidationChecksum.Builder;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-public class ValidationChecksumTest {
+class ValidationChecksumTest {
 
     private File checksumdirectory = null;
 
-    @BeforeMethod
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp() throws IOException {
         this.checksumdirectory = Files.createTempDirectory("ValidationChecksumTest").toFile();
     }
 
-    @AfterMethod
-    public void tearDown() throws IOException {
+    @AfterEach
+    void tearDown() throws IOException {
         Files.walk(checksumdirectory.toPath())
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
@@ -51,25 +51,25 @@ public class ValidationChecksumTest {
     }
 
     @Test
-    public void testValidationChecksumBuilderNullFile() {
-        new ValidationChecksum.Builder().destination(null).artifacts(emptyList()).build();
+    void testValidationChecksumBuilderNullFile() {
+        assertDoesNotThrow(() -> new ValidationChecksum.Builder().destination(null).artifacts(emptyList()).build());
     }
 
     @Test
-    public void testValidationChecksumBuilderArtifactsNull() {
+    void testValidationChecksumBuilderArtifactsNull() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         assertThatCode(() -> builder.artifacts(null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testValidationChecksumBuilderArtifactsNotProvided() {
+    void testValidationChecksumBuilderArtifactsNotProvided() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         assertThatCode(builder::build).isExactlyInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    public void testValidationChecksumBuilderChecksumEmptyCollection() {
+    void testValidationChecksumBuilderChecksumEmptyCollection() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         final ValidationChecksum checksum = builder.artifacts(emptyList()).build();
         assertThat(checksum).isNotNull();
@@ -77,7 +77,7 @@ public class ValidationChecksumTest {
     }
 
     @Test
-    public void testValidationChecksumBuilderChecksumArtifactsNullFails() {
+    void testValidationChecksumBuilderChecksumArtifactsNullFails() {
 
         final Artifact a1 = TestArtifactBuilder.testArtifact()
                 .groupId("org.apache.maven.plugins")
@@ -104,7 +104,7 @@ public class ValidationChecksumTest {
     }
 
     @Test
-    public void testValidationChecksumBuilderChecksumArtifactsRepeatedly() {
+    void testValidationChecksumBuilderChecksumArtifactsRepeatedly() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         final Artifact a1 = TestArtifactBuilder.testArtifact()
                 .groupId("org.apache.maven.plugins").artifactId("maven-compiler-plugin")
@@ -125,7 +125,7 @@ public class ValidationChecksumTest {
     }
 
     @Test
-    public void testValidationChecksumBuilderChecksumArtifactsDeterministicOrder() {
+    void testValidationChecksumBuilderChecksumArtifactsDeterministicOrder() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         final Artifact a1 = TestArtifactBuilder.testArtifact()
                 .groupId("org.apache.maven.plugins").artifactId("maven-compiler-plugin")
@@ -146,7 +146,7 @@ public class ValidationChecksumTest {
     }
 
     @Test
-    public void testValidationChecksumBuilderChecksumArtifactsDisabled() {
+    void testValidationChecksumBuilderChecksumArtifactsDisabled() {
         final Builder builder = new ValidationChecksum.Builder().destination(checksumdirectory);
         final Artifact a1 = TestArtifactBuilder.testArtifact()
                 .groupId("org.apache.maven.plugins").artifactId("maven-compiler-plugin")

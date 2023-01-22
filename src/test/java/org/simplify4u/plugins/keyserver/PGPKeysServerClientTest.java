@@ -42,16 +42,17 @@ import org.apache.http.impl.client.ProxyAuthenticationStrategy;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Settings;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplify4u.plugins.pgp.KeyId;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class PGPKeysServerClientTest {
+@ExtendWith(MockitoExtension.class)
+class PGPKeysServerClientTest {
 
     @Mock
     Settings settings;
@@ -62,16 +63,16 @@ public class PGPKeysServerClientTest {
     @Mock
     HttpClientBuilder clientBuilder;
 
-    @DataProvider(name = "proxy")
-    public static Object[][] emptyProxy() {
-        return new Object[][]{
-                {makeMavenProxy("", "")},
-                {makeMavenProxy(null, null)},
-                {null}};
+    public static Proxy[] proxy() {
+        return new Proxy[] {
+                makeMavenProxy("", ""),
+                makeMavenProxy(null, null),
+                null};
     }
 
-    @Test(dataProvider = "proxy")
-    public void emptyProxyNotConfigureClient(Proxy proxy) throws URISyntaxException, IOException {
+    @ParameterizedTest
+    @MethodSource("proxy")
+    void emptyProxyNotConfigureClient(Proxy proxy) throws URISyntaxException, IOException {
         runProxyConfig(proxy);
 
         verify(clientBuilder).setDefaultRequestConfig(any());
@@ -79,7 +80,7 @@ public class PGPKeysServerClientTest {
     }
 
     @Test
-    public void mavenProxyShouldConfigureClient() {
+    void mavenProxyShouldConfigureClient() {
 
         runProxyConfig(makeMavenProxy("user", "userPass"));
 
@@ -116,7 +117,7 @@ public class PGPKeysServerClientTest {
     }
 
     @Test
-    public void offLineModeShouldThrowIOException() throws URISyntaxException {
+    void offLineModeShouldThrowIOException() throws URISyntaxException {
 
         URI uri = new URI("https://localhost/");
 
@@ -134,14 +135,14 @@ public class PGPKeysServerClientTest {
     }
 
     @Test
-    public void unsupportedProtocolShouldThrowIOException() throws IOException {
+    void unsupportedProtocolShouldThrowIOException() throws IOException {
         assertThatThrownBy(() -> PGPKeysServerClient.getClient("abc://loclahost", null))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Unsupported protocol: abc");
     }
 
     @Test
-    public void serverResponse404() throws URISyntaxException, IOException {
+    void serverResponse404() throws URISyntaxException, IOException {
 
         when(mavenSession.getSettings()).thenReturn(settings);
 
@@ -168,7 +169,7 @@ public class PGPKeysServerClientTest {
     }
 
     @Test
-    public void serverIOException() throws URISyntaxException, IOException {
+    void serverIOException() throws URISyntaxException, IOException {
 
         when(mavenSession.getSettings()).thenReturn(settings);
 

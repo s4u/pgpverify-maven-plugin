@@ -26,17 +26,17 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.slf4j.Logger;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
-public class AbstractPGPMojoTest {
+@ExtendWith(MockitoExtension.class)
+class AbstractPGPMojoTest {
 
     static class TestMojo extends AbstractPGPMojo {
 

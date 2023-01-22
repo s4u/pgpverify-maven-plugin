@@ -36,18 +36,19 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.repository.RepositorySystem;
 import org.bouncycastle.openpgp.PGPException;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.simplify4u.plugins.keyserver.PGPKeysCache;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureStatus;
 import org.simplify4u.plugins.pgp.SignatureUtils;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-@Listeners(MockitoTestNGListener.class)
+@ExtendWith(MockitoExtension.class)
 public class ShowMojoTest {
 
     @Mock
@@ -74,12 +75,12 @@ public class ShowMojoTest {
         assertThat(mojo.getMojoName()).isEqualTo(ShowMojo.MOJO_NAME);
     }
 
-    @DataProvider
-    public static Object[] invalidArtifactNames() {
-        return new Object[]{null, "test", "test:test", "test:test:1.0:type:class:class"};
+    public static String[] invalidArtifactNames() {
+        return new String[]{null, "test", "test:test", "test:test:1.0:type:class:class"};
     }
 
-    @Test(dataProvider = "invalidArtifactNames")
+    @ParameterizedTest
+    @MethodSource("invalidArtifactNames")
     void shouldThrowExceptionForInvalidArtifact(String artifact) {
 
         //given

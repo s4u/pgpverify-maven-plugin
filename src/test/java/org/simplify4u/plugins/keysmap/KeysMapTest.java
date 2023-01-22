@@ -31,18 +31,18 @@ import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
 
 import org.codehaus.plexus.resource.ResourceManager;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Slawomir Jaranowski.
  */
-@Listeners(MockitoTestNGListener.class)
-public class KeysMapTest {
+@ExtendWith(MockitoExtension.class)
+class KeysMapTest {
 
     @Mock
     private ResourceManager resourceManager;
@@ -57,12 +57,12 @@ public class KeysMapTest {
     private KeysMap keysMap;
 
     @Test
-    public void isComponentSet() {
+    void isComponentSet() {
         assertThat(keysMap).isNotNull();
     }
 
     @Test
-    public void nullLocationTest() throws Exception {
+    void nullLocationTest() throws Exception {
 
         assertThatThrownBy(() -> keysMap.load(null))
                 .isExactlyInstanceOf(NullPointerException.class);
@@ -72,7 +72,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void emptyLocationTest() throws Exception {
+    void emptyLocationTest() throws Exception {
         keysMap.load(aKeysMapLocationConfig(""));
 
         verifyNoInteractions(resourceManager);
@@ -80,7 +80,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void validKeyFromMap() throws Exception {
+    void validKeyFromMap() throws Exception {
 
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
@@ -145,7 +145,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void invalidKeyFromMap() throws Exception {
+    void invalidKeyFromMap() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -161,7 +161,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void specialValueNoSig() throws Exception {
+    void specialValueNoSig() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -190,7 +190,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void specialValueBadSig() throws Exception {
+    void specialValueBadSig() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -204,7 +204,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void specialValueNoKey() throws Exception {
+    void specialValueNoKey() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -218,7 +218,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void shortKeyShouldThrownException() throws Exception {
+    void shortKeyShouldThrownException() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -229,7 +229,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void properLogShouldBeGeneratedForProcessingItems() throws Exception {
+    void properLogShouldBeGeneratedForProcessingItems() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -249,7 +249,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void onlyIncludedItemsFromMapByValue() throws Exception {
+    void onlyIncludedItemsFromMapByValue() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -267,7 +267,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void onlyIncludedItemsFromMapByPattern() throws Exception {
+    void onlyIncludedItemsFromMapByPattern() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 
@@ -289,7 +289,7 @@ public class KeysMapTest {
     }
 
     @Test
-    public void excludeItemsFromMap() throws Exception {
+    void excludeItemsFromMap() throws Exception {
         doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
                 .when(resourceManager).getResourceAsInputStream(anyString());
 

@@ -24,18 +24,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.bouncycastle.openpgp.PGPException;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.simplify4u.plugins.pgp.KeyFingerprint;
 import org.simplify4u.plugins.pgp.KeyInfo;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Slawomir Jaranowski.
  */
-public class KeyItemsTest {
+class KeyItemsTest {
 
-    @DataProvider(name = "keys")
-    public Object[][] keys() {
+    public static Object[][] keys() {
         return new Object[][]{
                 {"*", "0x123456789abcdef0", true},
                 {"", "0x123456789abcdef0", false},
@@ -55,8 +55,9 @@ public class KeyItemsTest {
         };
     }
 
-    @Test(dataProvider = "keys")
-    public void testIsKeyMatch(String strKeys, String key, boolean match) throws Exception {
+    @ParameterizedTest
+    @MethodSource("keys")
+    void testIsKeyMatch(String strKeys, String key, boolean match) throws Exception {
 
         KeyItems keyItems = new KeyItems().addKeys(strKeys, null);
         assertThat(keyItems.isKeyMatch(aKeyInfo(key))).as("isKeyMatch").isEqualTo(match);
@@ -67,7 +68,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void nullKeyShouldThrowsException() {
+    void nullKeyShouldThrowsException() {
         // given
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems();
@@ -79,7 +80,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void invalidKeyShouldThrowsException() {
+    void invalidKeyShouldThrowsException() {
         // given
         KeyItems keyItems = new KeyItems();
 
@@ -91,21 +92,21 @@ public class KeyItemsTest {
 
 
     @Test
-    public void testIsNoSignature() {
+    void testIsNoSignature() {
 
         KeyItems keyItems = new KeyItems().addKeys("", null);
         assertThat(keyItems.isNoSignature()).isTrue();
     }
 
     @Test
-    public void testIsNoSignatureIncorrect() {
+    void testIsNoSignatureIncorrect() {
 
         KeyItems keyItems = new KeyItems().addKeys("0x123456789abcdef0", null);
         assertThat(keyItems.isNoSignature()).isFalse();
     }
 
     @Test
-    public void testSubKeyMach() throws IOException, PGPException {
+    void testSubKeyMach() throws IOException, PGPException {
 
         KeyInfo keyInfo = KeyInfo.builder()
                 .fingerprint(new KeyFingerprint("0x1234567890123456789012345678901234567890"))
@@ -119,7 +120,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void oddHexStringShouldThrowException() {
+    void oddHexStringShouldThrowException() {
         // given
         KeyItems keyItems = new KeyItems();
 
@@ -130,7 +131,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void invalidHexStringShouldThrowException() {
+    void invalidHexStringShouldThrowException() {
         // given
         KeyItems keyItems = new KeyItems();
 
@@ -141,7 +142,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void onlyIncludedValuesShouldBePreserved() {
+    void onlyIncludedValuesShouldBePreserved() {
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
 
@@ -159,7 +160,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void includedAnyValuesShouldDoNothing() {
+    void includedAnyValuesShouldDoNothing() {
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
 
@@ -177,7 +178,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void emptyIncludedValuesRemoveAllItems() {
+    void emptyIncludedValuesRemoveAllItems() {
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
 
@@ -189,7 +190,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void excludedValuesShouldBeRemoved() {
+    void excludedValuesShouldBeRemoved() {
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
 
@@ -207,7 +208,7 @@ public class KeyItemsTest {
     }
 
     @Test
-    public void emptyExcludedValuesDoNothing() {
+    void emptyExcludedValuesDoNothing() {
         KeysMapContext keysMapContext = new KeysMapContext("test.map");
         KeyItems keyItems = new KeyItems().addKeys("noSig, badSig, noKey, 0x123456789abcdef0", keysMapContext);
 

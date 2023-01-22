@@ -18,20 +18,19 @@ package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class ScopeSkipperTest {
+class ScopeSkipperTest {
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void testConstructNullScopeFilter() {
-        new ScopeSkipper(null);
+    @Test
+    void testConstructNullScopeFilter() {
+        assertThrows(NullPointerException.class, () -> new ScopeSkipper(null));
     }
 
     @Test
-    public void testConstructTestScopeFilter() {
+    void testConstructTestScopeFilter() {
         final ScopeSkipper filter = new ScopeSkipper(Artifact.SCOPE_TEST);
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "system", "jar", "classifier", null)));
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "provided", "jar", "classifier", null)));
@@ -41,7 +40,7 @@ public class ScopeSkipperTest {
     }
 
     @Test
-    public void testConstructCompileScopeFilter() {
+    void testConstructCompileScopeFilter() {
         final ScopeSkipper filter = new ScopeSkipper(Artifact.SCOPE_COMPILE);
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "system", "jar", "classifier", null)));
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "provided", "jar", "classifier", null)));
@@ -51,7 +50,7 @@ public class ScopeSkipperTest {
     }
 
     @Test
-    public void testConstructRuntimeScopeFilter() {
+    void testConstructRuntimeScopeFilter() {
         final ScopeSkipper filter = new ScopeSkipper(Artifact.SCOPE_RUNTIME);
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "system", "jar", "classifier", null)));
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "provided", "jar", "classifier", null)));
@@ -61,7 +60,7 @@ public class ScopeSkipperTest {
     }
 
     @Test
-    public void testConstructCompileRuntimeScopeFilter() {
+    void testConstructCompileRuntimeScopeFilter() {
         final ScopeSkipper filter = new ScopeSkipper(Artifact.SCOPE_COMPILE_PLUS_RUNTIME);
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "system", "jar", "classifier", null)));
         assertFalse(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "provided", "jar", "classifier", null)));
@@ -71,7 +70,7 @@ public class ScopeSkipperTest {
     }
 
     @Test
-    public void testConstructInvalidScopeFilter() {
+    void testConstructInvalidScopeFilter() {
         final ScopeSkipper filter = new ScopeSkipper("invalid-scope");
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "system", "jar", "classifier", null)));
         assertTrue(filter.shouldSkipArtifact(new DefaultArtifact("a", "b", "1.0", "provided", "jar", "classifier", null)));
