@@ -86,7 +86,7 @@
         <maven.version>3.5.0</maven.version>
         <mockito.version>4.11.0</mockito.version>
         <resilience4j.version>1.7.1</resilience4j.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.7</slf4j.version>
 
         <project.build.outputTimestamp>2023-01-21T10:56:30Z</project.build.outputTimestamp>
 
