@@ -74,7 +74,7 @@ keysMap with PGP fingerprint from external artifact
               <version>${project.version}</version>
               <configuration>
                   <keysMapLocation>/pgp-keys-map.list</keysMapLocation>                
-                  <verifyPlugins>true</<verifyPlugins>
+                  <verifyPlugins>true</verifyPlugins>
                   <verifyPluginDependencies>true</verifyPluginDependencies>
               </configuration>
               <dependencies>
