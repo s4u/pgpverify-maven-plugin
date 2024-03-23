@@ -46,6 +46,7 @@
 
             <snapshots>
                 <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
             </snapshots>
 
             <releases>
