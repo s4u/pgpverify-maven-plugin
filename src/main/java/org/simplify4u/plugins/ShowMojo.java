@@ -15,13 +15,13 @@
  */
 package org.simplify4u.plugins;
 
+import javax.inject.Inject;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Inject;
 
-import io.vavr.control.Try;
 import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;
-import org.bouncycastle.openpgp.PGPUtil;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
@@ -130,9 +129,8 @@ public class ShowMojo extends AbstractPGPMojo {
             messageBuilder.a("PGP signature:").newline();
             messageBuilder.a("\tversion:     ").strong(signature.getVersion()).newline();
             messageBuilder.a("\talgorithm:   ")
-                    .strong(Try.of(() ->
-                            PGPUtil.getSignatureName(signature.getKeyAlgorithm(), signature.getHashAlgorithm())).get())
-                    .newline();
+                    .strong(signatureUtils.digestName(signature.getHashAlgorithm()) + " with "
+                            + signatureUtils.keyAlgorithmName(signature.getKeyAlgorithm())).newline();
             messageBuilder.a("\tkeyId:       ").strong(signature.getKeyId()).newline();
             messageBuilder.a("\tcreate date: ").strong(signature.getDate()).newline();
             messageBuilder.a("\tstatus:      ");

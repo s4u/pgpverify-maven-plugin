@@ -103,7 +103,7 @@ public class SignatureUtilsTest {
     }
 
     public static Object[][] providerSignatureHashAlgorithms() {
-        return new Object[][]{
+        return new Object[][] {
                 {HashAlgorithmTags.MD5, false},
                 {HashAlgorithmTags.SHA1, true},
                 {HashAlgorithmTags.RIPEMD160, true},
@@ -303,7 +303,6 @@ public class SignatureUtilsTest {
                 .build());
     }
 
-
     public static Object[] keyAlgorithms() {
         return Arrays.stream(PublicKeyAlgorithmTags.class.getDeclaredFields())
                 .map(filed -> Try.of(() -> filed.getInt(null)).get())
@@ -317,9 +316,29 @@ public class SignatureUtilsTest {
     }
 
     @Test
-    void unKnownKeyAlgorithmThrowExceptio() {
+    void unKnownKeyAlgorithmThrowException() {
         assertThatCode(() -> signatureUtils.keyAlgorithmName(9999998))
                 .isExactlyInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Unknown key algorithm value encountered: 9999998");
     }
+
+    public static Object[] digestAlgorithms() {
+        return Arrays.stream(HashAlgorithmTags.class.getDeclaredFields())
+                .map(filed -> Try.of(() -> filed.getInt(null)).get())
+                .toArray();
+    }
+
+    @ParameterizedTest
+    @MethodSource("digestAlgorithms")
+    void digestNameShouldBeResolved(int keyAlgorithm) {
+        assertThat(signatureUtils.digestName(keyAlgorithm)).isNotBlank();
+    }
+
+    @Test
+    void unKnownDigestNameThrowException() {
+        assertThatCode(() -> signatureUtils.digestName(9999998))
+                .isExactlyInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Unknown hash algorithm tag in digestName: 9999998");
+    }
+
 }

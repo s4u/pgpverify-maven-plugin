@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -69,14 +70,13 @@ public class ShowMojoTest {
     @InjectMocks
     private ShowMojo mojo;
 
-
     @Test
     void shouldReturnMojoName() {
         assertThat(mojo.getMojoName()).isEqualTo(ShowMojo.MOJO_NAME);
     }
 
     public static String[] invalidArtifactNames() {
-        return new String[]{null, "test", "test:test", "test:test:1.0:type:class:class"};
+        return new String[] {null, "test", "test:test", "test:test:1.0:type:class:class"};
     }
 
     @ParameterizedTest
@@ -103,9 +103,10 @@ public class ShowMojoTest {
         //given
         mojo.setArtifact("groupId:artifactId:1.0.0:war");
 
-        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull())).thenReturn(artifact);
-        when(artifactResolver.resolveSignatures(anyCollection())).thenReturn(Collections.singletonMap(artifact, artifactAsc));
-
+        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(),
+                isNull())).thenReturn(artifact);
+        when(artifactResolver.resolveSignatures(anyCollection())).thenReturn(
+                Collections.singletonMap(artifact, artifactAsc));
 
         SignatureCheckResult signatureCheckResult = aSignatureCheckResultBuilder()
                 .status(SignatureStatus.SIGNATURE_VALID)
@@ -122,7 +123,8 @@ public class ShowMojoTest {
         verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(signatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
-        verify(signatureUtils).keyAlgorithmName(anyInt());
+        verify(signatureUtils, times(2)).keyAlgorithmName(anyInt());
+        verify(signatureUtils).digestName(anyInt());
 
         verify(pgpKeysCache).init(any(), any());
 
@@ -138,7 +140,8 @@ public class ShowMojoTest {
         mojo.setArtifact("groupId:artifactId:1.0.0:war");
         mojo.setShowPom(true);
 
-        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
+        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(),
+                isNull()))
                 .thenReturn(artifact);
 
         // when
@@ -149,7 +152,6 @@ public class ShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolvePom(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
-
 
         verify(pgpKeysCache).init(any(), any());
 
@@ -165,7 +167,8 @@ public class ShowMojoTest {
         //given
         mojo.setArtifact("groupId:artifactId:1.0.0:war");
 
-        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
+        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(),
+                isNull()))
                 .thenReturn(artifact);
 
         when(artifactResolver.resolveSignatures(anyCollection()))
@@ -187,7 +190,8 @@ public class ShowMojoTest {
         verify(artifactResolver).resolveArtifact(artifact);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
-        verify(signatureUtils).keyAlgorithmName(anyInt());
+        verify(signatureUtils, times(2)).keyAlgorithmName(anyInt());
+        verify(signatureUtils).digestName(anyInt());
 
         verify(pgpKeysCache).init(any(), any());
 
@@ -203,7 +207,8 @@ public class ShowMojoTest {
         //given
         mojo.setArtifact("groupId:artifactId:1.0.0:war");
 
-        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(), isNull()))
+        when(repositorySystem.createArtifactWithClassifier(anyString(), anyString(), anyString(), anyString(),
+                isNull()))
                 .thenReturn(artifact);
 
         when(artifactResolver.resolveSignatures(anyCollection()))

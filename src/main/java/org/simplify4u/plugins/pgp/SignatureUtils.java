@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.Optional;
+
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -60,7 +61,6 @@ public class SignatureUtils {
      * Check PGP signature for bad algorithms.
      *
      * @param hashAlgorithm PGP signature hashAlgorithm
-     *
      * @return Returns null if no bad algorithms used, or algorithm name if used.
      */
     public String checkWeakHashAlgorithm(int hashAlgorithm) {
@@ -97,9 +97,7 @@ public class SignatureUtils {
      * Load PGPSignature from input stream.
      *
      * @param input the input stream having PGPSignature content
-     *
      * @return Returns the (first) read PGP signature.
-     *
      * @throws SignatureException In case of failure loading signature.
      */
     public PGPSignature loadSignature(InputStream input) throws SignatureException {
@@ -140,11 +138,9 @@ public class SignatureUtils {
      * Load PGPSignature from file.
      *
      * @param file the file having PGPSignature content
-     *
      * @return Returns the (first) read PGP signature.
-     *
      * @throws SignatureException In case of failure loading signature.
-     * @throws IOException           In case of IO failures.
+     * @throws IOException        In case of IO failures.
      */
     public PGPSignature loadSignature(File file) throws IOException, SignatureException {
         try (InputStream in = new FileInputStream(file)) {
@@ -157,7 +153,6 @@ public class SignatureUtils {
      *
      * @param signature the PGP signature instance. The instance is expected to be initialized.
      * @param file      the file to read
-     *
      * @throws IOException In case of failure to open the file or failure while reading its content.
      */
     public void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
@@ -174,9 +169,7 @@ public class SignatureUtils {
      * Retrieve Key Id from signature ISSUER_FINGERPRINT subpackage or standard keyId.
      *
      * @param signature the PGP signature instance
-     *
      * @return Returns the keyId from signature
-     *
      * @throws SignatureException In case of problem with signature data
      */
     public KeyId retrieveKeyId(PGPSignature signature) throws SignatureException {
@@ -200,7 +193,6 @@ public class SignatureUtils {
         Optional<Long> issuerKeyId = unHashedSubPackets
                 .map(PGPSignatureSubpacketVector::getIssuerKeyID)
                 .filter(id -> id != 0L);
-
 
         if (!issuerKeyId.isPresent()) {
             issuerKeyId = hashedSubPackets
@@ -250,11 +242,10 @@ public class SignatureUtils {
      * @param artifactAsc The artifact contains signature
      * @param onlyResolve Only resolve signature and keys
      * @param cache       PGP cache for access public key
-     *
      * @return check verification result
      */
     private SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc,
-            boolean onlyResolve, PGPKeysCache cache) {
+                                                boolean onlyResolve, PGPKeysCache cache) {
 
         SignatureCheckResult.SignatureCheckResultBuilder signatureCheckResultBuilder = SignatureCheckResult.builder();
 
@@ -332,10 +323,10 @@ public class SignatureUtils {
         }
 
         Boolean verifyStatus = Try.of(() -> {
-            signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-            readFileContentInto(signature, artifact.getFile());
-            return signature.verify();
-        }).onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
+                    signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
+                    readFileContentInto(signature, artifact.getFile());
+                    return signature.verify();
+                }).onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
                 .getOrNull();
 
         if (verifyStatus == null) {
@@ -355,7 +346,6 @@ public class SignatureUtils {
      * @param artifact    The artifact to check signature
      * @param artifactAsc The artifact contains signature
      * @param cache       PGP cache for access public key
-     *
      * @return check verification result
      */
     public SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
@@ -369,7 +359,6 @@ public class SignatureUtils {
      * @param artifact    The artifact to check signature
      * @param artifactAsc The artifact contains signature
      * @param cache       PGP cache for access public key
-     *
      * @return check verification result
      */
     public SignatureCheckResult resolveSignature(Artifact artifact, Artifact artifactAsc, PGPKeysCache cache) {
@@ -377,14 +366,12 @@ public class SignatureUtils {
     }
 
     /**
-         * Map Public-Key algorithms id to name
-         *
-         * @param keyAlgorithm key algorithm id
-         *
-         * @return key algorithm name
-         *
-         * @throws UnsupportedOperationException if algorithm is is not known
-         */
+     * Map Public-Key algorithms id to name
+     *
+     * @param keyAlgorithm key algorithm id
+     * @return key algorithm name
+     * @throws UnsupportedOperationException if algorithm is is not known
+     */
     public String keyAlgorithmName(int keyAlgorithm) {
         switch (keyAlgorithm) {
             case PublicKeyAlgorithmTags.RSA_GENERAL:
@@ -429,6 +416,50 @@ public class SignatureUtils {
                 return "Experimental - " + keyAlgorithm;
             default:
                 throw new UnsupportedOperationException("Unknown key algorithm value encountered: " + keyAlgorithm);
+        }
+    }
+
+    public String digestName(int hashAlgorithm) {
+        switch (hashAlgorithm) {
+            case HashAlgorithmTags.SHA1:
+                return "SHA1";
+            case HashAlgorithmTags.DOUBLE_SHA:
+                return "double-width SHA";
+            case HashAlgorithmTags.MD2:
+                return "MD2";
+            case HashAlgorithmTags.MD4:
+                return "MD4";
+            case HashAlgorithmTags.MD5:
+                return "MD5";
+            case HashAlgorithmTags.HAVAL_5_160:
+                return "HAVAL (5 pass, 160-bit)";
+            case HashAlgorithmTags.RIPEMD160:
+                return "RIPEMD160";
+            case HashAlgorithmTags.SHA256:
+                return "SHA256";
+            case HashAlgorithmTags.SHA384:
+                return "SHA384";
+            case HashAlgorithmTags.SHA512:
+                return "SHA512";
+            case HashAlgorithmTags.SHA224:
+                return "SHA224";
+            case HashAlgorithmTags.SHA3_256:
+            case HashAlgorithmTags.SHA3_256_OLD:
+                return "SHA256";
+            case HashAlgorithmTags.SHA3_384:
+                return "SHA384";
+            case HashAlgorithmTags.SHA3_512:
+            case HashAlgorithmTags.SHA3_512_OLD:
+                return "SHA512";
+            case HashAlgorithmTags.SHA3_224:
+                return "SHA224";
+            case HashAlgorithmTags.TIGER_192:
+                return "TIGER";
+            case HashAlgorithmTags.SM3:
+                return "SM3";
+            default:
+                throw new UnsupportedOperationException(
+                        "Unknown hash algorithm tag in digestName: " + hashAlgorithm);
         }
     }
 }
