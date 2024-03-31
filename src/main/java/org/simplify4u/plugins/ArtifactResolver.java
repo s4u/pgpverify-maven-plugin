@@ -17,26 +17,24 @@
 
 package org.simplify4u.plugins;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import static java.util.Collections.singleton;
-import static java.util.Objects.requireNonNull;
-import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
 import io.vavr.control.Try;
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
@@ -46,12 +44,24 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.RequestTrace;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
+import org.eclipse.aether.resolution.ArtifactResult;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.utils.MavenCompilerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
+import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
 /**
  * Artifact resolver for project dependencies, build plug-ins, and build plug-in dependencies.
@@ -62,10 +72,14 @@ public class ArtifactResolver {
     private static final Logger LOG = LoggerFactory.getLogger(ArtifactResolver.class);
 
     private static final VersionRange SUREFIRE_PLUGIN_VERSION_RANGE = Try.of(
-            () -> VersionRange.createFromVersionSpec("(2.999999999,4)"))
+                    () -> VersionRange.createFromVersionSpec("(2.999999999,4)"))
             .getOrElseThrow(e -> new IllegalStateException("BUG: Failed to create version range.", e));
 
     private final RepositorySystem repositorySystem;
+
+    private final org.eclipse.aether.RepositorySystem aetherRepositorySystem;
+
+    private final RepositorySystemSession repositorySession;
 
     private final ArtifactRepository localRepository;
 
@@ -76,48 +90,50 @@ public class ArtifactResolver {
      * <p>
      * pgp signature *.asc is signature so there is'n signature for signature
      */
-    private final List<ArtifactRepository> remoteRepositoriesIgnoreCheckSum;
+    private final List<RemoteRepository> remoteRepositoriesIgnoreCheckSum;
 
     @Inject
-    ArtifactResolver(RepositorySystem repositorySystem, MavenSession session) {
+    ArtifactResolver(RepositorySystem repositorySystem, MavenSession session,
+                     org.eclipse.aether.RepositorySystem aetherRepositorySystem) {
         this.repositorySystem = requireNonNull(repositorySystem);
         this.localRepository = requireNonNull(session.getLocalRepository());
         this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteArtifactRepositories());
-        this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteRepositories);
+        this.remoteRepositoriesIgnoreCheckSum =
+                repositoriesIgnoreCheckSum(session.getCurrentProject().getRemoteProjectRepositories());
+        this.aetherRepositorySystem = aetherRepositorySystem;
+        this.repositorySession = session.getRepositorySession();
     }
 
     /**
      * Wrap remote repository with ignore check sum policy.
      *
      * @param repositories list to wrap
-     *
      * @return wrapped repository list
      */
-    private List<ArtifactRepository> repositoriesIgnoreCheckSum(List<ArtifactRepository> repositories) {
+    private static List<RemoteRepository> repositoriesIgnoreCheckSum(List<RemoteRepository> repositories) {
 
         return Optional.ofNullable(repositories)
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(this::repositoryIgnoreCheckSum)
+                .map(ArtifactResolver::repositoryIgnoreCheckSum)
                 .collect(Collectors.toList());
     }
 
-    private ArtifactRepository repositoryIgnoreCheckSum(ArtifactRepository repository) {
+    private static RemoteRepository repositoryIgnoreCheckSum(RemoteRepository repository) {
 
-        ArtifactRepository newRepository = repositorySystem.createArtifactRepository(
-                repository.getId(), repository.getUrl(), repository.getLayout(),
-                policyIgnoreCheckSum(repository.getSnapshots()),
-                policyIgnoreCheckSum(repository.getReleases()));
+        RepositoryPolicy snapshotPolicy = repository.getPolicy(true);
+        RepositoryPolicy releasePolicy = repository.getPolicy(false);
 
-        newRepository.setAuthentication(repository.getAuthentication());
-        newRepository.setProxy(repository.getProxy());
-        newRepository.setMirroredRepositories(repositoriesIgnoreCheckSum(repository.getMirroredRepositories()));
+        RemoteRepository.Builder builder = new RemoteRepository.Builder(repository);
+        builder.setSnapshotPolicy(policyIgnoreCheckSum(snapshotPolicy));
+        builder.setReleasePolicy(policyIgnoreCheckSum(releasePolicy));
 
-        return newRepository;
+        return builder.build();
     }
 
-    private static ArtifactRepositoryPolicy policyIgnoreCheckSum(ArtifactRepositoryPolicy policy) {
-        return new ArtifactRepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(), "ignore");
+    private static RepositoryPolicy policyIgnoreCheckSum(RepositoryPolicy policy) {
+        return new RepositoryPolicy(policy.isEnabled(), policy.getUpdatePolicy(),
+                RepositoryPolicy.CHECKSUM_POLICY_IGNORE);
     }
 
     /**
@@ -125,10 +141,9 @@ public class ArtifactResolver {
      *
      * @param project the maven project instance
      * @param config  configuration for the artifact resolver
-     *
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    @SuppressWarnings({"deprecation", "java:S1874"})
+    @SuppressWarnings( {"deprecation", "java:S1874"})
     Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(resolveArtifacts(project.getArtifacts(),
                 config.dependencyFilter, null, config.verifyPomFiles, false));
@@ -231,26 +246,43 @@ public class ArtifactResolver {
      * Retrieves the PGP signature file that corresponds to the given Maven artifact.
      *
      * @param artifacts The artifacts for which a signatures are desired.
-     *
      * @return Map artifact to signature
      */
     Map<Artifact, Artifact> resolveSignatures(Collection<Artifact> artifacts) {
-        return artifacts.stream().collect(Collectors.toMap(Function.identity(), this::resolveSignature));
-    }
 
-    private Artifact resolveSignature(Artifact artifact) {
-        final Artifact aAsc = repositorySystem.createArtifactWithClassifier(
-                artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(),
-                artifact.getType(), artifact.getClassifier());
-        aAsc.setArtifactHandler(new AscArtifactHandler(aAsc));
+        List<ArtifactRequest> requestList = new ArrayList<>();
+        artifacts.forEach(a -> {
+            String version = a.getVersion();
+            if (version == null && a.getVersionRange() != null) {
+                version = a.getVersionRange().toString();
+            }
+            DefaultArtifact artifact = new DefaultArtifact(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
+                    a.getArtifactHandler().getExtension() + ".asc", version);
 
-        final ArtifactResolutionResult ascResult = request(aAsc, remoteRepositoriesIgnoreCheckSum);
-        if (!ascResult.isSuccess()) {
-            ascResult.getExceptions().forEach(
-                    e -> LOG.debug("Failed to resolve asc {}: {}", aAsc.getId(), e.getMessage()));
-        }
+            ArtifactRequest request = new ArtifactRequest(artifact, remoteRepositoriesIgnoreCheckSum, null);
+            request.setTrace(new RequestTrace(a));
+            requestList.add(request);
+        });
 
-        return aAsc;
+        Map<Artifact, Artifact> result = new HashMap<>();
+
+        List<ArtifactResult> artifactResults =
+                Try.of(() -> aetherRepositorySystem.resolveArtifacts(repositorySession, requestList))
+                        .recover(ArtifactResolutionException.class, ArtifactResolutionException::getResults)
+                        .get();
+
+        artifactResults.forEach(aResult -> {
+            Artifact ascArtifact = RepositoryUtils.toArtifact(aResult.getArtifact());
+            Artifact artifact = (Artifact) aResult.getRequest().getTrace().getData();
+            if (!aResult.isResolved()) {
+                aResult.getExceptions().forEach(
+                        e -> LOG.debug("Failed to resolve asc {}: {}", aResult.getRequest().getArtifact(),
+                                e.getMessage()));
+            }
+            result.put(artifact, ascArtifact);
+        });
+
+        return result;
     }
 
     /**
@@ -264,7 +296,6 @@ public class ArtifactResolver {
      *                           resolved.
      * @param transitive         Boolean indicating whether or not to resolve all dependencies in the transitive closure
      *                           of provided artifact.
-     *
      * @return Returns set of resolved artifacts.
      */
     private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter artifactFilter,
@@ -372,10 +403,15 @@ public class ArtifactResolver {
     public static final class Configuration {
 
         final SkipFilter dependencyFilter;
+
         final SkipFilter pluginFilter;
+
         final boolean verifyPomFiles;
+
         final boolean verifyPlugins;
+
         final boolean verifyPluginDependencies;
+
         final boolean verifyAtypical;
 
         /**
@@ -389,7 +425,7 @@ public class ArtifactResolver {
          * @param verifyAtypical           verify dependencies in a-typical locations, such as maven-compiler-plugin's
          */
         public Configuration(SkipFilter dependencyFilter, SkipFilter pluginFilter, boolean verifyPomFiles,
-                boolean verifyPlugins, boolean verifyPluginDependencies, boolean verifyAtypical) {
+                             boolean verifyPlugins, boolean verifyPluginDependencies, boolean verifyAtypical) {
             this.dependencyFilter = requireNonNull(dependencyFilter);
             this.pluginFilter = requireNonNull(pluginFilter);
             this.verifyPomFiles = verifyPomFiles;
