@@ -18,8 +18,10 @@
 package org.simplify4u.plugins;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,8 +31,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
@@ -55,13 +55,11 @@ import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class ArtifactResolverTest {
@@ -131,17 +129,23 @@ class ArtifactResolverTest {
     }
 
     @Test
-    void testResolveProjectArtifactsWithoutPoms() throws MojoExecutionException {
+    void testResolveProjectArtifactsWithoutPoms() throws Exception {
 
         // given
-        when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
-            artifact.setResolvedVersion(artifact.getVersion());
-            artifact.setResolved(true);
-            return new ArtifactResolutionResult();
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", new DefaultArtifactHandler("jar"));
+
+        when(aetherRepositorySystem.resolveArtifacts(any(), any())).thenAnswer((Answer<List<ArtifactResult>>) invocation -> {
+            Collection<ArtifactRequest> artifactsRequests = invocation.getArgument(1);
+            assertThat(artifactsRequests).hasSize(1);
+            ArtifactRequest artifactRequest = artifactsRequests.iterator().next();
+            ArtifactResult artifactResult = new ArtifactResult(artifactRequest);
+            org.eclipse.aether.artifact.Artifact resolvedArtifact = artifactRequest.getArtifact();
+            resolvedArtifact = resolvedArtifact.setFile(new File("."));
+            artifactResult.setArtifact(resolvedArtifact);
+            return Collections.singletonList(artifactResult);
         });
 
-        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
+
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         Configuration config = new Configuration(new CompositeSkipper(emptyList()),
@@ -157,19 +161,33 @@ class ArtifactResolverTest {
     }
 
     @Test
-    void testResolveProjectArtifactsWithPoms() throws MojoExecutionException {
+    void testResolveProjectArtifactsWithPoms() throws Exception {
 
         // given
-        when(repositorySystem.resolve(isA(ArtifactResolutionRequest.class))).thenAnswer((Answer<ArtifactResolutionResult>) invocation -> {
-            Artifact artifact = invocation.<ArtifactResolutionRequest>getArgument(0).getArtifact();
-            artifact.setResolved(true);
-            return new ArtifactResolutionResult();
+        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", new DefaultArtifactHandler("jar"));
+        when(aetherRepositorySystem.resolveArtifacts(any(), any())).thenAnswer((Answer<List<ArtifactResult>>) invocation -> {
+            Collection<ArtifactRequest> artifactsRequests = invocation.getArgument(1);
+            assertThat(artifactsRequests).hasSize(2);
+
+            Iterator<ArtifactRequest> iterator = artifactsRequests.iterator();
+            List<ArtifactResult> results = new ArrayList<>();
+            ArtifactRequest artifactRequest = iterator.next();
+            ArtifactResult artifactResult = new ArtifactResult(artifactRequest);
+            org.eclipse.aether.artifact.Artifact resolvedArtifact = artifactRequest.getArtifact();
+            resolvedArtifact = resolvedArtifact.setFile(new File("."));
+            artifactResult.setArtifact(resolvedArtifact);
+            results.add(artifactResult);
+
+            artifactRequest = iterator.next();
+            artifactResult = new ArtifactResult(artifactRequest);
+            resolvedArtifact = artifactRequest.getArtifact();
+            resolvedArtifact = resolvedArtifact.setFile(new File("."));
+            artifactResult.setArtifact(resolvedArtifact);
+            results.add(artifactResult);
+
+            return results;
         });
 
-        when(repositorySystem.createProjectArtifact("g", "a", "1.0"))
-                .thenReturn(new DefaultArtifact("g", "a", "1.0", "compile", "pom", "classifier", null));
-
-        DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", "classifier", null);
         when(project.getArtifacts()).thenReturn(singleton(artifact));
 
         Configuration config = new Configuration(new CompositeSkipper(emptyList()),
@@ -179,8 +197,6 @@ class ArtifactResolverTest {
         Set<Artifact> resolved = resolver.resolveProjectArtifacts(project, config);
 
         // then
-        verify(repositorySystem, times(1))
-                .createProjectArtifact("g", "a", "1.0");
 
         assertThat(resolved).hasSize(2)
                 .allMatch(Artifact::isResolved)
@@ -189,7 +205,7 @@ class ArtifactResolverTest {
     }
 
     @Test
-    void testResolveSignaturesEmpty() throws MojoExecutionException {
+    void testResolveSignaturesEmpty() {
 
         // when
         Map<Artifact, Artifact> resolved = resolver.resolveSignatures(emptyList());
@@ -205,7 +221,7 @@ class ArtifactResolverTest {
         DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
 
         when(aetherRepositorySystem.resolveArtifacts(any(), any())).thenAnswer((Answer<List<ArtifactResult>>) invocation -> {
-            Collection<ArtifactRequest> artifactsRequests = invocation.<Collection<ArtifactRequest>>getArgument(1);
+            Collection<ArtifactRequest> artifactsRequests = invocation.getArgument(1);
             assertThat(artifactsRequests).hasSize(1);
             ArtifactRequest artifactRequest = artifactsRequests.iterator().next();
             ArtifactResult artifactResult = new ArtifactResult(artifactRequest);
@@ -240,7 +256,7 @@ class ArtifactResolverTest {
         DefaultArtifact artifact = new DefaultArtifact("g", "a", "1.0", "compile", "jar", null, new DefaultArtifactHandler());
 
         when(aetherRepositorySystem.resolveArtifacts(any(), any())).thenAnswer((Answer<List<ArtifactResult>>) invocation -> {
-            Collection<ArtifactRequest> artifactsRequests = invocation.<Collection<ArtifactRequest>>getArgument(1);
+            Collection<ArtifactRequest> artifactsRequests = invocation.getArgument(1);
             assertThat(artifactsRequests).hasSize(1);
             ArtifactRequest artifactRequest = artifactsRequests.iterator().next();
             ArtifactResult artifactResult = new ArtifactResult(artifactRequest);
