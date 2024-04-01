@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.util.artifact.SubArtifact;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
 import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
@@ -85,6 +87,8 @@ public class ArtifactResolver {
 
     private final List<ArtifactRepository> remoteRepositories;
 
+    private final List<RemoteRepository> aeRemoteRepositories;
+
     /**
      * Copy of remote repositories with check sum policy set to ignore, we need it for pgp signature resolving.
      * <p>
@@ -98,6 +102,7 @@ public class ArtifactResolver {
         this.repositorySystem = requireNonNull(repositorySystem);
         this.localRepository = requireNonNull(session.getLocalRepository());
         this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteArtifactRepositories());
+        this.aeRemoteRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
         this.remoteRepositoriesIgnoreCheckSum =
                 repositoriesIgnoreCheckSum(session.getCurrentProject().getRemoteProjectRepositories());
         this.aetherRepositorySystem = aetherRepositorySystem;
@@ -143,10 +148,12 @@ public class ArtifactResolver {
      * @param config  configuration for the artifact resolver
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
-    @SuppressWarnings( {"deprecation", "java:S1874"})
+    //    @SuppressWarnings( {"deprecation", "java:S1874"})
     Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
-        final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(resolveArtifacts(project.getArtifacts(),
-                config.dependencyFilter, null, config.verifyPomFiles, false));
+
+        final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(resolveProjectArtifacts(project.getArtifacts(),
+                config.dependencyFilter, config.verifyPomFiles));
+
         if (config.verifyPlugins) {
             // Resolve transitive dependencies for build plug-ins and reporting plug-ins and their dependencies.
             // The transitive closure is computed for each plug-in with its dependencies, as individual executions may
@@ -288,6 +295,53 @@ public class ArtifactResolver {
     /**
      * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
      *
+     * @param artifacts      Dependencies to be resolved.
+     * @param artifactFilter Skip filter to test against to determine whether dependency must be skipped.
+     * @param verifyPom      Boolean indicating whether or not POMs corresponding to dependencies should be
+     *                       resolved.
+     * @return Returns set of resolved artifacts.
+     */
+    private Set<Artifact> resolveProjectArtifacts(Iterable<Artifact> artifacts, SkipFilter artifactFilter,
+                                                  boolean verifyPom) {
+        final LinkedHashSet<org.eclipse.aether.artifact.Artifact> collection = new LinkedHashSet<>();
+        for (Artifact artifact : artifacts) {
+            if (artifactFilter.shouldSkipArtifact(artifact)) {
+                LOG.debug("Skipping artifact: {}", artifact);
+                continue;
+            }
+            org.eclipse.aether.artifact.Artifact aeArtifact = RepositoryUtils.toArtifact(artifact);
+            collection.add(aeArtifact);
+            if (verifyPom) {
+                SubArtifact pomArtifact = new SubArtifact(aeArtifact, null, "pom");
+                collection.add(pomArtifact);
+            }
+        }
+
+        List<ArtifactRequest> requestList = collection.stream()
+                .map(a -> new ArtifactRequest(a, aeRemoteRepositories, null))
+                .collect(Collectors.toList());
+
+        List<ArtifactResult> artifactResults =
+                Try.of(() -> aetherRepositorySystem.resolveArtifacts(repositorySession, requestList))
+                        .recover(ArtifactResolutionException.class, ArtifactResolutionException::getResults)
+                        .get();
+
+        Set<Artifact> result = new HashSet<>();
+        artifactResults.forEach(aResult -> {
+            if (aResult.isResolved()) {
+                result.add(RepositoryUtils.toArtifact(aResult.getArtifact()));
+            } else {
+                aResult.getExceptions().forEach(
+                        e -> LOG.debug("Failed to resolve {}: {}", aResult.getRequest().getArtifact(),
+                                e.getMessage()));
+            }
+        });
+        return result;
+    }
+
+    /**
+     * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
+     *
      * @param artifacts          Dependencies to be resolved.
      * @param artifactFilter     Skip filter to test against to determine whether dependency must be skipped.
      * @param dependenciesFilter Skip filter to test against to determine whether transitive dependencies must be
@@ -299,7 +353,8 @@ public class ArtifactResolver {
      * @return Returns set of resolved artifacts.
      */
     private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter artifactFilter,
-            SkipFilter dependenciesFilter, boolean verifyPom, boolean transitive) throws MojoExecutionException {
+                                           SkipFilter dependenciesFilter, boolean verifyPom, boolean transitive)
+            throws MojoExecutionException {
         final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
         for (final Artifact artifact : artifacts) {
             Artifact resolved = resolveArtifact(artifact);
