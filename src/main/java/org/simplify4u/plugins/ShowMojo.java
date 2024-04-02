@@ -17,10 +17,9 @@ package org.simplify4u.plugins;
 
 import javax.inject.Inject;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -44,7 +43,7 @@ import org.simplify4u.plugins.pgp.SignatureStatus;
  * @since 1.10.0
  */
 @Slf4j
-@Mojo(name = ShowMojo.MOJO_NAME, requiresDirectInvocation = true, requiresOnline = true, requiresProject = false)
+@Mojo(name = ShowMojo.MOJO_NAME, requiresOnline = true, requiresProject = false)
 public class ShowMojo extends AbstractPGPMojo {
 
     public static final String MOJO_NAME = "show";
@@ -78,16 +77,11 @@ public class ShowMojo extends AbstractPGPMojo {
     @Override
     protected void executeConfiguredMojo() {
 
-        Set<Artifact> artifactsToCheck = new HashSet<>();
         Artifact artifactToCheck = prepareArtifactToCheck();
 
-        artifactsToCheck.add(artifactResolver.resolveArtifact(artifactToCheck));
+        List<Artifact> resolveArtifacts = artifactResolver.resolveArtifact(artifactToCheck, showPom);
 
-        if (showPom && artifactToCheck.isResolved()) {
-            artifactsToCheck.add(artifactResolver.resolvePom(artifactToCheck));
-        }
-
-        Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(artifactsToCheck);
+        Map<Artifact, Artifact> artifactMap = artifactResolver.resolveSignatures(resolveArtifacts);
 
         Boolean result = artifactMap.entrySet().stream()
                 .map(this::processArtifact)

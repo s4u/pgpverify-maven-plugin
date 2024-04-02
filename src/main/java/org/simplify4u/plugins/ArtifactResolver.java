@@ -35,33 +35,34 @@ import java.util.stream.Collectors;
 import io.vavr.control.Try;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.ModelBase;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.model.ReportPlugin;
+import org.apache.maven.model.Reporting;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.SubArtifact;
-import org.simplify4u.plugins.skipfilters.CompositeSkipper;
-import org.simplify4u.plugins.skipfilters.ScopeSkipper;
 import org.simplify4u.plugins.skipfilters.SkipFilter;
 import org.simplify4u.plugins.utils.MavenCompilerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static org.simplify4u.plugins.utils.MavenCompilerUtils.extractAnnotationProcessors;
 
@@ -79,15 +80,9 @@ public class ArtifactResolver {
 
     private final RepositorySystem repositorySystem;
 
-    private final org.eclipse.aether.RepositorySystem aetherRepositorySystem;
-
     private final RepositorySystemSession repositorySession;
 
-    private final ArtifactRepository localRepository;
-
-    private final List<ArtifactRepository> remoteRepositories;
-
-    private final List<RemoteRepository> aeRemoteRepositories;
+    private final List<RemoteRepository> remoteRepositories;
 
     /**
      * Copy of remote repositories with check sum policy set to ignore, we need it for pgp signature resolving.
@@ -97,16 +92,11 @@ public class ArtifactResolver {
     private final List<RemoteRepository> remoteRepositoriesIgnoreCheckSum;
 
     @Inject
-    ArtifactResolver(RepositorySystem repositorySystem, MavenSession session,
-                     org.eclipse.aether.RepositorySystem aetherRepositorySystem) {
+    ArtifactResolver(MavenSession session, RepositorySystem repositorySystem) {
+        this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
+        this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteRepositories);
         this.repositorySystem = requireNonNull(repositorySystem);
-        this.localRepository = requireNonNull(session.getLocalRepository());
-        this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteArtifactRepositories());
-        this.aeRemoteRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
-        this.remoteRepositoriesIgnoreCheckSum =
-                repositoriesIgnoreCheckSum(session.getCurrentProject().getRemoteProjectRepositories());
-        this.aetherRepositorySystem = aetherRepositorySystem;
-        this.repositorySession = session.getRepositorySession();
+        this.repositorySession = requireNonNull(session.getRepositorySession());
     }
 
     /**
@@ -149,7 +139,7 @@ public class ArtifactResolver {
      * @return Returns set of all artifacts whose signature needs to be verified.
      */
     //    @SuppressWarnings( {"deprecation", "java:S1874"})
-    Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) throws MojoExecutionException {
+    Set<Artifact> resolveProjectArtifacts(MavenProject project, Configuration config) {
 
         final LinkedHashSet<Artifact> allArtifacts = new LinkedHashSet<>(resolveProjectArtifacts(project.getArtifacts(),
                 config.dependencyFilter, config.verifyPomFiles));
@@ -160,43 +150,144 @@ public class ArtifactResolver {
             // depend on a different version of a particular dependency. Therefore, a dependency may be included in the
             // over-all artifacts list multiple times with different versions.
             for (final Plugin plugin : project.getBuildPlugins()) {
-                final LinkedHashSet<Artifact> artifacts = new LinkedHashSet<>();
-                artifacts.add(repositorySystem.createPluginArtifact(plugin));
-                artifacts.addAll(plugin.getDependencies().stream()
-                        .map(repositorySystem::createDependencyArtifact)
-                        .collect(Collectors.toSet()));
-                final Set<Artifact> resolved = resolveArtifacts(artifacts, config.pluginFilter, config.dependencyFilter,
-                        config.verifyPomFiles, config.verifyPluginDependencies);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Build plugin dependencies for {}:{}:{} {}", plugin.getGroupId(), plugin.getArtifactId(),
-                            plugin.getVersion(), resolved);
-                }
+                List<Artifact> resolved = resolvePlugin(plugin, config);
                 allArtifacts.addAll(resolved);
             }
-            for (final Artifact plugin : project.getReportArtifacts()) {
-                final Set<Artifact> resolved = resolveArtifacts(singleton(plugin), config.pluginFilter,
-                        config.dependencyFilter, config.verifyPomFiles, config.verifyPluginDependencies);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Report plugin dependencies for {}:{}:{} {}", plugin.getGroupId(), plugin.getArtifactId(),
-                            plugin.getVersion(), resolved);
-                }
+
+            List<ReportPlugin> reportPlugins = Optional.ofNullable(project.getModel())
+                    .map(ModelBase::getReporting)
+                    .map(Reporting::getPlugins)
+                    .orElseGet(Collections::emptyList);
+
+            for (ReportPlugin plugin : reportPlugins) {
+                Plugin p = new Plugin();
+                p.setGroupId(plugin.getGroupId());
+                p.setArtifactId(plugin.getArtifactId());
+                p.setVersion(plugin.getVersion());
+                List<Artifact> resolved = resolvePlugin(p, config);
                 allArtifacts.addAll(resolved);
             }
         }
         if (config.verifyAtypical) {
             // Verify artifacts in atypical locations, such as references in configuration.
-            allArtifacts.addAll(resolveArtifacts(searchCompilerAnnotationProcessors(project),
-                    config.dependencyFilter, config.dependencyFilter, config.verifyPomFiles,
-                    config.verifyPluginDependencies));
+            List<org.eclipse.aether.artifact.Artifact> artifacts = searchCompilerAnnotationProcessors(project);
+
+            artifacts.forEach(a -> {
+                Plugin p = new Plugin();
+                p.setGroupId(a.getGroupId());
+                p.setArtifactId(a.getArtifactId());
+                p.setVersion(a.getVersion());
+                List<Artifact> resolved = resolvePlugin(p, config);
+                allArtifacts.addAll(resolved);
+            });
+
             informSurefire3RuntimeDependencyLoadingLimitation(project);
         }
         return allArtifacts;
     }
 
-    private Collection<Artifact> searchCompilerAnnotationProcessors(MavenProject project) {
+    private List<Artifact> resolvePlugin(Plugin plugin, Configuration config) {
+        org.eclipse.aether.artifact.Artifact pArtifact = toArtifact(plugin);
+
+        if (config.pluginFilter.shouldSkipArtifact(RepositoryUtils.toArtifact(pArtifact))) {
+            return Collections.emptyList();
+        }
+
+        List<org.eclipse.aether.artifact.Artifact> result;
+        if (config.verifyPluginDependencies) {
+            // we need resolve all transitive dependencies
+            result = resolveArtifactsTransitive(pArtifact, plugin.getDependencies(), config.verifyPomFiles);
+        } else {
+            // only resolve plugin artifact
+            List<org.eclipse.aether.artifact.Artifact> aeArtifacts = new ArrayList<>();
+            aeArtifacts.add(pArtifact);
+            aeArtifacts.addAll(plugin.getDependencies().stream().map(
+                            d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
+                    .map(Dependency::getArtifact)
+                    .collect(Collectors.toList()));
+
+            result = resolveArtifacts(aeArtifacts, config.verifyPomFiles);
+        }
+
+        return result.stream().map(RepositoryUtils::toArtifact).collect(Collectors.toList());
+    }
+
+    private List<org.eclipse.aether.artifact.Artifact> resolveArtifactsTransitive(
+            org.eclipse.aether.artifact.Artifact artifact,
+            List<org.apache.maven.model.Dependency> dependencies, boolean verifyPomFiles) {
+
+        CollectRequest collectRequest = new CollectRequest(new Dependency(artifact, "runtime"), remoteRepositories);
+
+        dependencies.stream().map(d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
+                .forEach(collectRequest::addDependency);
+
+        DependencyRequest request = new DependencyRequest(collectRequest, null);
+
+        DependencyResult dependencyResult =
+                Try.of(() -> repositorySystem.resolveDependencies(repositorySession, request))
+                        .recover(DependencyResolutionException.class, DependencyResolutionException::getResult)
+                        .get();
+
+        List<org.eclipse.aether.artifact.Artifact> result = new ArrayList<>(
+                dependencyResult.getArtifactResults().stream()
+                        .map(aResult -> aResult.isResolved() ?
+                                aResult.getArtifact() :
+                                aResult.getRequest().getArtifact())
+                        .collect(Collectors.toList()));
+
+        if (verifyPomFiles) {
+            resolvePoms(result);
+        }
+        return result;
+    }
+
+    private List<org.eclipse.aether.artifact.Artifact> resolveArtifacts(
+            List<org.eclipse.aether.artifact.Artifact> artifacts,
+            boolean verifyPomFiles) {
+
+        List<ArtifactRequest> requestList = artifacts.stream()
+                .map(a -> new ArtifactRequest(a, remoteRepositories, null))
+                .collect(Collectors.toList());
+
+        List<org.eclipse.aether.artifact.Artifact> result =
+                new ArrayList<>(Try.of(() -> repositorySystem.resolveArtifacts(repositorySession, requestList))
+                        .recover(ArtifactResolutionException.class, ArtifactResolutionException::getResults)
+                        .get()
+                        .stream()
+                        .map(aResult -> aResult.isResolved() ?
+                                aResult.getArtifact() :
+                                aResult.getRequest().getArtifact())
+                        .collect(Collectors.toList()));
+
+        if (verifyPomFiles) {
+            resolvePoms(result);
+        }
+
+        return result;
+
+    }
+
+    private void resolvePoms(List<org.eclipse.aether.artifact.Artifact> result) {
+        List<org.eclipse.aether.artifact.Artifact> poms =
+                result.stream().filter(a -> !"pom".equals(a.getExtension()))
+                        .map(a -> new SubArtifact(a, null, "pom"))
+                        .collect(Collectors.toList());
+
+        result.addAll(resolveArtifacts(poms, false));
+    }
+
+    private static org.eclipse.aether.artifact.Artifact toArtifact(Plugin plugin) {
+        String version = plugin.getVersion();
+        if (version == null || version.isEmpty()) {
+            version = "RELEASE";
+        }
+        return new DefaultArtifact(plugin.getGroupId(), plugin.getArtifactId(), "jar", version);
+    }
+
+    private static List<org.eclipse.aether.artifact.Artifact> searchCompilerAnnotationProcessors(MavenProject project) {
         return project.getBuildPlugins().stream()
                 .filter(MavenCompilerUtils::checkCompilerPlugin)
-                .flatMap(p -> extractAnnotationProcessors(repositorySystem, p).stream())
+                .flatMap(p -> extractAnnotationProcessors(p).stream())
                 .collect(Collectors.toList());
     }
 
@@ -229,11 +320,11 @@ public class ArtifactResolver {
      */
     // TODO: maven-surefire-plugin dependency loading during execution is detected but not handled. Some of surefire's
     //  dependencies are not validated.
-    private void informSurefire3RuntimeDependencyLoadingLimitation(MavenProject project) {
+    private static void informSurefire3RuntimeDependencyLoadingLimitation(MavenProject project) {
         final boolean surefireDynamicLoadingLikely = project.getBuildPlugins().stream()
                 .filter(p -> "org.apache.maven.plugins".equals(p.getGroupId()))
                 .filter(p -> "maven-surefire-plugin".equals(p.getArtifactId()))
-                .anyMatch(this::matchSurefireVersion);
+                .anyMatch(ArtifactResolver::matchSurefireVersion);
         if (surefireDynamicLoadingLikely) {
             LOG.info("NOTE: maven-surefire-plugin version 3 is present. This version is known to resolve " +
                     "and load dependencies for various unit testing frameworks (called \"providers\") during " +
@@ -241,9 +332,8 @@ public class ArtifactResolver {
         }
     }
 
-    private boolean matchSurefireVersion(Plugin plugin) {
-
-        return Try.of(() -> repositorySystem.createPluginArtifact(plugin).getSelectedVersion())
+    private static boolean matchSurefireVersion(Plugin plugin) {
+        return Try.of(() -> new DefaultArtifactVersion(plugin.getVersion()))
                 .map(SUREFIRE_PLUGIN_VERSION_RANGE::containsVersion)
                 .onFailure(e -> LOG.debug("Found build plug-in with overly constrained version specification.", e))
                 .getOrElse(false);
@@ -274,7 +364,7 @@ public class ArtifactResolver {
         Map<Artifact, Artifact> result = new HashMap<>();
 
         List<ArtifactResult> artifactResults =
-                Try.of(() -> aetherRepositorySystem.resolveArtifacts(repositorySession, requestList))
+                Try.of(() -> repositorySystem.resolveArtifacts(repositorySession, requestList))
                         .recover(ArtifactResolutionException.class, ArtifactResolutionException::getResults)
                         .get();
 
@@ -318,11 +408,11 @@ public class ArtifactResolver {
         }
 
         List<ArtifactRequest> requestList = collection.stream()
-                .map(a -> new ArtifactRequest(a, aeRemoteRepositories, null))
+                .map(a -> new ArtifactRequest(a, remoteRepositories, null))
                 .collect(Collectors.toList());
 
         List<ArtifactResult> artifactResults =
-                Try.of(() -> aetherRepositorySystem.resolveArtifacts(repositorySession, requestList))
+                Try.of(() -> repositorySystem.resolveArtifacts(repositorySession, requestList))
                         .recover(ArtifactResolutionException.class, ArtifactResolutionException::getResults)
                         .get();
 
@@ -340,116 +430,18 @@ public class ArtifactResolver {
     }
 
     /**
-     * Resolve all dependencies provided as input. POMs corresponding to the dependencies may optionally be resolved.
+     * Resolve given artifact.
      *
-     * @param artifacts          Dependencies to be resolved.
-     * @param artifactFilter     Skip filter to test against to determine whether dependency must be skipped.
-     * @param dependenciesFilter Skip filter to test against to determine whether transitive dependencies must be
-     *                           skipped.
-     * @param verifyPom          Boolean indicating whether or not POMs corresponding to dependencies should be
-     *                           resolved.
-     * @param transitive         Boolean indicating whether or not to resolve all dependencies in the transitive closure
-     *                           of provided artifact.
-     * @return Returns set of resolved artifacts.
+     * @param artifact       - an artiact to resolve
+     * @param verifyPomFiles - if true also pom will be resolved for artifact
+     * @return an resolved artifact
      */
-    private Set<Artifact> resolveArtifacts(Iterable<Artifact> artifacts, SkipFilter artifactFilter,
-                                           SkipFilter dependenciesFilter, boolean verifyPom, boolean transitive)
-            throws MojoExecutionException {
-        final LinkedHashSet<Artifact> collection = new LinkedHashSet<>();
-        for (final Artifact artifact : artifacts) {
-            Artifact resolved = resolveArtifact(artifact);
-            if (artifactFilter.shouldSkipArtifact(artifact)) {
-                LOG.debug("Skipping artifact: {}", artifact);
-                continue;
-            }
-            if (!resolved.isResolved()) {
-                throw new MojoExecutionException("Failed to resolve artifact: {}" + artifact);
-            }
-            collection.add(resolved);
-            if (verifyPom) {
-                final Artifact resolvedPom = resolvePom(artifact);
-                if (resolvedPom.isResolved()) {
-                    collection.add(resolvedPom);
-                } else {
-                    LOG.warn("Failed to resolve pom artifact: {}", resolvedPom);
-                }
-            }
-        }
-        if (transitive) {
-            // Transitive dependencies are not compiled/tested, so set requirement to scopes relevant at run-time.
-            // This is only relevant for plug-in artifacts and their dependencies, as project dependencies are already
-            // resolved by Maven.
-            // Note: this avoids issues with test-scoped artifacts that are not available to the public, such as
-            //       NullAway's test libraries.
-            final CompositeSkipper transitivesFilter = new CompositeSkipper(dependenciesFilter,
-                    new ScopeSkipper(Artifact.SCOPE_RUNTIME));
-            final LinkedHashSet<Artifact> transitives = new LinkedHashSet<>();
-            for (Artifact artifact : collection) {
-                transitives.addAll(resolveTransitively(artifact, transitivesFilter, verifyPom));
-            }
-            collection.addAll(transitives);
-        }
-        return collection;
-    }
+    public List<Artifact> resolveArtifact(Artifact artifact, boolean verifyPomFiles) {
 
-    private Set<Artifact> resolveTransitively(Artifact artifact, SkipFilter dependencyFilter, boolean verifyPom)
-            throws MojoExecutionException {
-        final ArtifactFilter requestFilter = a -> !dependencyFilter.shouldSkipArtifact(a);
-        final ArtifactResolutionRequest request = new ArtifactResolutionRequest()
-                .setArtifact(artifact)
-                .setLocalRepository(localRepository)
-                .setRemoteRepositories(remoteRepositories)
-                .setResolutionFilter(requestFilter)
-                .setCollectionFilter(requestFilter)
-                .setResolveTransitively(true);
-        final ArtifactResolutionResult resolution = repositorySystem.resolve(request);
-        if (!resolution.isSuccess()) {
-            if (resolution.hasMissingArtifacts()) {
-                LOG.warn("Missing artifacts for {}: {}", artifact.getId(), resolution.getMissingArtifacts());
-            }
-            resolution.getExceptions().forEach(e -> LOG.warn("Failed to resolve transitive dependencies for {}: {}",
-                    artifact.getId(), e.getMessage()));
-            throw new MojoExecutionException("Failed to resolve transitive dependencies.");
-        }
-        if (verifyPom) {
-            // Verifying project artifacts (POM) is significant as these are used to determine artifact dependencies.
-            final LinkedHashSet<Artifact> resolved = new LinkedHashSet<>(resolution.getArtifacts());
-            for (Artifact a : resolution.getArtifacts()) {
-                resolved.add(resolvePom(a));
-            }
-            return resolved;
-        } else {
-            return resolution.getArtifacts();
-        }
-    }
+        List<org.eclipse.aether.artifact.Artifact> artifacts =
+                resolveArtifacts(Collections.singletonList(RepositoryUtils.toArtifact(artifact)), verifyPomFiles);
 
-    public Artifact resolvePom(Artifact artifact) {
-        final Artifact pomArtifact = repositorySystem.createProjectArtifact(artifact.getGroupId(),
-                artifact.getArtifactId(), artifact.getVersion());
-        final ArtifactResolutionResult result = request(pomArtifact, remoteRepositories);
-        if (!result.isSuccess()) {
-            result.getExceptions().forEach(
-                    e -> LOG.debug("Failed to resolve pom {}: {}", pomArtifact.getId(), e.getMessage()));
-        }
-        return pomArtifact;
-    }
-
-    public Artifact resolveArtifact(Artifact artifact) {
-        final ArtifactResolutionResult result = request(artifact, remoteRepositories);
-        if (!result.isSuccess()) {
-            result.getExceptions().forEach(e -> LOG.warn("Failed to resolve {}: {}", artifact.getId(), e.getMessage()));
-        }
-        return artifact;
-    }
-
-    private ArtifactResolutionResult request(Artifact artifact, List<ArtifactRepository> remoteRepositoriesToResolve) {
-        final ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-        request.setArtifact(artifact);
-        request.setResolveTransitively(false);
-        request.setLocalRepository(localRepository);
-        request.setRemoteRepositories(remoteRepositoriesToResolve);
-
-        return repositorySystem.resolve(request);
+        return artifacts.stream().map(RepositoryUtils::toArtifact).collect(Collectors.toList());
     }
 
     /**

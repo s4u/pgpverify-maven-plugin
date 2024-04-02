@@ -119,7 +119,7 @@ public class ShowMojoTest {
 
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
-        verify(artifactResolver).resolveArtifact(artifact);
+        verify(artifactResolver).resolveArtifact(artifact, false);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(signatureUtils).checkSignature(artifact, artifactAsc, pgpKeysCache);
@@ -149,8 +149,7 @@ public class ShowMojoTest {
 
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
-        verify(artifactResolver).resolveArtifact(artifact);
-        verify(artifactResolver).resolvePom(artifact);
+        verify(artifactResolver).resolveArtifact(artifact, true);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(pgpKeysCache).init(any(), any());
@@ -187,7 +186,7 @@ public class ShowMojoTest {
 
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
-        verify(artifactResolver).resolveArtifact(artifact);
+        verify(artifactResolver).resolveArtifact(artifact, false);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(signatureUtils, times(2)).keyAlgorithmName(anyInt());
@@ -228,7 +227,7 @@ public class ShowMojoTest {
 
         // then
         verify(repositorySystem).createArtifactWithClassifier("groupId", "artifactId", "1.0.0", "war", null);
-        verify(artifactResolver).resolveArtifact(artifact);
+        verify(artifactResolver).resolveArtifact(artifact, false);
         verify(artifactResolver).resolveSignatures(anyCollection());
 
         verify(signatureUtils).keyAlgorithmName(anyInt());
