@@ -51,36 +51,32 @@ final class MavenCompilerUtilsTest {
 
     @Test
     void testExtractAnnotationProcessorsIllegalInputs() {
-        assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(null, null));
+        assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(null));
         final Plugin badPlugin = mock(Plugin.class);
         when(badPlugin.getGroupId()).thenReturn("org.my-bad-plugin");
         when(badPlugin.getArtifactId()).thenReturn("bad-plugin");
         when(badPlugin.getVersion()).thenReturn("1.1.1");
-        assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(null, badPlugin));
-        final RepositorySystem repository = mock(RepositorySystem.class);
-        assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(repository, null));
-        assertThrows(IllegalArgumentException.class, () -> extractAnnotationProcessors(repository, badPlugin));
+        assertThrows(NullPointerException.class, () -> extractAnnotationProcessors(null));
+        assertThrows(IllegalArgumentException.class, () -> extractAnnotationProcessors( badPlugin));
     }
 
     @Test
     void testExtractAnnotationProcessorsNoConfiguration() {
-        final RepositorySystem repository = mock(RepositorySystem.class);
         final Plugin plugin = mock(Plugin.class);
         when(plugin.getGroupId()).thenReturn("org.apache.maven.plugins");
         when(plugin.getArtifactId()).thenReturn("maven-compiler-plugin");
         when(plugin.getVersion()).thenReturn("3.8.1");
-        assertEquals(emptySet(), extractAnnotationProcessors(repository, plugin));
+        assertEquals(emptySet(), extractAnnotationProcessors(plugin));
     }
 
     @Test
     void testExtractAnnotationProcessorsUnsupportedConfigurationType() {
-        final RepositorySystem repository = mock(RepositorySystem.class);
         final Plugin plugin = mock(Plugin.class);
         when(plugin.getGroupId()).thenReturn("org.apache.maven.plugins");
         when(plugin.getArtifactId()).thenReturn("maven-compiler-plugin");
         when(plugin.getVersion()).thenReturn("3.8.1");
         when(plugin.getConfiguration()).thenReturn("Massive configuration encoded in magic \"Hello World!\" string.");
-        assertThrows(UnsupportedOperationException.class, () -> extractAnnotationProcessors(repository, plugin));
+        assertThrows(UnsupportedOperationException.class, () -> extractAnnotationProcessors(plugin));
     }
 
     @Test
@@ -98,9 +94,9 @@ final class MavenCompilerUtilsTest {
             when(artifact.getVersion()).thenReturn(invocation.getArgument(2));
             return artifact;
         });
-        final Set<Artifact> result = extractAnnotationProcessors(repository, plugin);
+        final Set<org.eclipse.aether.artifact.Artifact> result = extractAnnotationProcessors(plugin);
         assertEquals(1, result.size());
-        final Artifact resultElement = result.iterator().next();
+        final org.eclipse.aether.artifact.Artifact resultElement = result.iterator().next();
         assertEquals("myGroupId", resultElement.getGroupId());
         assertEquals("myArtifactId", resultElement.getArtifactId());
         assertEquals("1.2.3", resultElement.getVersion());

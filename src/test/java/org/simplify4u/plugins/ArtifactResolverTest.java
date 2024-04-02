@@ -30,12 +30,11 @@ import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.repository.RepositorySystem;
 import org.assertj.core.api.Condition;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -55,7 +54,6 @@ import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -68,13 +66,10 @@ class ArtifactResolverTest {
     private static final Condition<Artifact> IS_POM_TYPE = new Condition<>(a -> "pom".equals(a.getType()), "is pom type");
 
     @Mock
-    private RepositorySystem repositorySystem;
-
-    @Mock
     private org.eclipse.aether.RepositorySystem aetherRepositorySystem;
 
     @Mock
-    private ArtifactRepository localRepository;
+    private RepositorySystemSession repositorySession;
 
     @Mock
     private MavenSession session;
@@ -86,11 +81,9 @@ class ArtifactResolverTest {
 
     @BeforeEach
     void setup() {
-        when(session.getLocalRepository()).thenReturn(localRepository);
         when(session.getCurrentProject()).thenReturn(project);
-        when(project.getRemoteArtifactRepositories()).thenReturn(emptyList());
-
-        resolver = new ArtifactResolver(repositorySystem, session, aetherRepositorySystem);
+        when(session.getRepositorySession()).thenReturn(repositorySession);
+        resolver = new ArtifactResolver(session, aetherRepositorySystem);
     }
 
     @Test
@@ -98,19 +91,17 @@ class ArtifactResolverTest {
 
         reset(session, project);
 
-        assertThatCode(() -> new ArtifactResolver(null, null, null))
+        assertThatCode(() -> new ArtifactResolver(null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
-        assertThatCode(() -> new ArtifactResolver(null, session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
-        doThrow(new NullPointerException()).when(session).getLocalRepository();
-        assertThatCode(() -> new ArtifactResolver(repositorySystem, session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
-        doReturn(localRepository).when(session).getLocalRepository();
         doThrow(new NullPointerException()).when(session).getCurrentProject();
-        assertThatCode(() -> new ArtifactResolver(repositorySystem, session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 
