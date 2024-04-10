@@ -173,6 +173,11 @@
                 <artifactId>bcprov-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcutil-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
+            </dependency>
             <!-- /bouncycastle -->
 
             <!-- codehaus -->
@@ -372,6 +377,11 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <!-- /bouncycastle -->
 
         <!-- codehaus -->
@@ -552,6 +562,7 @@
                     <skip>${maven.test.skip}</skip>
                     <failOnWarning>true</failOnWarning>
                     <ignoredUnusedDeclaredDependencies>
+                        <ignored>org.bouncycastle:bcutil-jdk18on</ignored>
                         <ignored>org.mockito:mockito-inline</ignored>
                         <ignored>org.simplify4u:slf4j-mock</ignored>
                     </ignoredUnusedDeclaredDependencies>
