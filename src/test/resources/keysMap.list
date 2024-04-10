@@ -42,3 +42,5 @@ noKey:test                          = noKey
 
 # duplicate artifact pattern with duplicate value
 noKey:test                          = noKey
+
+noSig:test-snapshot:1.20.1-R0.1-SNAPSHOT     = noSig
