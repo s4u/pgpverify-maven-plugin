@@ -18,6 +18,7 @@ package org.simplify4u.plugins.keysmap;
 import java.util.Locale;
 
 import lombok.Getter;
+import lombok.ToString;
 import org.apache.maven.artifact.Artifact;
 
 /**
@@ -28,6 +29,7 @@ import org.apache.maven.artifact.Artifact;
  * @author Slawomir Jaranowski.
  */
 @Getter
+@ToString
 class ArtifactData {
 
     private final String groupId;
@@ -39,6 +41,6 @@ class ArtifactData {
         groupId = artifact.getGroupId().toLowerCase(Locale.US);
         artifactId = artifact.getArtifactId().toLowerCase(Locale.US);
         type = artifact.getType().toLowerCase(Locale.US);
-        version = artifact.getVersion().toLowerCase(Locale.US);
+        version = artifact.getBaseVersion().toLowerCase(Locale.US);
     }
 }

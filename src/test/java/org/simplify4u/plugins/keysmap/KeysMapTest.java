@@ -30,6 +30,7 @@ import static org.simplify4u.plugins.TestArtifactBuilder.testArtifact;
 import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 import static org.simplify4u.plugins.TestUtils.aKeysMapLocationConfig;
 
+import org.apache.maven.artifact.Artifact;
 import org.codehaus.plexus.resource.ResourceManager;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -235,16 +236,18 @@ class KeysMapTest {
 
         keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
 
-        assertThat(keysMap.size()).isEqualTo(10);
+        assertThat(keysMap.size()).isEqualTo(11);
 
         verify(loggerKeysMap)
-                .debug(eq("Existing artifact pattern: {} - only update key items in {}"), anyString(), any(KeysMapContext.class));
+                .debug(eq("Existing artifact pattern: {} - only update key items in {}"), anyString(),
+                        any(KeysMapContext.class));
         verifyNoMoreInteractions(loggerKeysMap);
 
         verify(loggerKeyItems, times(3))
                 .warn(eq("Duplicate key item: {} in: {}"), any(KeyItem.class), any(KeysMapContext.class));
         verify(loggerKeyItems)
-                .warn(eq("Empty value for key is deprecated - please provide some value - now assume as noSig in: {}"), any(KeysMapContext.class));
+                .warn(eq("Empty value for key is deprecated - please provide some value - now assume as noSig in: {}"),
+                        any(KeysMapContext.class));
         verifyNoMoreInteractions(loggerKeyItems);
     }
 
@@ -260,7 +263,7 @@ class KeysMapTest {
 
         keysMap.load(config);
 
-        assertThat(keysMap.size()).isEqualTo(3);
+        assertThat(keysMap.size()).isEqualTo(4);
 
         assertThat(keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test3").build())).isTrue();
         assertThat(keysMap.isKeyMissing(testArtifact().groupId("noKey").build())).isFalse();
@@ -301,10 +304,29 @@ class KeysMapTest {
 
         keysMap.load(config);
 
-        assertThat(keysMap.size()).isEqualTo(9);
+        assertThat(keysMap.size()).isEqualTo(10);
 
         assertThat(keysMap.isNoSignature(testArtifact().groupId("noSig").artifactId("test2").build())).isFalse();
         assertThat(keysMap.isKeyMissing(testArtifact().groupId("noKey").build())).isTrue();
+    }
+
+    @Test
+    void baseVersionFromArtifactShouldBeUsed() throws Exception {
+        doAnswer(invocation -> getClass().getResourceAsStream(invocation.getArgument(0)))
+                .when(resourceManager).getResourceAsInputStream(anyString());
+
+        keysMap.load(aKeysMapLocationConfig("/keysMap.list"));
+
+        Artifact snapshot = testArtifact()
+                .groupId("noSig")
+                .artifactId("test-snapshot")
+                .version("1.20.1-R0.1-20240410.215944-178")
+                .build();
+
+        assertThat(snapshot.isSnapshot()).isTrue();
+        assertThat(snapshot.getBaseVersion()).isEqualTo("1.20.1-R0.1-SNAPSHOT");
+
+        assertThat(keysMap.isNoSignature(snapshot)).isTrue();
     }
 
 }

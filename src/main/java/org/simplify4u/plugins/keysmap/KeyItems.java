@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.simplify4u.plugins.pgp.KeyInfo;
 
@@ -28,6 +29,7 @@ import org.simplify4u.plugins.pgp.KeyInfo;
  * @author Slawomir Jaranowski.
  */
 @Slf4j
+@ToString
 class KeyItems {
 
     private final List<KeyItem> keys = new ArrayList<>();
@@ -100,6 +102,11 @@ class KeyItems {
         }
     }
 
+    /**
+     * Check if key match
+     * @param keyInfo a key to test
+     * @return a result
+     */
     public boolean isKeyMatch(KeyInfo keyInfo) {
         return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatch(keyInfo));
     }

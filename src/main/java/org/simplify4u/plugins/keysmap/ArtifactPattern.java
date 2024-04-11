@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException;
 import org.apache.maven.artifact.versioning.VersionRange;
@@ -32,24 +33,32 @@ import org.apache.maven.artifact.versioning.VersionRange;
  * @author Slawomir Jaranowski.
  */
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
 class ArtifactPattern {
 
     private static final Pattern DOT_REPLACE = Pattern.compile("\\.");
+
     private static final Pattern STAR_REPLACE = Pattern.compile("\\*");
+
     private static final Pattern PACKAGING = Pattern.compile("^[a-zA-Z]+$");
 
     private static final String VERSION_REGEX_PREFIX = "~";
+
     private static final String NOT_VERSION_REGEX_PREFIX = "!~";
 
     /**
      * Original pattern from keysMap. Used to compare if object is equal to another.
      */
     @EqualsAndHashCode.Include
+    @ToString.Include
     private final String pattern;
 
     private final Pattern groupIdPattern;
+
     private final Pattern artifactIdPattern;
+
     private final Pattern packagingPattern;
+
     private final Function<String, Boolean> versionMatch;
 
     public ArtifactPattern(String pattern) {
@@ -75,7 +84,6 @@ class ArtifactPattern {
         } else {
             packaging = "";
         }
-
 
         try {
             groupIdPattern = Pattern.compile(patternPrepare(groupId));
@@ -155,6 +163,12 @@ class ArtifactPattern {
         return versionSpec;
     }
 
+    /**
+     * Check if given artifact match a pattern.
+     *
+     * @param artifact an artifact to test
+     * @return result of verification
+     */
     public boolean isMatch(ArtifactData artifact) {
 
         return isMatchPattern(groupIdPattern, artifact.getGroupId())
