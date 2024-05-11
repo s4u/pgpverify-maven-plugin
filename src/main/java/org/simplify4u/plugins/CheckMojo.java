@@ -134,7 +134,7 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
      * </p>
      *
      * <p>
-     * Since version <b>1.12.0</b> - <a href="keysmap-multiple.html">Multiple KeysMpa configuration</a>
+     * Since version <b>1.12.0</b> - <a href="keysmap-multiple.html">Multiple KeysMap configuration</a>
      * </p>
      *
      * <p>
