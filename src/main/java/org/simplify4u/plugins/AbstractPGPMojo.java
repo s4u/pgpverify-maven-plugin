@@ -65,7 +65,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     private File pgpKeysCachePath;
 
     /**
-     * When key not exist on keys servers such information will be store in cache.
+     * When key does not exist on key servers such information will be stored in cache.
      * <p>
      * Next checking for key existence will be done after specific hours remain.
      *
@@ -78,7 +78,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      * PGP public key servers address.
      *
      * <p>
-     * From version <b>1.7.0</b> you can provide many kay servers separated by comma, semicolon or whitespace.
+     * From version <b>1.7.0</b> you can provide many key servers separated by comma, semicolon or whitespace.
      *
      * <p>
      * From version <b>1.15.0</b> hkp/http protocols are deprecated - please use hkps/https for key servers.
@@ -108,7 +108,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
     private boolean skip;
 
     /**
-     * If many key server is provided, use all of them.
+     * If many key servers are provided, use all of them.
      * <p>
      * If set to false only first key server will be used, another as fallback.
      *
