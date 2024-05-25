@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.vavr.control.Try;
 import org.apache.maven.RepositoryUtils;
@@ -82,7 +83,9 @@ public class ArtifactResolver {
 
     private final RepositorySystemSession repositorySession;
 
-    private final List<RemoteRepository> remoteRepositories;
+    private final List<RemoteRepository> remoteProjectRepositories;
+
+    private final List<RemoteRepository> remotePluginRepositories;
 
     /**
      * Copy of remote repositories with check sum policy set to ignore, we need it for pgp signature resolving.
@@ -93,25 +96,38 @@ public class ArtifactResolver {
 
     @Inject
     ArtifactResolver(MavenSession session, RepositorySystem repositorySystem) {
-        this.remoteRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
-        this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteRepositories);
+        this.remoteProjectRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
+        this.remotePluginRepositories = requireNonNull(session.getCurrentProject().getRemotePluginRepositories());
         this.repositorySystem = requireNonNull(repositorySystem);
         this.repositorySession = requireNonNull(session.getRepositorySession());
+        this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteProjectRepositories,
+                remotePluginRepositories);
     }
 
     /**
      * Wrap remote repository with ignore check sum policy.
      *
-     * @param repositories list to wrap
+     * @param remoteProjectRepositories project repositories to wrap
+     * @param remotePluginRepositories  plugin repositories to wrap
      * @return wrapped repository list
      */
-    private static List<RemoteRepository> repositoriesIgnoreCheckSum(List<RemoteRepository> repositories) {
+    private List<RemoteRepository> repositoriesIgnoreCheckSum(List<RemoteRepository> remoteProjectRepositories,
+                                                                     List<RemoteRepository> remotePluginRepositories) {
 
-        return Optional.ofNullable(repositories)
+        Stream<RemoteRepository> remoteProjectRepositoryStream = Optional.ofNullable(remoteProjectRepositories)
                 .orElse(Collections.emptyList())
-                .stream()
-                .map(ArtifactResolver::repositoryIgnoreCheckSum)
-                .collect(Collectors.toList());
+                .stream();
+
+        Stream<RemoteRepository> remotePluginsRepositoryStream = Optional.ofNullable(remotePluginRepositories)
+                .orElse(Collections.emptyList())
+                .stream();
+
+        List<RemoteRepository> remoteRepositories =
+                Stream.concat(remoteProjectRepositoryStream, remotePluginsRepositoryStream)
+                        .map(ArtifactResolver::repositoryIgnoreCheckSum)
+                        .collect(Collectors.toList());
+
+        return repositorySystem.newResolutionRepositories(repositorySession, remoteRepositories);
     }
 
     private static RemoteRepository repositoryIgnoreCheckSum(RemoteRepository repository) {
@@ -196,7 +212,7 @@ public class ArtifactResolver {
         List<org.eclipse.aether.artifact.Artifact> result;
         if (config.verifyPluginDependencies) {
             // we need resolve all transitive dependencies
-            result = resolveArtifactsTransitive(pArtifact, plugin.getDependencies(), config.verifyPomFiles);
+            result = resolvePluginArtifactsTransitive(pArtifact, plugin.getDependencies(), config.verifyPomFiles);
         } else {
             // only resolve plugin artifact
             List<org.eclipse.aether.artifact.Artifact> aeArtifacts = new ArrayList<>();
@@ -206,17 +222,18 @@ public class ArtifactResolver {
                     .map(Dependency::getArtifact)
                     .collect(Collectors.toList()));
 
-            result = resolveArtifacts(aeArtifacts, config.verifyPomFiles);
+            result = resolveArtifacts(aeArtifacts, remotePluginRepositories, config.verifyPomFiles);
         }
 
         return result.stream().map(RepositoryUtils::toArtifact).collect(Collectors.toList());
     }
 
-    private List<org.eclipse.aether.artifact.Artifact> resolveArtifactsTransitive(
+    private List<org.eclipse.aether.artifact.Artifact> resolvePluginArtifactsTransitive(
             org.eclipse.aether.artifact.Artifact artifact,
             List<org.apache.maven.model.Dependency> dependencies, boolean verifyPomFiles) {
 
-        CollectRequest collectRequest = new CollectRequest(new Dependency(artifact, "runtime"), remoteRepositories);
+        CollectRequest collectRequest = new CollectRequest(new Dependency(artifact, "runtime"),
+                remotePluginRepositories);
 
         dependencies.stream().map(d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
                 .forEach(collectRequest::addDependency);
@@ -236,13 +253,14 @@ public class ArtifactResolver {
                         .collect(Collectors.toList()));
 
         if (verifyPomFiles) {
-            resolvePoms(result);
+            resolvePoms(result, remotePluginRepositories);
         }
         return result;
     }
 
     private List<org.eclipse.aether.artifact.Artifact> resolveArtifacts(
             List<org.eclipse.aether.artifact.Artifact> artifacts,
+            List<RemoteRepository> remoteRepositories,
             boolean verifyPomFiles) {
 
         List<ArtifactRequest> requestList = artifacts.stream()
@@ -260,20 +278,21 @@ public class ArtifactResolver {
                         .collect(Collectors.toList()));
 
         if (verifyPomFiles) {
-            resolvePoms(result);
+            resolvePoms(result, remoteRepositories);
         }
 
         return result;
 
     }
 
-    private void resolvePoms(List<org.eclipse.aether.artifact.Artifact> result) {
+    private void resolvePoms(List<org.eclipse.aether.artifact.Artifact> result,
+                             List<RemoteRepository> remoteRepositories) {
         List<org.eclipse.aether.artifact.Artifact> poms =
                 result.stream().filter(a -> !"pom".equals(a.getExtension()))
                         .map(a -> new SubArtifact(a, null, "pom"))
                         .collect(Collectors.toList());
 
-        result.addAll(resolveArtifacts(poms, false));
+        result.addAll(resolveArtifacts(poms, remoteRepositories, false));
     }
 
     private static org.eclipse.aether.artifact.Artifact toArtifact(Plugin plugin) {
@@ -408,7 +427,7 @@ public class ArtifactResolver {
         }
 
         List<ArtifactRequest> requestList = collection.stream()
-                .map(a -> new ArtifactRequest(a, remoteRepositories, null))
+                .map(a -> new ArtifactRequest(a, remoteProjectRepositories, null))
                 .collect(Collectors.toList());
 
         List<ArtifactResult> artifactResults =
@@ -439,7 +458,8 @@ public class ArtifactResolver {
     public List<Artifact> resolveArtifact(Artifact artifact, boolean verifyPomFiles) {
 
         List<org.eclipse.aether.artifact.Artifact> artifacts =
-                resolveArtifacts(Collections.singletonList(RepositoryUtils.toArtifact(artifact)), verifyPomFiles);
+                resolveArtifacts(Collections.singletonList(RepositoryUtils.toArtifact(artifact)),
+                        remoteProjectRepositories, verifyPomFiles);
 
         return artifacts.stream().map(RepositoryUtils::toArtifact).collect(Collectors.toList());
     }
