@@ -19,7 +19,6 @@ import static org.simplify4u.plugins.utils.HexUtils.fingerprintToString;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
-import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
@@ -33,7 +32,7 @@ public interface KeyId {
 
     PGPPublicKey getKeyFromRing(PGPPublicKeyRing publicKeyRing);
 
-    PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) throws PGPException;
+    PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection);
 
     /**
      * Representation of a keyId with long as key.
@@ -58,8 +57,7 @@ public interface KeyId {
         }
 
         @Override
-        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection)
-                throws PGPException {
+        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) {
             return pgpRingCollection.getPublicKeyRing(keyId);
         }
 
@@ -100,8 +98,7 @@ public interface KeyId {
         }
 
         @Override
-        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection)
-                throws PGPException {
+        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) {
             return pgpRingCollection.getPublicKeyRing(fingerprint);
         }
 

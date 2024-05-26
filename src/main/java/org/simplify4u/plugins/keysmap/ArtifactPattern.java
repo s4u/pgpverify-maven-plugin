@@ -97,7 +97,7 @@ class ArtifactPattern {
 
     private static String patternPrepare(String str) {
 
-        if (str.length() == 0) {
+        if (str.isEmpty()) {
             return ".*";
         }
 
@@ -149,7 +149,7 @@ class ArtifactPattern {
 
     private static String versionSpecPrepare(String versionSpec) throws InvalidVersionSpecificationException {
 
-        if (versionSpec.length() == 0 || "*".equals(versionSpec)) {
+        if (versionSpec.isEmpty() || "*".equals(versionSpec)) {
             // any version
             return null;
         }

@@ -72,7 +72,7 @@ class PGPKeysServerClientTest {
 
     @ParameterizedTest
     @MethodSource("proxy")
-    void emptyProxyNotConfigureClient(Proxy proxy) throws URISyntaxException, IOException {
+    void emptyProxyNotConfigureClient(Proxy proxy) {
         runProxyConfig(proxy);
 
         verify(clientBuilder).setDefaultRequestConfig(any());
@@ -117,7 +117,7 @@ class PGPKeysServerClientTest {
     }
 
     @Test
-    void unsupportedProtocolShouldThrowIOException() throws IOException {
+    void unsupportedProtocolShouldThrowIOException() {
         assertThatThrownBy(() -> PGPKeysServerClient.getClient("abc://loclahost", null))
                 .isExactlyInstanceOf(IOException.class)
                 .hasMessage("Unsupported protocol: abc");

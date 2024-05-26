@@ -16,10 +16,6 @@
 package org.simplify4u.plugins;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -28,27 +24,14 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import org.apache.maven.artifact.Artifact;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 import org.simplify4u.plugins.ValidationChecksum.Builder;
 import org.junit.jupiter.api.Test;
 
 class ValidationChecksumTest {
 
+    @TempDir
     private File checksumdirectory = null;
-
-    @BeforeEach
-    void setUp() throws IOException {
-        this.checksumdirectory = Files.createTempDirectory("ValidationChecksumTest").toFile();
-    }
-
-    @AfterEach
-    void tearDown() throws IOException {
-        Files.walk(checksumdirectory.toPath())
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
-    }
 
     @Test
     void testValidationChecksumBuilderNullFile() {

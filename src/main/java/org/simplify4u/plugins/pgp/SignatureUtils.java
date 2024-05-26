@@ -20,10 +20,10 @@ package org.simplify4u.plugins.pgp;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.Optional;
 
 import javax.inject.Named;
@@ -143,7 +143,7 @@ public class SignatureUtils {
      * @throws IOException        In case of IO failures.
      */
     public PGPSignature loadSignature(File file) throws IOException, SignatureException {
-        try (InputStream in = new FileInputStream(file)) {
+        try (InputStream in = Files.newInputStream(file.toPath())) {
             return loadSignature(in);
         }
     }
@@ -156,7 +156,7 @@ public class SignatureUtils {
      * @throws IOException In case of failure to open the file or failure while reading its content.
      */
     public void readFileContentInto(final PGPSignature signature, final File file) throws IOException {
-        try (InputStream inArtifact = new BufferedInputStream(new FileInputStream(file))) {
+        try (InputStream inArtifact = new BufferedInputStream(Files.newInputStream(file.toPath()))) {
             byte[] buf = new byte[8192];
             int t;
             while ((t = inArtifact.read(buf)) >= 0) {
@@ -372,6 +372,7 @@ public class SignatureUtils {
      * @return key algorithm name
      * @throws UnsupportedOperationException if algorithm is is not known
      */
+    @SuppressWarnings("deprecation")
     public String keyAlgorithmName(int keyAlgorithm) {
         switch (keyAlgorithm) {
             case PublicKeyAlgorithmTags.RSA_GENERAL:
@@ -419,6 +420,12 @@ public class SignatureUtils {
         }
     }
 
+    /**
+     * Map a hashAlgorithm into name.
+     *
+     * @param hashAlgorithm a hashAlgorithm
+     * @return a name of hashAlgorithm
+     */
     public String digestName(int hashAlgorithm) {
         switch (hashAlgorithm) {
             case HashAlgorithmTags.SHA1:

@@ -18,14 +18,13 @@ package org.simplify4u.plugins.keyserver;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -33,12 +32,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 
-import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 
@@ -113,7 +110,7 @@ public class PGPKeysCache {
 
         List<String> keyServersList = Arrays.stream(KEY_SERVERS_SPLIT_PATTERN.split(keyServers))
                 .map(String::trim)
-                .filter(s -> s.length() > 0)
+                .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
         return keyServersList.stream()
@@ -165,7 +162,7 @@ public class PGPKeysCache {
     public PGPPublicKeyRing getKeyRing(KeyId keyID) throws IOException {
 
         String path = keyID.getHashPath();
-        File keyFile = new File(cachePath, path);
+        Path keyFile = new File(cachePath, path).toPath();
 
         synchronized (LOCK) {
 
@@ -173,7 +170,7 @@ public class PGPKeysCache {
                 checkNotFoundCache(path);
             }
 
-            if (keyFile.exists()) {
+            if (keyFile.toFile().exists()) {
                 // load from cache
                 Optional<PGPPublicKeyRing> keyRing = loadKeyFromFile(keyFile, keyID);
                 if (keyRing.isPresent()) {
@@ -195,10 +192,10 @@ public class PGPKeysCache {
 
     private void writeNotFoundCache(String keyFilePath) {
 
-        File file = new File(cachePath, keyFilePath + ".404");
+        Path file = new File(cachePath, keyFilePath + ".404").toPath();
 
         try {
-            Files.write(file.toPath(), String.valueOf(System.currentTimeMillis()).getBytes(US_ASCII));
+            Files.write(file, String.valueOf(System.currentTimeMillis()).getBytes(US_ASCII));
         } catch (IOException e) {
             LOGGER.warn("Write file: {} exception: {}", file, getMessage(e));
             deleteFile(file);
@@ -223,7 +220,7 @@ public class PGPKeysCache {
             if (elapsedTime.toHours() > notFoundRefreshHours) {
                 LOGGER.debug("KeyNotFound remove cache {} - mark time: {} elapsed: {}",
                         file, markTime, elapsedTime);
-                deleteFile(file);
+                deleteFile(file.toPath());
             } else {
                 LOGGER.debug("KeyNotFound from cache {} - mark time: {} elapsed: {}",
                         file, markTime, elapsedTime);
@@ -232,10 +229,10 @@ public class PGPKeysCache {
         }
     }
 
-    private static Optional<PGPPublicKeyRing> loadKeyFromFile(File keyFile, KeyId keyID)
+    private static Optional<PGPPublicKeyRing> loadKeyFromFile(Path keyFile, KeyId keyID)
             throws IOException {
         Optional<PGPPublicKeyRing> keyRing = Optional.empty();
-        try (InputStream keyFileStream = new FileInputStream(keyFile)) {
+        try (InputStream keyFileStream = Files.newInputStream(keyFile)) {
             keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
         } catch (PGPException e) {
             throw new IOException(e);
@@ -247,28 +244,25 @@ public class PGPKeysCache {
         return keyRing;
     }
 
-    private static PGPPublicKeyRing receiveKey(File keyFile, KeyId keyId, PGPKeysServerClient keysServerClient)
+    private static PGPPublicKeyRing receiveKey(Path keyFile, KeyId keyId, PGPKeysServerClient keysServerClient)
             throws IOException {
-        File dir = keyFile.getParentFile();
+        Path dir = keyFile.getParent();
 
         if (dir == null) {
             throw new IOException("No parent dir for: " + keyFile);
         }
 
-        if (dir.exists() && !dir.isDirectory()) {
+        if (dir.toFile().exists() && !dir.toFile().isDirectory()) {
             throw new IOException("Path exist but it isn't directory: " + dir);
         }
 
-        // result is ignored, in this place we suspect that nothing wrong can happen
-        // in multi process mode it can happen that two process check for existing directory
-        // in the same time, one create it
-        dir.mkdirs();
+        Files.createDirectories(dir);
 
-        File partFile = File.createTempFile(String.valueOf(keyId), "pgp-public-key");
+        Path partFile = Files.createTempFile(String.valueOf(keyId), "pgp-public-key");
 
         try {
-            try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(partFile))) {
-                keysServerClient.copyKeyToOutputStream(keyId, outputStream, PGPKeysCache::onRetry);
+            try (BufferedOutputStream output = new BufferedOutputStream(Files.newOutputStream(partFile))) {
+                keysServerClient.copyKeyToOutputStream(keyId, output, PGPKeysCache::onRetry);
             }
             moveFile(partFile, keyFile);
         } catch (IOException e) {
@@ -295,25 +289,28 @@ public class PGPKeysCache {
                 lastThrowable.getClass().getName(), getMessage(lastThrowable));
     }
 
-    private static void deleteFile(File file) {
+    private static void deleteFile(Path file) {
 
         Optional.ofNullable(file)
-                .map(File::toPath)
                 .ifPresent(filePath ->
                         Try.run(() -> Files.deleteIfExists(filePath))
                                 .onFailure(e ->
                                         LOGGER.warn("Can't delete: {} with exception: {}", filePath, e.getMessage())));
     }
 
-    private static void moveFile(File source, File destination) throws IOException {
+    private static void moveFile(Path source, Path destination) throws IOException {
         try {
-            Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
         } catch (FileSystemException fse) {
-            // on windows system we can get:
+            // on Windows system we can get:
             // The process cannot access the file because it is being used by another process.
             // so wait ... and try again
-            sleepUninterruptibly(250L + new SecureRandom().nextInt(1000), TimeUnit.MILLISECONDS);
-            Files.move(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Thread.sleep(250L + new SecureRandom().nextInt(1000));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

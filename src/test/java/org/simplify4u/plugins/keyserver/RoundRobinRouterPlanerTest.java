@@ -16,7 +16,6 @@
 package org.simplify4u.plugins.keyserver;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,7 +73,7 @@ class RoundRobinRouterPlanerTest {
     }
 
     @Test
-    void shouldReturnNextAddressAfterError() throws UnknownHostException, HttpException {
+    void shouldReturnNextAddressAfterError() throws HttpException {
 
         HttpHost httpHost = new HttpHost(TEST_HOST);
 

@@ -31,7 +31,6 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.assertj.core.api.Condition;
 import org.eclipse.aether.RepositorySystemSession;
@@ -106,7 +105,7 @@ class ArtifactResolverTest {
     }
 
     @Test
-    void testResolveProjectArtifactsEmpty() throws MojoExecutionException {
+    void testResolveProjectArtifactsEmpty() {
 
         // given
         Configuration config = new Configuration(new CompositeSkipper(emptyList()),

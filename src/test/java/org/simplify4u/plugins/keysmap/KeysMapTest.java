@@ -63,7 +63,7 @@ class KeysMapTest {
     }
 
     @Test
-    void nullLocationTest() throws Exception {
+    void nullLocationTest() {
 
         assertThatThrownBy(() -> keysMap.load(null))
                 .isExactlyInstanceOf(NullPointerException.class);

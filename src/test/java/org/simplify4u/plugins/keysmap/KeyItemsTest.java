@@ -15,7 +15,6 @@
  */
 package org.simplify4u.plugins.keysmap;
 
-import java.io.IOException;
 import java.util.Collections;
 
 import static java.util.Arrays.asList;
@@ -23,7 +22,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.bouncycastle.openpgp.PGPException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.simplify4u.plugins.pgp.KeyFingerprint;
@@ -57,7 +55,7 @@ class KeyItemsTest {
 
     @ParameterizedTest
     @MethodSource("keys")
-    void testIsKeyMatch(String strKeys, String key, boolean match) throws Exception {
+    void testIsKeyMatch(String strKeys, String key, boolean match) {
 
         KeyItems keyItems = new KeyItems().addKeys(strKeys, null);
         assertThat(keyItems.isKeyMatch(aKeyInfo(key))).as("isKeyMatch").isEqualTo(match);
@@ -106,7 +104,7 @@ class KeyItemsTest {
     }
 
     @Test
-    void testSubKeyMach() throws IOException, PGPException {
+    void testSubKeyMach() {
 
         KeyInfo keyInfo = KeyInfo.builder()
                 .fingerprint(new KeyFingerprint("0x1234567890123456789012345678901234567890"))
