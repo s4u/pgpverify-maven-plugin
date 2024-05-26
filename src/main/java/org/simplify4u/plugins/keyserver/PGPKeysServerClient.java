@@ -193,9 +193,6 @@ class PGPKeysServerClient {
             throws IOException {
 
         final URI keyUri = getUriForGetKey(keyId);
-        if (keyServerClientSettings.isOffline()) {
-            throw new IOException("Not possible to download key: " + keyUri + " in offline mode.");
-        }
 
         final HttpUriRequest request = new HttpGet(keyUri);
 

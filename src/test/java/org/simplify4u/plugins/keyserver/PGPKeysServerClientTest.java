@@ -117,24 +117,6 @@ class PGPKeysServerClientTest {
     }
 
     @Test
-    void offLineModeShouldThrowIOException() throws URISyntaxException {
-
-        URI uri = new URI("https://localhost/");
-
-        when(mavenSession.isOffline()).thenReturn(true);
-
-        KeyServerClientSettings clientSettings = KeyServerClientSettings.builder()
-                .mavenSession(mavenSession)
-                .build();
-
-        PGPKeysServerClient pgpKeysServerClient = new PGPKeysServerClient(uri, clientSettings);
-
-        assertThatThrownBy(() -> pgpKeysServerClient.copyKeyToOutputStream(KeyId.from(0x0123456789ABCDEFL), null, null))
-                .isExactlyInstanceOf(IOException.class)
-                .hasMessage("Not possible to download key: https://localhost/pks/lookup?op=get&options=mr&search=0x0123456789ABCDEF in offline mode.");
-    }
-
-    @Test
     void unsupportedProtocolShouldThrowIOException() throws IOException {
         assertThatThrownBy(() -> PGPKeysServerClient.getClient("abc://loclahost", null))
                 .isExactlyInstanceOf(IOException.class)

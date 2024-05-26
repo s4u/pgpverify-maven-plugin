@@ -60,8 +60,4 @@ public class KeyServerClientSettings {
                 .filter(proxy -> proxyName.equalsIgnoreCase(proxy.getId()))
                 .findFirst();
     }
-
-    public boolean isOffline() {
-        return mavenSession.isOffline();
-    }
 }
