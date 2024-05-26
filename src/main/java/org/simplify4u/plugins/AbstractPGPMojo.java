@@ -135,7 +135,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
      */
     protected abstract String getMojoName();
 
-    protected abstract void executeConfiguredMojo() throws MojoExecutionException, MojoFailureException;
+    protected abstract void executeConfiguredMojo();
 
     /**
      * check and warn if any of the deprecated options are used.

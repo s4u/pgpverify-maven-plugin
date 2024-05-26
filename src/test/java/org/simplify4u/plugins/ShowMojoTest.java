@@ -36,7 +36,6 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.repository.RepositorySystem;
-import org.bouncycastle.openpgp.PGPException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -132,7 +131,7 @@ public class ShowMojoTest {
     }
 
     @Test
-    void shouldProcessArtifactWithPom() throws MojoFailureException, MojoExecutionException, IOException, PGPException {
+    void shouldProcessArtifactWithPom() throws MojoFailureException, MojoExecutionException, IOException {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().build();
 
@@ -198,7 +197,7 @@ public class ShowMojoTest {
     }
 
     @Test
-    void shouldFailForNotResolvedSignature() throws MojoExecutionException, IOException {
+    void shouldFailForNotResolvedSignature() throws IOException {
 
         Artifact artifact = TestArtifactBuilder.testArtifact().build();
         Artifact artifactAsc = TestArtifactBuilder.testArtifact().packaging("jar.asc").build();

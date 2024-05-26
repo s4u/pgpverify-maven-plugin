@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.simplify4u.plugins.ArtifactResolver.Configuration;
 import org.simplify4u.plugins.skipfilters.CompositeSkipper;
@@ -145,7 +144,7 @@ public abstract class AbstractVerifyMojo<V> extends AbstractPGPMojo {
     private boolean verifyReactorDependencies;
 
     @Override
-    public final void executeConfiguredMojo() throws MojoExecutionException {
+    public final void executeConfiguredMojo() {
 
         final SkipFilter dependencyFilter = prepareDependencyFilters();
         final SkipFilter pluginFilter = preparePluginFilters();

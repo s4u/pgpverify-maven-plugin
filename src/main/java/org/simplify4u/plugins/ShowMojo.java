@@ -161,7 +161,7 @@ public class ShowMojo extends AbstractPGPMojo {
         Optional.ofNullable(signatureCheckResult.getErrorMessage()).ifPresent(errorMessage ->
                 messageBuilder.failure(errorMessage).newline());
 
-        LOGGER.info(messageBuilder.toString());
+        LOGGER.info(messageBuilder.build());
 
         return signatureCheckResult.getStatus() == SignatureStatus.SIGNATURE_VALID;
     }

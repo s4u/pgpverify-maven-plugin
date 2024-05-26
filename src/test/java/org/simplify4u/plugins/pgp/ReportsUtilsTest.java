@@ -17,6 +17,8 @@ package org.simplify4u.plugins.pgp;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,24 +28,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.simplify4u.plugins.TestUtils.aSignatureCheckResultBuilder;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class ReportsUtilsTest {
 
     private final ReportsUtils reportsUtils = new ReportsUtils();
+
+    @TempDir
+    private Path tempDir;
+
     private File reportFile;
 
     @BeforeEach
     void setup() throws IOException {
-        reportFile = File.createTempFile("report-test", ".json");
-        reportFile.deleteOnExit();
-    }
-
-    @AfterEach
-    void cleanup() {
-        reportFile.delete();
+        reportFile = Files.createTempFile(tempDir, "report-test", ".json").toFile();
     }
 
     @Test

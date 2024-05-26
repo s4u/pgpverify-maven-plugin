@@ -221,7 +221,7 @@ public class KeysMap {
             }
         }
         String ret = nextLine.toString().trim();
-        return ret.length() == 0 ? null : ret;
+        return ret.isEmpty() ? null : ret;
     }
 
     private static String getNextNotEmptyLine(BufferedReader readLine) throws IOException {
@@ -236,11 +236,11 @@ public class KeysMap {
             }
         }
 
-        return nextLine == null || nextLine.length() == 0 ? null : nextLine;
+        return nextLine == null || nextLine.isEmpty() ? null : nextLine;
     }
 
     private static String stripComments(String line) {
-        if (line.length() < 1) {
+        if (line.isEmpty()) {
             return line;
         }
         int hashIndex = line.indexOf('#');
