@@ -155,6 +155,7 @@ public abstract class AbstractPGPMojo extends AbstractMojo {
                 .keyServers(pgpKeyServer)
                 .loadBalance(pgpKeyServerLoadBalance)
                 .notFoundRefreshHours(keyNotFoundRefreshHour)
+                .offLine(session.isOffline())
                 .build();
 
         try {

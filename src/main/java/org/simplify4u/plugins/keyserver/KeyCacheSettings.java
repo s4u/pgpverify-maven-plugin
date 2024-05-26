@@ -34,4 +34,6 @@ public class KeyCacheSettings {
     boolean loadBalance;
 
     int notFoundRefreshHours;
+
+    boolean offLine;
 }

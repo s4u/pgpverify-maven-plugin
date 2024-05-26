@@ -66,6 +66,7 @@ public class PGPKeysCache {
     private File cachePath;
     private int notFoundRefreshHours;
     private KeyServerList keyServerList;
+    private boolean offLine;
 
     PGPKeysCache() {
     }
@@ -89,6 +90,7 @@ public class PGPKeysCache {
         this.cachePath = cacheSettings.getCachePath();
         this.notFoundRefreshHours = cacheSettings.getNotFoundRefreshHours();
         this.keyServerList = createKeyServerList(pgpKeysServerClients, cacheSettings.isLoadBalance());
+        this.offLine = cacheSettings.isOffLine();
 
         LOGGER.info("Key server(s) - {}", keyServerList);
 
@@ -167,7 +169,9 @@ public class PGPKeysCache {
 
         synchronized (LOCK) {
 
-            checkNotFoundCache(path);
+            if (!offLine) {
+                checkNotFoundCache(path);
+            }
 
             if (keyFile.exists()) {
                 // load from cache
@@ -175,6 +179,11 @@ public class PGPKeysCache {
                 if (keyRing.isPresent()) {
                     return keyRing.get();
                 }
+            }
+
+            if (offLine) {
+                throw new IOException("Key " + keyID + " not exits in cache under path: " + keyFile
+                        + " it is not possible to download in offline mode");
             }
 
             // key not exists in cache or something wrong with cache, so receive from servers

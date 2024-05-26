@@ -44,11 +44,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
@@ -69,6 +67,7 @@ class PGPKeysCacheTest {
 
     public static final KeyId KEY_ID_1 = KeyId.from(1L);
 
+    @TempDir
     private Path cachePath;
 
     @Spy
@@ -106,16 +105,6 @@ class PGPKeysCacheTest {
                         any(PGPKeysServerClient.OnRetryConsumer.class));
 
         return Collections.singletonList(keysServerClient);
-    }
-
-    @BeforeEach
-    void setup() throws IOException {
-        cachePath = Files.createTempDirectory("cache-path-test");
-    }
-
-    @AfterEach
-    void cleanup() throws IOException {
-        MoreFiles.deleteRecursively(cachePath, RecursiveDeleteOption.ALLOW_INSECURE);
     }
 
     @Test
@@ -216,6 +205,31 @@ class PGPKeysCacheTest {
 
         // client was call only once
         verify(keysServerClients.get(0)).copyKeyToOutputStream(eq(keyId), any(), any());
+    }
+
+    @Test
+    void notFoundKeyFromCacheInOfflineMode() throws IOException {
+
+        KeyCacheSettings cacheSettings = KeyCacheSettings.builder()
+                .cachePath(cachePath.toFile())
+                .offLine(true)
+                .build();
+
+        pgpKeysCache.init(cacheSettings, Collections.singletonList(keysServerClient));
+
+        KeyId keyId = KeyId.from(0x1234567890L);
+
+        assertThatCode(() -> pgpKeysCache.getKeyRing(keyId))
+                .isExactlyInstanceOf(IOException.class)
+                .hasMessageContainingAll("not exits in cache under path", "it is not possible to download in offline mode");
+
+
+        File notFoundCache = new File(cachePath.toFile(), keyId.getHashPath() + ".404");
+
+        assertThat(notFoundCache).doesNotExist();
+
+        // client was not call at all
+        verifyNoInteractions(keysServerClient);
     }
 
     @Test
