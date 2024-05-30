@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import io.vavr.control.Try;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
@@ -87,6 +88,8 @@ public class ArtifactResolver {
 
     private final List<RemoteRepository> remotePluginRepositories;
 
+    private final ArtifactHandlerManager artifactHandlerManager;
+
     /**
      * Copy of remote repositories with check sum policy set to ignore, we need it for pgp signature resolving.
      * <p>
@@ -95,13 +98,15 @@ public class ArtifactResolver {
     private final List<RemoteRepository> remoteRepositoriesIgnoreCheckSum;
 
     @Inject
-    ArtifactResolver(MavenSession session, RepositorySystem repositorySystem) {
+    ArtifactResolver(MavenSession session, RepositorySystem repositorySystem,
+                     ArtifactHandlerManager artifactHandlerManager) {
         this.remoteProjectRepositories = requireNonNull(session.getCurrentProject().getRemoteProjectRepositories());
         this.remotePluginRepositories = requireNonNull(session.getCurrentProject().getRemotePluginRepositories());
         this.repositorySystem = requireNonNull(repositorySystem);
         this.repositorySession = requireNonNull(session.getRepositorySession());
         this.remoteRepositoriesIgnoreCheckSum = repositoriesIgnoreCheckSum(remoteProjectRepositories,
                 remotePluginRepositories);
+        this.artifactHandlerManager = artifactHandlerManager;
     }
 
     /**
@@ -210,15 +215,20 @@ public class ArtifactResolver {
         }
 
         List<org.eclipse.aether.artifact.Artifact> result;
+
+        List<Dependency> pluginDependencies = plugin.getDependencies().stream()
+                .filter(d -> !config.dependencyFilter.shouldSkipDependency(d, artifactHandlerManager))
+                .map(d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
+                .collect(Collectors.toList());
+
         if (config.verifyPluginDependencies) {
             // we need resolve all transitive dependencies
-            result = resolvePluginArtifactsTransitive(pArtifact, plugin.getDependencies(), config.verifyPomFiles);
+            result = resolvePluginArtifactsTransitive(pArtifact, pluginDependencies, config.verifyPomFiles);
         } else {
             // only resolve plugin artifact
             List<org.eclipse.aether.artifact.Artifact> aeArtifacts = new ArrayList<>();
             aeArtifacts.add(pArtifact);
-            aeArtifacts.addAll(plugin.getDependencies().stream().map(
-                            d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
+            aeArtifacts.addAll(pluginDependencies.stream()
                     .map(Dependency::getArtifact)
                     .collect(Collectors.toList()));
 
@@ -230,14 +240,11 @@ public class ArtifactResolver {
 
     private List<org.eclipse.aether.artifact.Artifact> resolvePluginArtifactsTransitive(
             org.eclipse.aether.artifact.Artifact artifact,
-            List<org.apache.maven.model.Dependency> dependencies, boolean verifyPomFiles) {
+            List<Dependency> dependencies, boolean verifyPomFiles) {
 
         CollectRequest collectRequest = new CollectRequest(new Dependency(artifact, "runtime"),
                 remotePluginRepositories);
-
-        dependencies.stream().map(d -> RepositoryUtils.toDependency(d, repositorySession.getArtifactTypeRegistry()))
-                .forEach(collectRequest::addDependency);
-
+        collectRequest.setDependencies(dependencies);
         DependencyRequest request = new DependencyRequest(collectRequest, null);
 
         DependencyResult dependencyResult =

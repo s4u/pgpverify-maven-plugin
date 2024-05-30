@@ -30,6 +30,7 @@ import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 import org.assertj.core.api.Condition;
@@ -71,6 +72,9 @@ class ArtifactResolverTest {
     private RepositorySystemSession repositorySession;
 
     @Mock
+    private ArtifactHandlerManager artifactHandlerManager;
+
+    @Mock
     private MavenSession session;
 
     @Mock
@@ -82,7 +86,7 @@ class ArtifactResolverTest {
     void setup() {
         when(session.getCurrentProject()).thenReturn(project);
         when(session.getRepositorySession()).thenReturn(repositorySession);
-        resolver = new ArtifactResolver(session, aetherRepositorySystem);
+        resolver = new ArtifactResolver(session, aetherRepositorySystem, artifactHandlerManager);
     }
 
     @Test
@@ -90,17 +94,17 @@ class ArtifactResolverTest {
 
         reset(session, project);
 
-        assertThatCode(() -> new ArtifactResolver(null, null))
+        assertThatCode(() -> new ArtifactResolver(null, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
-        assertThatCode(() -> new ArtifactResolver(session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
-        assertThatCode(() -> new ArtifactResolver(session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
 
         doThrow(new NullPointerException()).when(session).getCurrentProject();
-        assertThatCode(() -> new ArtifactResolver(session, null))
+        assertThatCode(() -> new ArtifactResolver(session, null, null))
                 .isExactlyInstanceOf(NullPointerException.class);
     }
 

@@ -17,21 +17,40 @@
 package org.simplify4u.plugins.skipfilters;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
+import org.apache.maven.model.Dependency;
 
 /**
  * An interface for a filter that determines whether or not a particular artifact should be
  * processed or skipped, based on the mojo configuration.
  */
 public interface SkipFilter {
+
     /**
-     * Indicates whether or not an artifact should be skipped, based on the configuration of this
+     * Indicates whether an artifact should be skipped, based on the configuration of this
      * filter.
      *
-     * @param   artifact
-     *          The artifact being considered for verification.
-     *
-     * @return  {@code true} if the artifact should be skipped; {@code false} if it should be
-     *          processed.
+     * @param artifact The artifact being considered for verification.
+     * @return {@code true} if the artifact should be skipped; {@code false} if it should be
+     *         processed.
      */
     boolean shouldSkipArtifact(final Artifact artifact);
+
+    /**
+     * Indicates whether a dependency should be skipped, based on the configuration of this
+     * filter.
+     *
+     * @param dependency The artifact being considered for verification.
+     * @param artifactHandlerManager a artifactHandlerManager
+     * @return {@code true} if the artifact should be skipped; {@code false} if it should be
+     *         processed.
+     */
+    default boolean shouldSkipDependency(Dependency dependency, ArtifactHandlerManager artifactHandlerManager) {
+        DefaultArtifact artifact =
+                new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion(),
+                        dependency.getScope(), dependency.getType(), dependency.getClassifier(),
+                        artifactHandlerManager.getArtifactHandler(dependency.getType()));
+        return shouldSkipArtifact(artifact);
+    }
 }
