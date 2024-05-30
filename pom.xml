@@ -26,7 +26,7 @@
 
     <groupId>org.simplify4u.plugins</groupId>
     <artifactId>pgpverify-maven-plugin</artifactId>
-    <version>1.18.0-SNAPSHOT</version>
+    <version>1.18.0</version>
     <packaging>maven-plugin</packaging>
 
     <name>Verify PGP signatures plugin</name>
@@ -70,7 +70,7 @@
         <connection>scm:git:git@github.com:s4u/pgpverify-maven-plugin.git</connection>
         <developerConnection>${project.scm.connection}</developerConnection>
         <url>https://github.com/s4u/pgpverify-maven-plugin</url>
-        <tag>HEAD</tag>
+        <tag>v1.18.0</tag>
     </scm>
 
     <distributionManagement>
@@ -89,7 +89,7 @@
         <resilience4j.version>1.7.1</resilience4j.version>
         <slf4j.version>1.7.36</slf4j.version>
 
-        <project.build.outputTimestamp>2024-03-31T16:39:57Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2024-05-30T16:21:23Z</project.build.outputTimestamp>
 
         <!-- default value for ide -->
         <maven.test.skip />
