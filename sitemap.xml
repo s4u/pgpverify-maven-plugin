@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/check-mojo.html</loc>
+    </url>
+    <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/ci-management.html</loc>
     </url>
     <url>
@@ -8,6 +11,12 @@
     </url>
     <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/examples.html</loc>
+    </url>
+    <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/go-offline-mojo.html</loc>
+    </url>
+    <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/help-mojo.html</loc>
     </url>
     <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/</loc>
@@ -25,16 +34,25 @@
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/licenses.html</loc>
     </url>
     <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/plugin-info.html</loc>
+    </url>
+    <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/plugins.html</loc>
     </url>
     <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/project-info.html</loc>
     </url>
     <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/project-reports.html</loc>
+    </url>
+    <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/report-format.html</loc>
     </url>
     <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/scm.html</loc>
+    </url>
+    <url>
+        <loc>https://www.simplify4u.org/pgpverify-maven-plugin/show-mojo.html</loc>
     </url>
     <url>
         <loc>https://www.simplify4u.org/pgpverify-maven-plugin/summary.html</loc>
