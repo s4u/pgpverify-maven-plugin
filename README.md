@@ -12,3 +12,4 @@ This plugin allows you to automatically verify PGP signatures of all project dep
 You can find more information on the site:
 
 https://www.simplify4u.org/pgpverify-maven-plugin/
+
