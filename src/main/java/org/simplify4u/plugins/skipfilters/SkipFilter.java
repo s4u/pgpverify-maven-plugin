@@ -16,6 +16,7 @@
 
 package org.simplify4u.plugins.skipfilters;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
@@ -51,6 +52,14 @@ public interface SkipFilter {
                 new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(), dependency.getVersion(),
                         dependency.getScope(), dependency.getType(), dependency.getClassifier(),
                         artifactHandlerManager.getArtifactHandler(dependency.getType()));
+        return shouldSkipArtifact(artifact);
+    }
+
+    default boolean shouldSkipDependency(org.eclipse.aether.graph.Dependency dependency) {
+
+        Artifact artifact = RepositoryUtils.toArtifact(dependency.getArtifact());
+        artifact.setScope(dependency.getScope());
+        artifact.setOptional(dependency.getOptional());
         return shouldSkipArtifact(artifact);
     }
 }
