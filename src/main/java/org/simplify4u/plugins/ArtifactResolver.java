@@ -51,6 +51,8 @@ import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -223,7 +225,7 @@ public class ArtifactResolver {
 
         if (config.verifyPluginDependencies) {
             // we need resolve all transitive dependencies
-            result = resolvePluginArtifactsTransitive(pArtifact, pluginDependencies, config.verifyPomFiles);
+            result = resolvePluginArtifactsTransitive(pArtifact, pluginDependencies, config.dependencyFilter, config.verifyPomFiles);
         } else {
             // only resolve plugin artifact
             List<org.eclipse.aether.artifact.Artifact> aeArtifacts = new ArrayList<>();
@@ -240,7 +242,7 @@ public class ArtifactResolver {
 
     private List<org.eclipse.aether.artifact.Artifact> resolvePluginArtifactsTransitive(
             org.eclipse.aether.artifact.Artifact artifact,
-            List<Dependency> dependencies, boolean verifyPomFiles) {
+            List<Dependency> dependencies, SkipFilter dependencyFilter, boolean verifyPomFiles) {
 
         CollectRequest collectRequest = new CollectRequest(new Dependency(artifact, "runtime"),
                 remotePluginRepositories);
@@ -252,12 +254,21 @@ public class ArtifactResolver {
                         .recover(DependencyResolutionException.class, DependencyResolutionException::getResult)
                         .get();
 
-        List<org.eclipse.aether.artifact.Artifact> result = new ArrayList<>(
-                dependencyResult.getArtifactResults().stream()
-                        .map(aResult -> aResult.isResolved() ?
-                                aResult.getArtifact() :
-                                aResult.getRequest().getArtifact())
-                        .collect(Collectors.toList()));
+        List<org.eclipse.aether.artifact.Artifact> result = new ArrayList<>();
+        dependencyResult.getRoot().accept(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                if (node.getArtifact() != null && !dependencyFilter.shouldSkipDependency(node.getDependency())) {
+                    result.add(node.getArtifact());
+                }
+                return true;
+            }
+
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                return true;
+            }
+        });
 
         if (verifyPomFiles) {
             resolvePoms(result, remotePluginRepositories);
