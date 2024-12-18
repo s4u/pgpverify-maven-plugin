@@ -136,6 +136,13 @@ public class KeysMap {
                 .anyMatch(entry -> !entry.getValue().isNoSignature());
     }
 
+    public boolean isWithDuplicateKeyItems() {
+        return items
+                .values()
+                .stream()
+                .anyMatch(KeyItems::isWithDuplicateKeyItems);
+    }
+
     /**
      * Test if given key is trust for artifact.
      *

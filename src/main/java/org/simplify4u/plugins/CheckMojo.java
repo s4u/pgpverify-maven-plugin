@@ -175,6 +175,16 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
     @Parameter(property = "pgpverify.reportWrite", defaultValue = "false")
     private boolean reportWrite;
 
+    /**
+     * <p>
+     * Indicate if build should fail if duplicate item is found in key maps.
+     * </p>
+     *
+     * @since 1.19.0
+     */
+    @Parameter(property = "pgpverify.failDuplicateKeyItem", defaultValue = "false")
+    private boolean failDuplicateKeyItem;
+
     @Override
     protected String getMojoName() {
         return MOJO_NAME;
@@ -334,6 +344,10 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
 
         if (verificationResult.stream().anyMatch(result -> result.error)) {
             throw new PGPMojoException("Signature errors");
+        }
+
+        if (failDuplicateKeyItem && keysMap.isWithDuplicateKeyItems()) {
+            throw new DuplicateKeyMapKeyItemException();
         }
     }
 

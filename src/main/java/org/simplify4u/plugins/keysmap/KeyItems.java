@@ -18,6 +18,7 @@ package org.simplify4u.plugins.keysmap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,8 @@ import org.simplify4u.plugins.pgp.KeyInfo;
 class KeyItems {
 
     private final List<KeyItem> keys = new ArrayList<>();
+
+    private final AtomicBoolean duplicateKeyItemFound = new AtomicBoolean(false);
 
     /**
      * Add new keys to current list.
@@ -99,6 +102,7 @@ class KeyItems {
             keys.add(keyItem);
         } else {
             LOGGER.warn("Duplicate key item: {} in: {}", keyItem, keysMapContext);
+            duplicateKeyItemFound.set(true);
         }
     }
 
@@ -149,5 +153,9 @@ class KeyItems {
 
     public boolean isEmpty() {
         return keys.isEmpty();
+    }
+
+    public boolean isWithDuplicateKeyItems() {
+        return duplicateKeyItemFound.get();
     }
 }
