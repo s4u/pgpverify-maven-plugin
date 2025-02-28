@@ -395,6 +395,10 @@ public class SignatureUtils {
                 return "Diffie-Hellman";
             case PublicKeyAlgorithmTags.EDDSA:
                 return "EdDSA";
+            case PublicKeyAlgorithmTags.AEDH:
+                return "AEDH";
+            case PublicKeyAlgorithmTags.AEDSA:
+                return "AEDSA";
             case PublicKeyAlgorithmTags.X25519:
                 return "X25519";
             case PublicKeyAlgorithmTags.X448:
