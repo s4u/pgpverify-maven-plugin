@@ -96,6 +96,16 @@ class KeyItemFingerprintTest {
         KeyInfo keyInfo = aKeyInfo("0x1234 5678 9ABC DEF0");
 
         assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isTrue();
+        assertThat(keyItemFingerprint.isKeyMatchNoPublicKey(keyInfo)).isFalse();
     }
 
+    @Test
+    void markKeyWithOutPublic() {
+        KeyItemFingerprint keyItemFingerprint = new KeyItemFingerprint("!0x9ABC DEF0 1234 5678 9ABC DEF0 1234 5678 9ABC DEF0");
+
+        KeyInfo keyInfo = aKeyInfo("0x1234 5678 9ABC DEF0");
+
+        assertThat(keyItemFingerprint.isKeyMatch(keyInfo)).isFalse();
+        assertThat(keyItemFingerprint.isKeyMatchNoPublicKey(keyInfo)).isTrue();
+    }
 }

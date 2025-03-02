@@ -35,7 +35,6 @@ import org.assertj.core.api.Condition;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -271,14 +270,13 @@ public class SignatureUtilsTest {
                 .file(new File(getClass().getResource("/helloworld-1.0.jar.asc").getFile()))
                 .build();
 
-        PGPPublicKeyRing pgpPublicKeys;
+        PublicKeyRingPack keyRingPack;
         try (InputStream inputStream = getClass().getResourceAsStream("/F8484389379ACEAC.asc")) {
-            pgpPublicKeys = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xF8484389379ACEACL))
-                    .orElse(null);
+            keyRingPack = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xF8484389379ACEACL));
         }
 
         PGPKeysCache keysCache = Mockito.mock(PGPKeysCache.class);
-        when(keysCache.getKeyRing(any())).thenReturn(pgpPublicKeys);
+        when(keysCache.getKeyRing(any())).thenReturn(keyRingPack);
 
         SignatureCheckResult signatureInfo = signatureUtils.checkSignature(artifact, artifactAsc, keysCache);
 

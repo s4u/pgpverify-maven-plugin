@@ -30,10 +30,11 @@ import java.util.stream.StreamSupport;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 import org.bouncycastle.openpgp.PGPSignature;
+import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
@@ -53,7 +54,6 @@ public final class PublicKeyUtils {
      * Generate string version of key fingerprint
      *
      * @param publicKey given key
-     *
      * @return fingerprint as string
      */
     static String fingerprint(PGPPublicKey publicKey) {
@@ -64,7 +64,6 @@ public final class PublicKeyUtils {
      * Generate string version of master key fingerprint
      *
      * @param keyInfo given key
-     *
      * @return master key fingerprint as string
      */
     public static String fingerprintForMaster(KeyInfo keyInfo) {
@@ -75,7 +74,6 @@ public final class PublicKeyUtils {
      * Generate string with key id description.
      *
      * @param keyInfo a key
-     *
      * @return string with key id description
      */
     public static String keyIdDescription(KeyInfo keyInfo) {
@@ -90,9 +88,8 @@ public final class PublicKeyUtils {
     /**
      * Return master key for given sub public key.
      *
-     * @param publicKey     given key
+     * @param publicKey given key
      * @param publicKeyRing keys ring with master and sub keys
-     *
      * @return master key of empty if not found or given key is master key
      */
     static Optional<PGPPublicKey> getMasterKey(PGPPublicKey publicKey, PGPPublicKeyRing publicKeyRing) {
@@ -130,23 +127,57 @@ public final class PublicKeyUtils {
      * Load Public Keys ring from stream for given keyId.
      *
      * @param keyStream input stream with public keys
-     * @param keyId     key ID for find proper key ring
-     *
+     * @param keyId key ID for find proper key ring
      * @return key ring with given key id
-     *
-     * @throws IOException  if problem with comunication
+     * @throws IOException if problem with comunication
      * @throws PGPException if problem with PGP data
      */
-    public static Optional<PGPPublicKeyRing> loadPublicKeyRing(InputStream keyStream, KeyId keyId)
+    public static PublicKeyRingPack loadPublicKeyRing(InputStream keyStream, KeyId keyId)
             throws IOException, PGPException {
 
         InputStream keyIn = PGPUtil.getDecoderStream(keyStream);
-        PGPPublicKeyRingCollection pgpRing = new PGPPublicKeyRingCollection(keyIn, new BcKeyFingerprintCalculator());
+        PGPObjectFactory pgpFact = new PGPObjectFactory(keyIn, new BcKeyFingerprintCalculator());
 
-        Optional<PGPPublicKeyRing> publicKeyRing = Optional.ofNullable(keyId.getKeyRingFromRingCollection(pgpRing));
-        publicKeyRing.ifPresent(PublicKeyUtils::verifyPublicKeyRing);
+        Optional<PGPPublicKeyRing> publicKeyRing = Optional.empty();
+        Optional<PGPSignature> revocationSignature = Optional.empty();
 
-        return publicKeyRing;
+        for (Object obj = pgpFact.nextObject(); obj != null; obj = pgpFact.nextObject()) {
+            if (obj instanceof PGPPublicKeyRing) {
+                PGPPublicKeyRing ring = (PGPPublicKeyRing) obj;
+                if (keyId.getKeyFromRing(ring) != null) {
+                    publicKeyRing = Optional.of(ring);
+                }
+            } else if (obj instanceof PGPSignatureList) {
+                // we have only signatures without public keys ...
+                PGPSignatureList signatureList = (PGPSignatureList) obj;
+                revocationSignature = StreamSupport.stream(signatureList.spliterator(), false)
+                        .filter(s -> s.getSignatureType() == PGPSignature.KEY_REVOCATION)
+                        .filter(s -> s.getKeyID() == keyId.getId())
+                        .findAny();
+            } else {
+                LOGGER.warn("Invalid object item {} for keyId: {}", obj.getClass().getName(), keyId);
+            }
+        }
+
+        if (publicKeyRing.isPresent()) {
+            verifyPublicKeyRing(publicKeyRing.get());
+            PGPPublicKey key = keyId.getKeyFromRing(publicKeyRing.get());
+            if (key.hasRevocation() && !revocationSignature.isPresent()) {
+                LOGGER.warn("Revocation for: {}", keyId);
+                Iterator<PGPSignature> signaturesOfType = key.getSignaturesOfType(PGPSignature.KEY_REVOCATION);
+                if (signaturesOfType.hasNext()) {
+                    LOGGER.warn("Revocation signature: {}", keyId);
+                    revocationSignature = Optional.of(signaturesOfType.next());
+                }
+            }
+        }
+
+
+
+        return PublicKeyRingPack.builder()
+                .publicKeyRing(publicKeyRing.orElse(null))
+                .revocationSignature(revocationSignature.orElse(null))
+                .build();
     }
 
     /**

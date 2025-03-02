@@ -32,6 +32,7 @@ import org.apache.maven.shared.utils.logging.MessageBuilder;
 import org.apache.maven.shared.utils.logging.MessageUtils;
 import org.simplify4u.plugins.pgp.ArtifactInfo;
 import org.simplify4u.plugins.pgp.KeyInfo;
+import org.simplify4u.plugins.pgp.RevocationSignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureCheckResult;
 import org.simplify4u.plugins.pgp.SignatureInfo;
 import org.simplify4u.plugins.pgp.SignatureStatus;
@@ -130,6 +131,8 @@ public class ShowMojo extends AbstractPGPMojo {
             messageBuilder.a("\tstatus:      ");
             if (signatureCheckResult.getStatus() == SignatureStatus.SIGNATURE_VALID) {
                 messageBuilder.success("valid");
+            } else if (signatureCheckResult.getStatus() == SignatureStatus.KEY_REVOCATION) {
+                messageBuilder.success("revoked key without public key - not checked");
             } else {
                 messageBuilder.failure("invalid");
             }
@@ -154,6 +157,21 @@ public class ShowMojo extends AbstractPGPMojo {
             );
             messageBuilder.a("\tcreate date: ").strong(key.getDate()).newline();
             messageBuilder.a("\tuids:        ").strong(key.getUids()).newline();
+            if (key.isRevoked()) {
+                messageBuilder.strong("\tkey is revoked").newline();
+            }
+        }
+
+        RevocationSignatureInfo revocationSignature = signatureCheckResult.getRevocationSignature();
+        if (revocationSignature != null) {
+            messageBuilder.newline();
+            messageBuilder.a("Revocation signature:").newline();
+            messageBuilder.a("\tcreate date: ").strong(revocationSignature.getDate()).newline();
+            messageBuilder.a("\treason:      ").strong(revocationSignature.getReasonAsString()).newline();
+            Optional.ofNullable(revocationSignature.getDescription())
+                    .filter(desc -> !desc.isEmpty())
+                    .ifPresent(desc ->
+                            messageBuilder.a("\tdescription: ").strong(desc).newline());
         }
 
         messageBuilder.newline();

@@ -26,7 +26,8 @@ Example:
       "version": 4,
       "algorithm": 1,
       "bits": 2048,
-      "date": "2020-06-05T11:22:33.444+00:00"
+      "date": "2020-06-05T11:22:33.444+00:00",
+      "revoked": false
     },
     "keyShowUrl": "https://example.com/key",
     "signature": {
@@ -35,6 +36,11 @@ Example:
       "keyId": "0x0000000000001234",
       "date": "2020-06-05T11:22:33.444+00:00",
       "version": 4
+    },
+    "revocationSignature": {
+      "date": "2022-11-05T11:22:33.444+00:00",
+      "reason": 2,
+      "description": "description of revocation"
     },
     "status": "SIGNATURE_VALID"
   },
@@ -55,7 +61,8 @@ Example:
       "version": 4,
       "algorithm": 1,
       "bits": 2048,
-      "date": "2020-04-22T10:22:33.444+00:00"
+      "date": "2020-04-22T10:22:33.444+00:00",
+      "revoked": false
     },
     "keyShowUrl": "https://example.com/key",
     "signature": {
@@ -76,15 +83,15 @@ Item
 
 Each item of array has described by:
 
-| item         | description                                   |
-| ------------ | --------------------------------------------- |
-| artifact     | maven artifact                                |
-| key          | key used to sign artifact                     |
-| signature    | signature attached to artifact                |
-| keyShowUrl   | url address to key server where key was found |
-| status       | verification status                           |
-| errorMessage | optional error message in case of any problem |
-
+| item                | description                                   |
+|---------------------|-----------------------------------------------|
+| artifact            | maven artifact                                |
+| key                 | key used to sign artifact                     |
+| signature           | signature attached to artifact                |
+| keyShowUrl          | url address to key server where key was found |
+| revocationSignature | revocation key signature info                 |
+| status              | verification status                           |
+| errorMessage        | optional error message in case of any problem |
 
 Artifact 
 --------
@@ -110,6 +117,7 @@ Key
 | algorithm   | key algorithm - https://datatracker.ietf.org/doc/html/rfc4880#section-9.1 | 
 | bits        | key length                                                                |
 | date        | key creation date                                                         |
+| revoked     | key revocation status                                                     |
 
 Signature
 ---------
@@ -132,4 +140,5 @@ Verification status, can be:
 - `SIGNATURE_NOT_RESOLVED` - signature for artifact was not found
 - `KEY_NOT_FOUND` - key referenced in signature was not found on available key servers
 - `SIGNATURE_ERROR` - signature process error
+- `KEY_REVOKED` - key was revoked and public key is not available
 - `ERROR` - another error during processed 

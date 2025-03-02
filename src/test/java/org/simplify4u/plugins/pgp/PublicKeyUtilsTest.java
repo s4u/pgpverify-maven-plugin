@@ -17,7 +17,6 @@ package org.simplify4u.plugins.pgp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.simplify4u.plugins.TestUtils.aKeyInfo;
@@ -25,30 +24,21 @@ import static org.simplify4u.plugins.TestUtils.aKeyInfo;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PublicKeyUtilsTest {
 
     private static final KeyId SUB_KEY_ID = KeyId.from(0xEFE8086F9E93774EL);
     private static final long MASTER_KEY_ID = 0x164BD2247B936711L;
 
-    private PGPPublicKeyRing publicKeyRing;
-
-    @BeforeAll
-    void loadKeyRing() throws IOException, PGPException {
+    private PGPPublicKeyRing loadKeyRing() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/EFE8086F9E93774E.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, SUB_KEY_ID);
-            assertThat(aPublicKeyRing)
-                    .hasValueSatisfying(publicKeyRing -> assertThat(publicKeyRing).isNotEmpty());
-
-            publicKeyRing = aPublicKeyRing.get();
+            PublicKeyRingPack aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, SUB_KEY_ID);
+            assertThat(aPublicKeyRing.isEmpty()).isFalse();
+            return aPublicKeyRing.getPublicKeyRing();
         }
     }
-
 
     @Test
     void fingerPrintForMasterKey() {
@@ -75,8 +65,9 @@ class PublicKeyUtilsTest {
     }
 
     @Test
-    void userIdsWithSubKey() {
+    void userIdsWithSubKey() throws Exception {
 
+        PGPPublicKeyRing publicKeyRing = loadKeyRing();
         PGPPublicKey key = SUB_KEY_ID.getKeyFromRing(publicKeyRing);
 
         assertThat(key.isMasterKey()).isFalse();
@@ -85,8 +76,8 @@ class PublicKeyUtilsTest {
     }
 
     @Test
-    void userIdsWithMasterKey() {
-
+    void userIdsWithMasterKey() throws Exception {
+        PGPPublicKeyRing publicKeyRing = loadKeyRing();
         PGPPublicKey key = publicKeyRing.getPublicKey(MASTER_KEY_ID);
 
         assertThat(key.isMasterKey()).isTrue();
@@ -117,13 +108,12 @@ class PublicKeyUtilsTest {
     void invalidUTF8InUserId() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/B0F3710FA64900E7.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xB0F3710FA64900E7L));
+            PublicKeyRingPack keyRingPack = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xB0F3710FA64900E7L));
 
-            assertThat(aPublicKeyRing)
-                    .hasValueSatisfying(publicKeyRing ->
-                            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xB0F3710FA64900E7L), publicKeyRing))
-                                    .containsOnly("�amonn McManus <eamonn@mcmanus.net>")
-                    );
+            assertThat(keyRingPack.hasPublicKeys()).isTrue();
+            PGPPublicKeyRing publicKeyRing = keyRingPack.getPublicKeyRing();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0xB0F3710FA64900E7L), publicKeyRing))
+                    .containsOnly("�amonn McManus <eamonn@mcmanus.net>");
         }
     }
 
@@ -131,13 +121,12 @@ class PublicKeyUtilsTest {
     void validateSubKeyWithExternalSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/3D8B00E198E21827.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x3D8B00E198E21827L));
+            PublicKeyRingPack keyRingPack = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x3D8B00E198E21827L));
 
-            assertThat(aPublicKeyRing)
-                    .hasValueSatisfying(publicKeyRing ->
-                            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x3D8B00E198E21827L), publicKeyRing))
-                                    .containsOnly("Rick Hillegas <rhillegas@apache.org>")
-                    );
+            assertThat(keyRingPack.hasPublicKeys()).isTrue();
+            PGPPublicKeyRing publicKeyRing = keyRingPack.getPublicKeyRing();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x3D8B00E198E21827L), publicKeyRing))
+                    .containsOnly("Rick Hillegas <rhillegas@apache.org>");
         }
     }
 
@@ -145,14 +134,24 @@ class PublicKeyUtilsTest {
     void validateSubKeyWithRevokedSignature() throws IOException, PGPException {
 
         try (InputStream inputStream = getClass().getResourceAsStream("/411063A3A0FFD119.asc")) {
-            Optional<PGPPublicKeyRing> aPublicKeyRing = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x411063A3A0FFD119L));
+            PublicKeyRingPack keyRingPack = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0x411063A3A0FFD119L));
 
-            assertThat(aPublicKeyRing)
-                    .hasValueSatisfying(publicKeyRing ->
-                            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x411063A3A0FFD119L), publicKeyRing))
-                                    .hasSize(17)
-                                    .contains("Stian Soiland <stain@stud.ntnu.no>")
-                    );
+            assertThat(keyRingPack.hasPublicKeys()).isTrue();
+            PGPPublicKeyRing publicKeyRing = keyRingPack.getPublicKeyRing();
+            assertThat(PublicKeyUtils.getUserIDs(publicKeyRing.getPublicKey(0x411063A3A0FFD119L), publicKeyRing))
+                    .hasSize(17)
+                    .contains("Stian Soiland <stain@stud.ntnu.no>");
+        }
+    }
+
+    @Test
+    void onlyRevokedSignature() throws IOException, PGPException {
+        try (InputStream inputStream = getClass().getResourceAsStream("/D0BF1D737C9A1C22.asc")) {
+            PublicKeyRingPack keyRingPack = PublicKeyUtils.loadPublicKeyRing(inputStream, KeyId.from(0xD0BF1D737C9A1C22L));
+
+            assertThat(keyRingPack.isEmpty()).isFalse();
+            assertThat(keyRingPack.hasPublicKeys()).isFalse();
+            assertThat(keyRingPack.getRevocationSignature()).isNotNull();
         }
     }
 }

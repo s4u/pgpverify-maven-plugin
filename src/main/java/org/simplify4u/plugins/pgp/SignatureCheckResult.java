@@ -40,6 +40,8 @@ public class SignatureCheckResult {
 
     SignatureInfo signature;
 
+    RevocationSignatureInfo revocationSignature;
+
     @NonNull
     SignatureStatus status;
 

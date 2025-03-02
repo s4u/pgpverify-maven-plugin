@@ -63,7 +63,7 @@ class KeyItems {
                 .map(String::trim)
                 .forEach(key -> {
 
-                    if (key.startsWith("0x")) {
+                    if (key.startsWith("0x") || key.startsWith("!0x")) {
                         addKey(new KeyItemFingerprint(key), keysMapContext);
                     } else {
                         KeyItem keyInfoItem = KeyItemSpecialValue.keyItemFromString(key)
@@ -114,6 +114,16 @@ class KeyItems {
     public boolean isKeyMatch(KeyInfo keyInfo) {
         return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatch(keyInfo));
     }
+
+    /**
+     * Check if key with no public key match
+     * @param keyInfo a key to test
+     * @return a result
+     */
+    public boolean isKeyMatchNoPublicKey(KeyInfo keyInfo) {
+        return keys.stream().anyMatch(keyInfoItem -> keyInfoItem.isKeyMatchNoPublicKey(keyInfo));
+    }
+
 
     public boolean isNoSignature() {
         return keys.stream().anyMatch(KeyItem::isNoSignature);

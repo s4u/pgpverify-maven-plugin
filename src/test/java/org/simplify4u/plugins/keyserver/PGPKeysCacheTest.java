@@ -59,6 +59,7 @@ import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListLoadBalance;
 import org.simplify4u.plugins.keyserver.PGPKeysCache.KeyServerListOne;
 import org.simplify4u.plugins.pgp.KeyId;
 import org.simplify4u.plugins.pgp.KeyId.KeyIdLong;
+import org.simplify4u.plugins.pgp.PublicKeyRingPack;
 import org.slf4j.Logger;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +75,7 @@ class PGPKeysCacheTest {
     Logger keysCacheLogger;
 
     @Mock
-    private PGPPublicKeyRing emptyPgpPublicKeyRing;
+    private PublicKeyRingPack emptyPgpPublicKeyRingPack;
 
     @Mock
     private PGPKeysServerClient keysServerClient;
@@ -156,7 +157,7 @@ class PGPKeysCacheTest {
         pgpKeysCache.init(cacheSettings, keysServerClients);
 
         // first call retrieve key from server
-        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL)).getPublicKeyRing();
 
         assertThat(keyRing)
                 .hasSize(2)
@@ -168,7 +169,7 @@ class PGPKeysCacheTest {
         clearInvocations(keysServerClients.get(0));
 
         // second from cache
-        keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
+        keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL)).getPublicKeyRing();
 
         assertThat(keyRing)
                 .hasSize(2)
@@ -321,7 +322,7 @@ class PGPKeysCacheTest {
         Files.createFile(keyDirPath.resolve("EFE8086F9E93774E.asc"));
 
         // call should retrieve key from server
-        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL));
+        PGPPublicKeyRing keyRing = pgpKeysCache.getKeyRing(KeyId.from(0xEFE8086F9E93774EL)).getPublicKeyRing();
 
         assertThat(keyRing)
                 .hasSize(2)
@@ -384,12 +385,12 @@ class PGPKeysCacheTest {
         KeyServerList serverList = new KeyServerListOne().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 2; i++) {
-            PGPPublicKeyRing publicKeyRing = serverList.execute(client -> {
+            PublicKeyRingPack publicKeyRing = serverList.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
-                return emptyPgpPublicKeyRing;
+                return emptyPgpPublicKeyRingPack;
             });
-            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRingPack);
             serverList.getUriForShowKey(KEY_ID_1);
         }
 
@@ -434,12 +435,12 @@ class PGPKeysCacheTest {
         KeyServerList serverListFallback = new KeyServerListFallback().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 2; i++) {
-            PGPPublicKeyRing publicKeyRing = serverListFallback.execute(client -> {
+            PublicKeyRingPack publicKeyRing = serverListFallback.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
-                return emptyPgpPublicKeyRing;
+                return emptyPgpPublicKeyRingPack;
             });
-            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRingPack);
             serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
@@ -461,12 +462,12 @@ class PGPKeysCacheTest {
         KeyServerList serverListFallback = new KeyServerListLoadBalance().withClients(Arrays.asList(client1, client2));
 
         for (int i = 0; i < 3; i++) {
-            PGPPublicKeyRing publicKeyRing = serverListFallback.execute(client -> {
+            PublicKeyRingPack publicKeyRing = serverListFallback.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
-                return emptyPgpPublicKeyRing;
+                return emptyPgpPublicKeyRingPack;
             });
-            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRingPack);
             serverListFallback.getUriForShowKey(KEY_ID_1);
         }
 
@@ -503,12 +504,12 @@ class PGPKeysCacheTest {
         List<PGPKeysServerClient> executedClient = new ArrayList<>();
 
         for (int i = 0; i < 2; i++) {
-            PGPPublicKeyRing publicKeyRing = keyServerList.execute(client -> {
+            PublicKeyRingPack publicKeyRing = keyServerList.execute(client -> {
                 client.copyKeyToOutputStream(KEY_ID_1, null, null);
                 executedClient.add(client);
-                return emptyPgpPublicKeyRing;
+                return emptyPgpPublicKeyRingPack;
             });
-            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRing);
+            assertThat(publicKeyRing).isSameAs(emptyPgpPublicKeyRingPack);
             keyServerList.getUriForShowKey(KEY_ID_1);
         }
 

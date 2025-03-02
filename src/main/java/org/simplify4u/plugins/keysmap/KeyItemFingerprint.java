@@ -30,14 +30,30 @@ import org.simplify4u.plugins.utils.HexUtils;
 @EqualsAndHashCode
 class KeyItemFingerprint implements KeyItem {
 
+    private final boolean allowNoPublicKey;
     private final byte[] fingerPrint;
 
     public KeyItemFingerprint(String key) {
-        fingerPrint = stringToFingerprint(key);
+        if (key.startsWith("!")) {
+            fingerPrint = stringToFingerprint(key.substring(1));
+            allowNoPublicKey = true;
+        } else {
+            fingerPrint = stringToFingerprint(key);
+            allowNoPublicKey = false;
+        }
     }
 
     @Override
     public boolean isKeyMatch(KeyInfo keyInfo) {
+        return !allowNoPublicKey && compareWith(keyInfo);
+    }
+
+    @Override
+    public boolean isKeyMatchNoPublicKey(KeyInfo keyInfo) {
+        return allowNoPublicKey && compareWith(keyInfo);
+    }
+
+    private boolean compareWith(KeyInfo keyInfo) {
         return compareWith(keyInfo.getMaster()) || compareWith(keyInfo.getFingerprint()) ;
     }
 
