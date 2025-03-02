@@ -34,12 +34,12 @@ import org.apache.maven.artifact.Artifact;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.PublicKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.IssuerFingerprint;
+import org.bouncycastle.bcpg.sig.RevocationReason;
 import org.bouncycastle.openpgp.PGPCompressedData;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPObjectFactory;
 import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.bouncycastle.openpgp.PGPSignature;
 import org.bouncycastle.openpgp.PGPSignatureList;
 import org.bouncycastle.openpgp.PGPSignatureSubpacketVector;
@@ -244,6 +244,7 @@ public class SignatureUtils {
      * @param cache       PGP cache for access public key
      * @return check verification result
      */
+    @SuppressWarnings("java:S3776") //Refactor this method to reduce its Complexity
     private SignatureCheckResult checkSignature(Artifact artifact, Artifact artifactAsc,
                                                 boolean onlyResolve, PGPKeysCache cache) {
 
@@ -292,7 +293,7 @@ public class SignatureUtils {
                         .version(signature.getVersion())
                         .build());
 
-        PGPPublicKeyRing publicKeys = Try.of(() -> cache.getKeyRing(keyId))
+        PublicKeyRingPack publicKeys = Try.of(() -> cache.getKeyRing(keyId))
                 .onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
                 .onFailure(PGPKeyNotFound.class, e -> signatureCheckResultBuilder.status(SignatureStatus.KEY_NOT_FOUND))
                 .getOrNull();
@@ -303,40 +304,96 @@ public class SignatureUtils {
             return signatureCheckResultBuilder.build();
         }
 
-        PGPPublicKey publicKey = keyId.getKeyFromRing(publicKeys);
+        if (publicKeys.hasPublicKeys()) {
+            PGPPublicKey publicKey = keyId.getKeyFromRing(publicKeys.getPublicKeyRing());
 
-        signatureCheckResultBuilder.key(KeyInfo.builder()
-                .fingerprint(new KeyFingerprint(publicKey.getFingerprint()))
-                .master(PublicKeyUtils.getMasterKey(publicKey, publicKeys)
-                        .map(PGPPublicKey::getFingerprint)
-                        .map(KeyFingerprint::new)
-                        .orElse(null))
-                .uids(PublicKeyUtils.getUserIDs(publicKey, publicKeys))
-                .version(publicKey.getVersion())
-                .algorithm(publicKey.getAlgorithm())
-                .bits(publicKey.getBitStrength())
-                .date(publicKey.getCreationTime())
-                .build());
+            signatureCheckResultBuilder.key(KeyInfo.builder()
+                    .fingerprint(new KeyFingerprint(publicKey.getFingerprint()))
+                    .master(PublicKeyUtils.getMasterKey(publicKey, publicKeys.getPublicKeyRing())
+                            .map(PGPPublicKey::getFingerprint)
+                            .map(KeyFingerprint::new)
+                            .orElse(null))
+                    .uids(PublicKeyUtils.getUserIDs(publicKey, publicKeys.getPublicKeyRing()))
+                    .version(publicKey.getVersion())
+                    .algorithm(publicKey.getAlgorithm())
+                    .bits(publicKey.getBitStrength())
+                    .date(publicKey.getCreationTime())
+                    .revoked(publicKey.hasRevocation())
+                    .build());
+        }
+
+        if (publicKeys.hasRevocationSignature()) {
+            PGPSignature revocationSignature = publicKeys.getRevocationSignature();
+
+            if (!publicKeys.hasPublicKeys()) {
+                KeyId keyIdRecSignature = Try.of(() -> retrieveKeyId(revocationSignature))
+                        .onFailure(e ->
+                                signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.SIGNATURE_ERROR))
+                        .getOrNull();
+
+                if (keyIdRecSignature == null) {
+                    return signatureCheckResultBuilder.build();
+                }
+
+                signatureCheckResultBuilder.key(KeyInfo.builder()
+                        .fingerprint(new KeyFingerprint(keyIdRecSignature.toString()))
+                        .revoked(true)
+                        .build());
+            }
+
+            signatureCheckResultBuilder.revocationSignature(getRevocationSignatureInfo(revocationSignature));
+        }
 
         if (onlyResolve) {
             return signatureCheckResultBuilder.status(SignatureStatus.RESOLVED).build();
         }
 
-        Boolean verifyStatus = Try.of(() -> {
-                    signature.init(new BcPGPContentVerifierBuilderProvider(), publicKey);
-                    readFileContentInto(signature, artifact.getFile());
-                    return signature.verify();
-                }).onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
-                .getOrNull();
+        if (publicKeys.hasPublicKeys()) {
+            Boolean verifyStatus = Try.of(() -> {
+                        signature.init(new BcPGPContentVerifierBuilderProvider(),
+                                keyId.getKeyFromRing(publicKeys.getPublicKeyRing()));
+                        readFileContentInto(signature, artifact.getFile());
+                        return signature.verify();
+                    }).onFailure(e -> signatureCheckResultBuilder.errorCause(e).status(SignatureStatus.ERROR))
+                    .getOrNull();
 
-        if (verifyStatus == null) {
-            return signatureCheckResultBuilder.build();
+            if (verifyStatus == null) {
+                return signatureCheckResultBuilder.build();
+            }
+
+            return signatureCheckResultBuilder
+                    .status(Boolean.TRUE.equals(verifyStatus)
+                            ? SignatureStatus.SIGNATURE_VALID : SignatureStatus.SIGNATURE_INVALID)
+                    .build();
+        } else {
+            return signatureCheckResultBuilder
+                    .status(SignatureStatus.KEY_REVOCATION)
+                    .build();
+        }
+    }
+
+    private static RevocationSignatureInfo getRevocationSignatureInfo(PGPSignature signature) {
+
+        if (signature.getSignatureType() != PGPSignature.KEY_REVOCATION ) {
+            return null;
         }
 
-        return signatureCheckResultBuilder
-                .status(Boolean.TRUE.equals(verifyStatus)
-                        ? SignatureStatus.SIGNATURE_VALID : SignatureStatus.SIGNATURE_INVALID)
-                .build();
+        Optional<RevocationReason> revocationReason = Optional
+                .ofNullable(signature.getHashedSubPackets())
+                .map(PGPSignatureSubpacketVector::getRevocationReason);
+
+        if (!revocationReason.isPresent()) {
+            revocationReason = Optional.ofNullable(signature.getUnhashedSubPackets())
+                    .map(PGPSignatureSubpacketVector::getRevocationReason);
+        }
+
+        return revocationReason.map(r ->
+                RevocationSignatureInfo.builder()
+                        .date(signature.getCreationTime())
+                        .reason(r.getRevocationReason())
+                        .description(r.getRevocationDescription())
+                        .build()
+        ).orElse(null);
     }
 
     /**
@@ -375,6 +432,8 @@ public class SignatureUtils {
     @SuppressWarnings("deprecation")
     public String keyAlgorithmName(int keyAlgorithm) {
         switch (keyAlgorithm) {
+            case 0:
+                return "-";
             case PublicKeyAlgorithmTags.RSA_GENERAL:
                 return "RSA (Encrypt or Sign)";
             case PublicKeyAlgorithmTags.RSA_ENCRYPT:

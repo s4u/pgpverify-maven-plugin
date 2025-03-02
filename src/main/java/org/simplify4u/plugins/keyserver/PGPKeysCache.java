@@ -42,8 +42,8 @@ import static org.simplify4u.plugins.utils.ExceptionUtils.getMessage;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
 import org.simplify4u.plugins.pgp.KeyId;
+import org.simplify4u.plugins.pgp.PublicKeyRingPack;
 import org.simplify4u.plugins.pgp.PublicKeyUtils;
 
 /**
@@ -154,12 +154,10 @@ public class PGPKeysCache {
      * Return Public Key Ring from local cache or from key server.
      *
      * @param keyID a keyId for lookup
-     *
      * @return Public Key Ring for given key
-     *
      * @throws IOException in case of problems
      */
-    public PGPPublicKeyRing getKeyRing(KeyId keyID) throws IOException {
+    public PublicKeyRingPack getKeyRing(KeyId keyID) throws IOException {
 
         String path = keyID.getHashPath();
         Path keyFile = new File(cachePath, path).toPath();
@@ -172,9 +170,9 @@ public class PGPKeysCache {
 
             if (keyFile.toFile().exists()) {
                 // load from cache
-                Optional<PGPPublicKeyRing> keyRing = loadKeyFromFile(keyFile, keyID);
-                if (keyRing.isPresent()) {
-                    return keyRing.get();
+                PublicKeyRingPack keyRing = loadKeyFromFile(keyFile, keyID);
+                if (!keyRing.isEmpty()) {
+                    return keyRing;
                 }
             }
 
@@ -229,22 +227,22 @@ public class PGPKeysCache {
         }
     }
 
-    private static Optional<PGPPublicKeyRing> loadKeyFromFile(Path keyFile, KeyId keyID)
+    private static PublicKeyRingPack loadKeyFromFile(Path keyFile, KeyId keyID)
             throws IOException {
-        Optional<PGPPublicKeyRing> keyRing = Optional.empty();
+        PublicKeyRingPack keyRing = PublicKeyRingPack.EMPTY;
         try (InputStream keyFileStream = Files.newInputStream(keyFile)) {
             keyRing = PublicKeyUtils.loadPublicKeyRing(keyFileStream, keyID);
         } catch (PGPException e) {
             throw new IOException(e);
         } finally {
-            if (!keyRing.isPresent()) {
+            if (keyRing.isEmpty()) {
                 deleteFile(keyFile);
             }
         }
         return keyRing;
     }
 
-    private static PGPPublicKeyRing receiveKey(Path keyFile, KeyId keyId, PGPKeysServerClient keysServerClient)
+    private static PublicKeyRingPack receiveKey(Path keyFile, KeyId keyId, PGPKeysServerClient keysServerClient)
             throws IOException {
         Path dir = keyFile.getParent();
 
@@ -266,7 +264,7 @@ public class PGPKeysCache {
             }
             moveFile(partFile, keyFile);
         } catch (IOException e) {
-            // if error try remove file
+            // if error try to remove file
             deleteFile(keyFile);
             deleteFile(partFile);
             throw e;
@@ -275,10 +273,11 @@ public class PGPKeysCache {
         LOGGER.info("Receive key: {}{}\tto {}", keysServerClient.getUriForGetKey(keyId), NL, keyFile);
 
         // try load key
-        return loadKeyFromFile(keyFile, keyId)
-                .orElseThrow(() ->
-                        new IOException(String.format("Can't find public key %s in download file: %s",
-                                keyId, keyFile)));
+        PublicKeyRingPack keyRingPack = loadKeyFromFile(keyFile, keyId);
+        if (keyRingPack.isEmpty()) {
+            throw new IOException(String.format("Can't find public key %s in download file: %s", keyId, keyFile));
+        }
+        return keyRingPack;
     }
 
     private static void onRetry(InetAddress address, int numberOfRetryAttempts, Duration waitInterval,
@@ -316,7 +315,7 @@ public class PGPKeysCache {
 
     @FunctionalInterface
     interface KeyServerExecutor {
-        PGPPublicKeyRing run(PGPKeysServerClient client) throws IOException;
+        PublicKeyRingPack run(PGPKeysServerClient client) throws IOException;
     }
 
     /**
@@ -338,9 +337,9 @@ public class PGPKeysCache {
             return lastClient.getUriForShowKey(keyID);
         }
 
-        protected Optional<PGPPublicKeyRing> executeWithClient(KeyServerExecutor executor, PGPKeysServerClient client) {
+        protected PublicKeyRingPack executeWithClient(KeyServerExecutor executor, PGPKeysServerClient client) {
             try {
-                Optional<PGPPublicKeyRing> ret = Optional.of(executor.run(client));
+                PublicKeyRingPack ret = executor.run(client);
                 lastClient = client;
                 return ret;
             } catch (IOException e) {
@@ -350,7 +349,7 @@ public class PGPKeysCache {
                 }
                 LOGGER.warn("{} throw exception: {} - {} try next client", client, getMessage(e), getName());
             }
-            return Optional.empty();
+            return PublicKeyRingPack.EMPTY;
         }
 
         @Override
@@ -360,7 +359,7 @@ public class PGPKeysCache {
 
         abstract String getName();
 
-        abstract PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException;
+        abstract PublicKeyRingPack execute(KeyServerExecutor executor) throws IOException;
     }
 
     /**
@@ -374,7 +373,7 @@ public class PGPKeysCache {
         }
 
         @Override
-        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
+        PublicKeyRingPack execute(KeyServerExecutor executor) throws IOException {
             return executor.run(lastClient);
         }
 
@@ -395,12 +394,12 @@ public class PGPKeysCache {
         }
 
         @Override
-        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
+        PublicKeyRingPack execute(KeyServerExecutor executor) throws IOException {
 
             for (PGPKeysServerClient client : keysServerClients) {
-                Optional<PGPPublicKeyRing> pgpPublicKeys = executeWithClient(executor, client);
-                if (pgpPublicKeys.isPresent()) {
-                    return pgpPublicKeys.get();
+                PublicKeyRingPack pgpPublicKeys = executeWithClient(executor, client);
+                if (!pgpPublicKeys.isEmpty()) {
+                    return pgpPublicKeys;
                 }
             }
 
@@ -422,15 +421,15 @@ public class PGPKeysCache {
         }
 
         @Override
-        PGPPublicKeyRing execute(KeyServerExecutor executor) throws IOException {
+        PublicKeyRingPack execute(KeyServerExecutor executor) throws IOException {
 
             for (int i = 0; i < keysServerClients.size(); i++) {
 
                 PGPKeysServerClient client = keysServerClients.get(lastIndex);
                 lastIndex = (lastIndex + 1) % keysServerClients.size();
-                Optional<PGPPublicKeyRing> pgpPublicKeys = executeWithClient(executor, client);
-                if (pgpPublicKeys.isPresent()) {
-                    return pgpPublicKeys.get();
+                PublicKeyRingPack pgpPublicKeys = executeWithClient(executor, client);
+                if (!pgpPublicKeys.isEmpty()) {
+                    return pgpPublicKeys;
                 }
             }
 

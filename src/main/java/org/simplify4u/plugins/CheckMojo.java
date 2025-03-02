@@ -325,6 +325,21 @@ public class CheckMojo extends AbstractVerifyMojo<CheckMojo.VerificationResult> 
                         artifact.getId(), signatureCheckResult.getSignature().getKeyId());
                 verificationResultBuilder.error(true);
                 break;
+            case KEY_REVOCATION:
+                if (keysMap.isValidKeyNoPublicKey(artifact, signatureCheckResult.getKey())) {
+                    logInfoWithQuiet("{} PGP key {} is revoked and has no public key, consistent with keys map.",
+                            artifact::getId, signatureCheckResult.getSignature()::getKeyId);
+                    verificationResultBuilder.error(false);
+                    break;
+                }
+
+                String msg = String.format("%s = !%s", ArtifactUtils.key(artifact),
+                        PublicKeyUtils.fingerprintForMaster(signatureCheckResult.getKey()));
+                LOGGER.error("{} PGP key {} has been revoked and public key is not available\n\t{}\n\t{}",
+                        artifact.getId(), signatureCheckResult.getSignature().getKeyId(),
+                        msg, signatureCheckResult.getKeyShowUrl());
+                verificationResultBuilder.error(true);
+                break;
             default:
                 verificationResultBuilder.error(true);
                 break;
