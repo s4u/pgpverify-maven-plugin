@@ -164,6 +164,27 @@ public class KeysMap {
                 .anyMatch(entry -> entry.getValue().isKeyMatch(keyInfo));
     }
 
+    /**
+     * Test if given key without public key is trust for artifact.
+     *
+     * @param artifact an artifact
+     * @param keyInfo a key which is used to sign artifact
+     * @return a trust status
+     */
+    public boolean isValidKeyNoPublicKey(Artifact artifact, KeyInfo keyInfo) {
+
+        if (items.isEmpty()) {
+            return false;
+        }
+
+        ArtifactData artifactData = new ArtifactData(artifact);
+
+        return items.entrySet().stream()
+                .filter(entry -> entry.getKey().isMatch(artifactData))
+                .anyMatch(entry -> entry.getValue().isKeyMatchNoPublicKey(keyInfo));
+    }
+
+
     private void loadKeysMap(final InputStream inputStream,
             KeysMapLocationConfig locationConfig,
             KeysMapContext keysMapContext) throws IOException {

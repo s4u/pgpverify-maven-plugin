@@ -59,6 +59,19 @@ expression with a negated match against artifact version.
 This may be used, for example, to have separate PGP signing keys for continuous integration snapshot builds,
 while releases are signed by more protected PGP keys unavailable to the continuous integration platform.
 
+Revoked key without public key
+--------
+
+There are keys which contains only revocation signature without public key material.
+
+In such case verification of signature is not possible, we can only check that artifact was signed by given key.
+
+We can mark such key with exclamation ❗ prefix.
+
+like:
+ 
+    test.groupId:artifactId:1.0.0 = !0x1234567890123456789012345678901234567890  
+
 Examples
 --------
 

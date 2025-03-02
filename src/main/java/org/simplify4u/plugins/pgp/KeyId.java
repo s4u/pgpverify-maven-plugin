@@ -15,24 +15,26 @@
  */
 package org.simplify4u.plugins.pgp;
 
+import java.math.BigInteger;
+import java.util.Arrays;
+
 import static org.simplify4u.plugins.utils.HexUtils.fingerprintToString;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.EqualsAndHashCode;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
 
 /**
  * KeyId representation.
  */
 public interface KeyId {
 
+    long getId();
+
     String getHashPath();
 
     PGPPublicKey getKeyFromRing(PGPPublicKeyRing publicKeyRing);
-
-    PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection);
 
     /**
      * Representation of a keyId with long as key.
@@ -47,6 +49,11 @@ public interface KeyId {
         }
 
         @Override
+        public long getId() {
+            return keyId;
+        }
+
+        @Override
         public String getHashPath() {
             return String.format("%02X/%02X/%016X.asc", (byte) (keyId >> 56), (byte) (keyId >> 48 & 0xff), keyId);
         }
@@ -54,11 +61,6 @@ public interface KeyId {
         @Override
         public PGPPublicKey getKeyFromRing(PGPPublicKeyRing publicKeyRing) {
             return publicKeyRing.getPublicKey(keyId);
-        }
-
-        @Override
-        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) {
-            return pgpRingCollection.getPublicKeyRing(keyId);
         }
 
         @Override
@@ -81,6 +83,12 @@ public interface KeyId {
         }
 
         @Override
+        public long getId() {
+            return new BigInteger(Arrays.copyOfRange(fingerprint, fingerprint.length - 8, fingerprint.length)).
+                    longValue();
+        }
+
+        @Override
         public String getHashPath() {
             StringBuilder ret = new StringBuilder();
             ret.append(String.format("%02X/", fingerprint[0]));
@@ -95,11 +103,6 @@ public interface KeyId {
         @Override
         public PGPPublicKey getKeyFromRing(PGPPublicKeyRing publicKeyRing) {
             return publicKeyRing.getPublicKey(fingerprint);
-        }
-
-        @Override
-        public PGPPublicKeyRing getKeyRingFromRingCollection(PGPPublicKeyRingCollection pgpRingCollection) {
-            return pgpRingCollection.getPublicKeyRing(fingerprint);
         }
 
         @Override

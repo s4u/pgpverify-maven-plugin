@@ -1,5 +1,6 @@
 /*
- * Copyright 2020-2021 Slawomir Jaranowski
+ * Copyright 2020 Slawomir Jaranowski
+ * Portions copyright 2020 Danny van Heumen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,35 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.pgp;
+def buildLog = new File( basedir, 'build.log' ).text
 
-import java.util.Collection;
-import java.util.Date;
-
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-
-/**
- * Store information about used key.
- */
-@Builder
-@Value
-public class KeyInfo {
-
-    @NonNull
-    KeyFingerprint fingerprint;
-
-    KeyFingerprint master;
-
-    Collection<String> uids;
-
-    int version;
-    int algorithm;
-
-    int bits;
-
-    Date date;
-
-    boolean revoked;
-}
+assert buildLog.contains('[ERROR] com.amazonaws:aws-java-sdk-sns:pom:1.10.72 PGP key 0x03BD3C33F16AB41B has been revoked and public key is not available')
+assert buildLog.contains('[ERROR] com.amazonaws:aws-java-sdk-sns:jar:1.10.72 PGP key 0x03BD3C33F16AB41B has been revoked and public key is not available')

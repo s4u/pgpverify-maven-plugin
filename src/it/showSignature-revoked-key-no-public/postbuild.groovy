@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Slawomir Jaranowski
+ * Copyright 2025 Slawomir Jaranowski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,35 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.simplify4u.plugins.pgp;
 
-import java.util.Collection;
-import java.util.Date;
+def buildLog = new File( basedir, 'build.log' ).text
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+assert buildLog.contains('groupId:     com.amazonaws')
+assert buildLog.contains('artifactId:  aws-java-sdk-sns')
+assert buildLog.contains('type:        jar')
+assert buildLog.contains('version:     1.10.72')
 
-/**
- * Store information about used key.
- */
-@Builder
-@Value
-public class KeyInfo {
+assert buildLog.contains('PGP signature:')
+assert buildLog.contains('keyId:       0x03BD3C33F16AB41B')
 
-    @NonNull
-    KeyFingerprint fingerprint;
-
-    KeyFingerprint master;
-
-    Collection<String> uids;
-
-    int version;
-    int algorithm;
-
-    int bits;
-
-    Date date;
-
-    boolean revoked;
-}

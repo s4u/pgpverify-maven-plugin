@@ -59,4 +59,16 @@ interface KeyItem {
     default boolean isKeyMatch(KeyInfo keyInfo) {
         return false;
     }
+
+    /**
+     * Check if current key mach with given key and allow with missing public kay.
+     *
+     * @param keyInfo key to test
+     *
+     * @return key matching status
+     */
+    default boolean isKeyMatchNoPublicKey(KeyInfo keyInfo) {
+        return false;
+    }
+
 }
