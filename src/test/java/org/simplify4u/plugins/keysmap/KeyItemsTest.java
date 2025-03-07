@@ -81,11 +81,13 @@ class KeyItemsTest {
     void invalidKeyShouldThrowsException() {
         // given
         KeyItems keyItems = new KeyItems();
-
+        KeysMapContext keysMapContext = new KeysMapContext("test.map");
+        keysMapContext.incLineNumber();
         // then
-        assertThatThrownBy(() -> keyItems.addKeys("xxxx", null))
+        assertThatThrownBy(() -> keyItems.addKeys("xxxx", keysMapContext))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid keyID xxxx must start with 0x or be any of *,any,badSig,noKey,noSig");
+                .hasMessage("Invalid keyID xxxx must start with 0x or !0x or be any of *,any,badSig,noKey,noSig "
+                        + "in: keysMap: test.map lineNumber: 1");
     }
 
 
