@@ -68,8 +68,10 @@ class KeyItems {
                     } else {
                         KeyItem keyInfoItem = KeyItemSpecialValue.keyItemFromString(key)
                                 .orElseThrow(()
-                                        -> new IllegalArgumentException("Invalid keyID " + key + " must start with 0x "
-                                        + "or be any of " + KeyItemSpecialValue.getAllowedValue()));
+                                        -> new IllegalArgumentException(
+                                        "Invalid keyID " + key + " must start with 0x or !0x"
+                                                + " or be any of " + KeyItemSpecialValue.getAllowedValue()
+                                                + " in: " + keysMapContext));
                         addKey(keyInfoItem, keysMapContext);
                     }
                 });
