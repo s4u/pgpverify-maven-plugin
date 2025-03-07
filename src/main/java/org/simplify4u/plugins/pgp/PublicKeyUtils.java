@@ -163,10 +163,8 @@ public final class PublicKeyUtils {
             verifyPublicKeyRing(publicKeyRing.get());
             PGPPublicKey key = keyId.getKeyFromRing(publicKeyRing.get());
             if (key.hasRevocation() && !revocationSignature.isPresent()) {
-                LOGGER.warn("Revocation for: {}", keyId);
                 Iterator<PGPSignature> signaturesOfType = key.getSignaturesOfType(PGPSignature.KEY_REVOCATION);
                 if (signaturesOfType.hasNext()) {
-                    LOGGER.warn("Revocation signature: {}", keyId);
                     revocationSignature = Optional.of(signaturesOfType.next());
                 }
             }
