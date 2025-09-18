@@ -81,7 +81,7 @@
     </distributionManagement>
 
     <properties>
-        <bouncycastle.version>1.81</bouncycastle.version>
+        <bouncycastle.version>1.82</bouncycastle.version>
         <jackson.version>2.19.2</jackson.version>
         <mavenVersion>3.6.3</mavenVersion>
         <resolverVersion>1.4.1</resolverVersion>
