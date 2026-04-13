@@ -85,7 +85,7 @@
         <jackson.version>2.19.2</jackson.version>
         <mavenVersion>3.6.3</mavenVersion>
         <resolverVersion>1.4.1</resolverVersion>
-        <mockito.version>4.11.0</mockito.version>
+        <mockito.version>5.0.0</mockito.version>
         <resilience4j.version>1.7.1</resilience4j.version>
         <slf4j.version>1.7.36</slf4j.version>
 
