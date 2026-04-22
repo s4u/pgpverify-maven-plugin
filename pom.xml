@@ -87,7 +87,7 @@
         <resolverVersion>1.4.1</resolverVersion>
         <mockito.version>4.11.0</mockito.version>
         <resilience4j.version>1.7.1</resilience4j.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.0</slf4j.version>
 
         <project.build.outputTimestamp>2025-03-08T08:04:35Z</project.build.outputTimestamp>
 
