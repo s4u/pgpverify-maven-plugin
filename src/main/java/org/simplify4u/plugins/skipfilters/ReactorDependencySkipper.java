@@ -16,10 +16,12 @@
 
 package org.simplify4u.plugins.skipfilters;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.execution.ProjectDependencyGraph;
 import org.apache.maven.project.MavenProject;
 
 /**
@@ -35,8 +37,12 @@ public class ReactorDependencySkipper implements SkipFilter {
      * @param session The current maven session.
      */
     public ReactorDependencySkipper(final MavenSession session) {
-        this.upstreamProjects =
-                session.getProjectDependencyGraph().getUpstreamProjects(session.getCurrentProject(), true);
+        final ProjectDependencyGraph graph =
+                session.getProjectDependencyGraph();
+        final List<MavenProject> upstream = graph == null ? null
+                : graph.getUpstreamProjects(session.getCurrentProject(), true);
+        this.upstreamProjects = upstream == null
+                ? Collections.emptyList() : upstream;
     }
 
     @Override
