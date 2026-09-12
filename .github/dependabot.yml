@@ -15,3 +15,7 @@ updates:
   - dependency-name: io.github.resilience4j:*
     versions:
     - ">=2.0.0"
+  # Maven 3.x provides slf4j 1.7.x to plugins
+  - dependency-name: org.slf4j:*
+    versions:
+    - ">=2.0.0"
