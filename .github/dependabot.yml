@@ -8,3 +8,10 @@ updates:
   ignore:
   - dependency-name: org.apache.maven:*
   - dependency-name: org.apache.maven.resolver:*
+  # next major requires Java 17, project baseline is Java 8
+  - dependency-name: org.junit.jupiter:*
+    versions:
+    - ">=6.0.0"
+  - dependency-name: io.github.resilience4j:*
+    versions:
+    - ">=2.0.0"
