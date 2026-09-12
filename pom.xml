@@ -83,7 +83,7 @@
     <properties>
         <bouncycastle.version>1.85</bouncycastle.version>
         <!-- jackson-annotations has its own release line, without patch releases -->
-        <jackson-annotations.version>2.19.2</jackson-annotations.version>
+        <jackson-annotations.version>2.22</jackson-annotations.version>
         <jackson-databind.version>2.19.2</jackson-databind.version>
         <mavenVersion>3.6.3</mavenVersion>
         <resolverVersion>1.4.1</resolverVersion>
