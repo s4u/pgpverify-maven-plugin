@@ -234,6 +234,12 @@
                 <artifactId>javax.inject</artifactId>
                 <version>1</version>
             </dependency>
+            <!-- align version brought in by guava and vavr -->
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>1.0.1</version>
+            </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
