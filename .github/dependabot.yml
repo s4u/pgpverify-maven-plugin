@@ -5,6 +5,16 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
+  # jackson-databind requires jackson-annotations from at least its own line,
+  # keep both in one pull request so they can not land out of order
+  groups:
+    jackson:
+      patterns:
+      - com.fasterxml.jackson.core:*
+    jackson-security:
+      applies-to: security-updates
+      patterns:
+      - com.fasterxml.jackson.core:*
   ignore:
   - dependency-name: org.apache.maven:*
   - dependency-name: org.apache.maven.resolver:*
