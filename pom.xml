@@ -81,7 +81,7 @@
     </distributionManagement>
 
     <properties>
-        <bouncycastle.version>1.85</bouncycastle.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
         <!-- jackson-annotations has its own release line, without patch releases -->
         <jackson-annotations.version>2.22</jackson-annotations.version>
         <jackson-databind.version>2.22.2</jackson-databind.version>
