@@ -600,6 +600,17 @@
                 <invoker.streamLogsOnFailures>true</invoker.streamLogsOnFailures>
             </properties>
         </profile>
+        <profile>
+            <!-- TODO remove with surefire 3.6.1+ - 3.6.0 breaks Mockito agent on JDK 21+
+                 https://github.com/apache/maven-surefire/issues/3460 -->
+            <id>surefire-3460-workaround</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <properties>
+                <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+            </properties>
+        </profile>
     </profiles>
 
 </project>
