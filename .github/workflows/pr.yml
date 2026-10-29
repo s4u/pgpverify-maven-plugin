@@ -10,4 +10,4 @@ jobs:
   verify:
     name: Verify
     uses: s4u/.github/.github/workflows/maven-pr.yml@master
-
+    secrets: inherit

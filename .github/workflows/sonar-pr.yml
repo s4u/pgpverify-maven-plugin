@@ -1,0 +1,17 @@
+name: Sonar PR
+
+on:
+  workflow_run:
+    workflows: [ 'Pull requests' ]
+    types: [ completed ]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  sonar:
+    name: Sonar
+    uses: s4u/.github/.github/workflows/maven-sonar-pr.yml@master
+    secrets: inherit
