@@ -17,4 +17,4 @@
 def buildLog = new File( basedir, 'build.log' )
 
 assert buildLog.text.contains('[ERROR] Weak signature algorithm used: MD5')
-assert buildLog.text.contains('[INFO] BUILD FAILURE')
+assert buildLog.text.contains('BUILD FAILURE')

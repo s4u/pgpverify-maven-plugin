@@ -28,4 +28,4 @@ assert buildLog.contains('[ERROR] Not allowed artifact org.hamcrest:hamcrest-cor
 assert buildLog.contains('[INFO] commons-beanutils:commons-beanutils:jar:1.7.0 PGP Signature unavailable, consistent with keys map.')
 assert buildLog.contains('[INFO] commons-logging:commons-logging:jar:1.0.3 PGP Signature unavailable, consistent with keys map.')
 
-assert buildLog.contains('[INFO] BUILD FAILURE')
+assert buildLog.contains('BUILD FAILURE')
