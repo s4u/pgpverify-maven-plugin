@@ -18,4 +18,4 @@ def buildLog = new File( basedir, 'build.log' ).text
 assert buildLog.contains('[ERROR] Unsigned artifact not listed in keys map: commons-beanutils:commons-beanutils')
 assert buildLog.contains('[ERROR] Unsigned artifact not listed in keys map: commons-logging:commons-logging')
 
-assert buildLog.contains('[INFO] BUILD FAILURE')
+assert buildLog.contains('BUILD FAILURE')

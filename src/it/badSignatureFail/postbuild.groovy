@@ -16,4 +16,4 @@
 def buildLog = new File( basedir, 'build.log' ).text
 
 assert buildLog.contains('[ERROR] org.apache.struts:struts-core:pom:1.3.8 PGP Signature INVALID')
-assert buildLog.contains('[INFO] BUILD FAILURE')
+assert buildLog.contains('BUILD FAILURE')

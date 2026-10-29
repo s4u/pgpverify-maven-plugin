@@ -18,4 +18,4 @@ def buildLog = new File( basedir, 'build.log' ).text
 assert buildLog.contains('[ERROR] Unsigned artifact is listed with key in keys map: junit:junit:jar:3.8')
 assert buildLog.contains('[ERROR] Unsigned artifact is listed with key in keys map: junit:junit:pom:3.8')
 
-assert buildLog.contains('[INFO] BUILD FAILURE')
+assert buildLog.contains('BUILD FAILURE')
