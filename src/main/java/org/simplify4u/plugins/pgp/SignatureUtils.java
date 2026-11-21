@@ -466,6 +466,20 @@ public class SignatureUtils {
                 return "Ed25519";
             case PublicKeyAlgorithmTags.Ed448:
                 return "Ed448";
+            case PublicKeyAlgorithmTags.MLDSA65_Ed25519:
+                return "ML-DSA-65 with Ed25519";
+            case PublicKeyAlgorithmTags.MLDSA87_Ed448:
+                return "ML-DSA-87 with Ed448";
+            case PublicKeyAlgorithmTags.SLHDSA_SHAKE_128s:
+                return "SLH-DSA-SHAKE-128s";
+            case PublicKeyAlgorithmTags.SLHDSA_SHAKE_128f:
+                return "SLH-DSA-SHAKE-128f";
+            case PublicKeyAlgorithmTags.SLHDSA_SHAKE_256s:
+                return "SLH-DSA-SHAKE-256s";
+            case PublicKeyAlgorithmTags.MLKEM768_X25519:
+                return "ML-KEM-768 with X25519";
+            case PublicKeyAlgorithmTags.MLKEM1024_X448:
+                return "ML-KEM-1024 with X448";
             case PublicKeyAlgorithmTags.EXPERIMENTAL_1:
             case PublicKeyAlgorithmTags.EXPERIMENTAL_2:
             case PublicKeyAlgorithmTags.EXPERIMENTAL_3:
